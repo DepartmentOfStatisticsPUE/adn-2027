@@ -1,0 +1,234 @@
+---
+title: "1. Braki danych w pakietach statystycznych"
+format: 
+  html:
+    self-contained: true
+    number-sections: true
+    toc: true
+    toc-title: "Spis treści"
+editor: source
+---
+
+# Braki danych w pakietach statystycznych
+
+## Kodowanie braków danych
+
+::: panel-tabset
+## R
+
+```{r}
+x1 <- c(1,2,3,NA)
+summary(x1)
+```
+
+```{r}
+table(x1)
+```
+
+```{r}
+table(x1, useNA = "ifany")
+```
+
+```{r}
+mean(x1)
+```
+
+```{r}
+mean(x1, na.rm = T)
+```
+
+```{r}
+na.omit(x1)
+```
+
+```{r}
+x2 <- c(1,2,3, NA, NaN)
+```
+
+```{r}
+summary(x2)
+```
+
+```{r}
+mean(x2, na.rm=T)
+```
+
+```{r}
+table(x2)
+table(x2, useNA = "ifany")
+```
+
+```{r}
+na.omit(x2)
+```
+
+## Python
+
+```{python}
+import pandas as pd
+import numpy as np
+```
+
+
+```{python}
+x1 = pd.Series([1, 2, 3, np.nan])
+x1.describe()
+```
+
+```{python}
+x1.value_counts()
+```
+
+```{python}
+x1.value_counts(dropna=False)
+```
+
+
+W `pandas` braki danych są domyślnie pomijane (`skipna=True`), inaczej niż w R.
+
+```{python}
+x1.mean(skipna=False)
+```
+
+
+```{python}
+x1.mean()
+```
+
+
+```{python}
+x1.dropna()
+```
+
+
+
+:::
+
+## Praca z brakami danych
+
+### Dane wczytywane z plików
+
+::: panel-tabset
+## R
+
+```{r}
+dane <- read.csv("../data/plik-przyklad.csv")
+head(dane)
+```
+
+```{r}
+tail(dane)
+```
+
+Plik zawiera różne sposoby kodowania braków danych? Jakie? Jak to ustawić (hint `na.strings`)
+
+Co z korelacją? Jak wyznaczyć korelację między np. wiekiem, wzrostem i oceną gdy występują braki danych?
+
+```{r, eval = FALSE}
+with(dane, cor(wzrost, ocena))
+```
+
+## Python
+
+```{python, python-read-data}
+dane = pd.read_csv(
+    "../data/plik-przyklad.csv",
+    skip_blank_lines=True,
+    on_bad_lines="skip"
+)
+dane.head()
+```
+
+```{python, python-tail}
+dane.tail()
+```
+
+Plik zawiera różne sposoby kodowania braków danych? Jakie? Jak to ustawić (hint `na_values`)
+
+Co z korelacją? Jak wyznaczyć korelację między np. wiekiem, wzrostem i oceną gdy występują braki danych?
+
+```{python, python-cor, eval = F}
+correlation = dane["wiek"].corr(
+    dane["ocena"],
+    method="pearson"
+)
+```
+
+:::
+
+### Dane ankietowe
+
+W tym miejscu omówiony zostanie zbiór danych z Badania Kapitału Ludzkiego.
+
+::: panel-tabset
+## R
+
+```{r}
+library(haven)
+```
+
+```{r}
+## źródło: https://www.parp.gov.pl/images/publications/BKL/nowy-uklad/Baza_danych_z_badania_ludnoci_BKL_edycja_2021_SAV-SPSS.sav
+## (strona blokuje pobieranie z poziomu R, dlatego wczytujemy kopię lokalną)
+doc <- read_spss("../data/downloaded_data.sav")
+str(doc$m9_1,2)
+```
+
+```{r}
+table(doc$m9_1)
+table(doc$m9_1, useNA = "ifany")
+```
+
+```{r}
+doc <- read_spss("../data/downloaded_data.sav", user_na = T)
+str(doc$m9_1,2)
+```
+
+```{r}
+table(doc$m9_1)
+table(doc$m9_1, useNA = "ifany")
+```
+## Python
+
+```{python}
+import pandas as pd
+import pyreadstat
+import numpy as np
+```
+
+```{python}
+## źródło: https://www.parp.gov.pl/images/publications/BKL/nowy-uklad/Baza_danych_z_badania_ludnoci_BKL_edycja_2021_SAV-SPSS.sav
+## (strona blokuje pobieranie z poziomu Pythona, dlatego wczytujemy kopię lokalną)
+file_name = "../data/downloaded_data.sav"
+```
+
+```{python}
+df, meta = pyreadstat.read_sav(file_name)
+# Print structure of m9_1
+print(df['m9_1'].dtype)
+print(df['m9_1'].head(2))
+
+```
+
+
+```{python}
+print(df['m9_1'].value_counts())
+print(df['m9_1'].value_counts(dropna=False))
+```
+
+
+```{python}
+df2, meta2 = pyreadstat.read_sav(file_name, user_missing=True, usecols = ["m9_1"])
+print(df2['m9_1'].dtype)
+print(df2['m9_1'].head(2))
+```
+
+```{python}
+print(df2['m9_1'].value_counts())
+print(df2['m9_1'].value_counts(dropna=False))
+```
+
+:::
+
+
+

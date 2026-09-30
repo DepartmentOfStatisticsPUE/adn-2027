@@ -1,0 +1,259 @@
+---
+title: "6. Kalibracja -- wstęp"
+format: 
+  html:
+    self-contained: true
+    number-sections: true
+    toc: true
+    toc-title: "Spis treści"
+editor: source
+---
+
+# Wczytanie potrzebnych pakietów
+
+::: panel-tabset
+## R
+
+```{r pakiety, message=F, warning=F}
+library(survey)
+library(sampling)
+```
+
+
+## Python
+
+```{python moduly}
+import numpy as np
+import pandas as pd
+import polars as pl ## svy pracuje na ramkach danych polars
+import svy
+```
+
+:::
+
+
+# Rozwiązanie przykładu 1
+
+## Podejście krok po kroku
+
+::: panel-tabset
+## R
+
+
+Wczytujemy dane
+
+```{r}
+dane <- read.csv2("../data/data5-kalibracja.csv")
+head(dane)
+```
+
+Dane z pliku PDF do porównania
+
+```{r}
+wynik_poprawny <- c(52.275, 50.5821, 51.4286, 50.5462, 48.4301, 39.9657, 51.0054, 54.3911, 45.4675, 49.7357, 52.275, 51.4286, 45.0443, 51.0054, 51.0054, 48.8893, 52.275, 52.275, 50.5462, 51.4286)
+```
+
+Wektor wag wynikających z losowania $\boldsymbol{d}$
+
+```{r}
+d <- dane$Waga
+```
+
+Tworzenie macierzy zmiennych pomoczniczych (macierz $\boldsymbol{X}$)
+
+```{r}
+Xs <- model.matrix(~0+Przychod + Wielkosc, dane)
+head(Xs)
+```
+
+Wartości globalne dla zmiennych: Przychód i Wielkość (zachowuję porządek
+danych; wektor $\boldsymbol{X}$)
+
+```{r}
+wartosci_globalne <- c(19000, 280, 720)
+```
+
+Wartości estymowane dla Xs (wektor $\tilde{\boldsymbol{X}}$)
+
+```{r}
+wartosci_est <- colSums(Xs*d)
+wartosci_est
+```
+
+Liczba wierszy
+
+```{r}
+n_wierszy <- NROW(dane)
+```
+
+1.  Sposób pierwszy: pętla
+
+Tworzymy obiekt macierz (wymiary $3 \times 3$)
+
+$$
+\sum_{i=1}^n d_i \boldsymbol{x}_i \boldsymbol{x}_i^T
+$$
+
+```{r}
+macierz_sum <- matrix(0, 3, 3)
+
+for (i in 1:n_wierszy) {
+  macierz_sum <- macierz_sum + d[i]*Xs[i,]%*% t(Xs[i, ])
+}
+```
+
+Korzystamy ze wzoru na wektor $w$ (ze strony 11)
+
+```{r}
+w1 <- numeric(n_wierszy)
+for (i in 1:n_wierszy) {
+  w1[i] <- d[i] + d[i]*t(wartosci_globalne - wartosci_est) %*% solve(macierz_sum) %*% Xs[i, ]
+}
+```
+
+Zaokrąglam do 3 miejsc po przecinku aby porównać do slajdów.
+
+```{r}
+all.equal(round(w1,3),  round(wynik_poprawny,3))
+```
+
+## Python
+
+```{python}
+dane = pd.read_csv("../data/data5-kalibracja.csv", sep=';')
+dane.head()
+```
+
+
+```{python}
+wynik_poprawny = np.array([52.275, 50.5821, 51.4286, 50.5462, 48.4301, 39.9657, 
+                       51.0054, 54.3911, 45.4675, 49.7357, 52.275, 51.4286, 
+                       45.0443, 51.0054, 51.0054, 48.8893, 52.275, 52.275, 
+                       50.5462, 51.4286])
+wynik_poprawny
+```
+
+```{python}
+d = dane['Waga'].values.astype(np.float64)
+```
+
+
+```{python}
+Xs = pd.get_dummies(dane[['Przychod', 'Wielkosc']], drop_first=False).values.astype(np.float64)
+Xs[:3,:]
+```
+
+
+
+```{python}
+wartosci_globalne = np.array([19000, 280, 720], dtype=np.float64)
+```
+
+```{python}
+wartosci_est = np.sum(Xs * d[:, np.newaxis], axis=0)
+wartosci_est
+```
+
+
+```{python}
+n_wierszy = len(dane)
+```
+
+```{python}
+macierz_sum = np.zeros((3, 3), dtype=np.float64)
+for i in range(n_wierszy):
+    macierz_sum += d[i] * np.outer(Xs[i,], Xs[i,])
+macierz_sum
+```
+
+```{python}
+w1 = np.zeros(n_wierszy, dtype=np.float64)
+for i in range(n_wierszy):
+    w1[i] = d[i] + d[i] * (wartosci_globalne - wartosci_est).T @ np.linalg.solve(macierz_sum, Xs[i,])
+```
+
+```{python}
+np.round(w1, 3)
+np.round(wynik_poprawny, 3)
+np.allclose(np.round(w1, 3), np.round(wynik_poprawny, 3))
+```
+
+:::
+
+
+## Sposób 2: obliczenia macierzowe
+
+::: panel-tabset
+## R
+
+
+```{r}
+w2 <- d + d * t(wartosci_globalne - wartosci_est) %*% solve(t(d*Xs) %*% Xs) %*% t(Xs)
+w2 <- as.numeric(w2)
+```
+
+Zaokrąglam do 3 miejsc po przecinku aby porównać do slajdów.
+
+```{r}
+all.equal(round(w2,3),  round(wynik_poprawny,3))
+```
+
+## Python
+
+```{python}
+temp_matrix = np.linalg.solve((d[:, np.newaxis] * Xs).T @ Xs, Xs.T)
+w2 = d * (1 + (wartosci_globalne - wartosci_est) @ temp_matrix)
+w2 = w2.flatten()  # equivalent to as.numeric() in R
+w2
+```
+
+```{python}
+np.allclose(np.round(w2, 3), np.round(wynik_poprawny, 3))
+```
+
+:::
+
+## Sposób 3: Wykorzystanie dostępnych pakietów 
+
+::: panel-tabset
+## R
+
+```{r}
+wskaznik <- calib(Xs = Xs, 
+                  d=dane$Waga, 
+                  method = "linear", 
+                  total = wartosci_globalne)
+w2 <- dane$Waga*wskaznik
+```
+
+Zaokrąglam do 3 miejsc po przecinku aby porównać do slajdów.
+
+```{r}
+all.equal(round(w2,3),  round(wynik_poprawny,3))
+```
+
+## Python
+
+
+Pakiet [`svy`](https://svylab.com/docs/svy) (od autorów `samplics`) pracuje na ramkach danych `polars`, a wagi muszą być typu zmiennoprzecinkowego.
+
+```{python}
+dane_pl = pl.from_pandas(dane).with_columns(pl.col("Waga").cast(pl.Float64))
+proba = svy.Sample(dane_pl, svy.Design(wgt="Waga")) ## waga pierwotna (d)
+
+## wartosci globalne: zmienna ciągła oraz zmienna jakościowa (svy.Cat)
+totals = {"Przychod": 19000, svy.Cat("Wielkosc"): {"L": 280, "M": 720}}
+
+proba_kalib = proba.weighting.calibrate(controls=totals, wgt_name="calib_weight")
+w3 = proba_kalib.data["calib_weight"].to_numpy()
+proba_kalib.data.select(["Lp", "Przychod", "Wielkosc", "Waga", "calib_weight"]).head(10)
+```
+
+Zaokrąglam do 3 miejsc po przecinku aby porównać do slajdów.
+
+```{python}
+np.allclose(np.round(w3, 3), np.round(wynik_poprawny, 3))
+```
+
+
+:::

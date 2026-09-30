@@ -1,0 +1,207 @@
+---
+title: "7. Propensity score adjustment"
+format: 
+  html:
+    self-contained: true
+    number-sections: true
+    toc: true
+    toc-title: "Spis treści"
+editor: source
+---
+
+# Wczytanie potrzebnych pakietów
+
+::: panel-tabset
+## R
+
+```{r pakiety, message=F, warning=F}
+library(readxl)
+library(glmnet)
+```
+
+
+## Python
+
+```{python moduly}
+import pandas as pd
+import numpy as np
+from sklearn.linear_model import LogisticRegressionCV
+import statsmodels.api as sm
+import matplotlib.pyplot as plt
+```
+
+:::
+
+
+# Ważenie przez odwrotność -- metoda podstawowa 
+
+Wykorzystamy wyłącznie regresję logistyczną bez i z LASSO.
+
+::: panel-tabset
+## R
+
+Wczytujemy przykładowe dane
+
+```{r}
+gosp <- read_excel("../data/gospodarstwa-zajecia.xlsx")
+gosp <- transform(gosp, 
+                  klm = as.factor(klm),
+                  woj = as.factor(woj))
+head(gosp)
+```
+
+W trzech zmiennych (`los`, `dochg`, `wydg`) mamy braki danych
+
+```{r}
+summary(gosp[, c("los", "dochg", "wydg")])
+```
+
+Zmienna określająda odpowiedź
+
+```{r}
+gosp$R <- !is.na(gosp$dochg)
+```
+
+Model podstawowy
+
+```{r}
+m1 <- glm(R ~ klm + woj, data = gosp, family = binomial())
+summary(predict(m1, type = "response"))
+```
+
+```{r}
+gosp$w_rho <- 1/predict(m1, gosp, type="response")
+```
+
+Porównamy szacunki
+
+```{r}
+c(mean(gosp$dochg, na.rm=T), weighted.mean(gosp$dochg, gosp$w_rho, na.rm=T))
+```
+
+Teraz LASSO
+
+```{r}
+set.seed(2026)
+m2 <- cv.glmnet(x = model.matrix(~ klm + woj, gosp)[, -1],
+                y = gosp$R,
+                family = "binomial")
+coef(m2, s = "lambda.min")
+```
+
+```{r}
+gosp$w_rho_lasso <- 1/as.numeric(predict(m2, newx = model.matrix(~ klm + woj, gosp)[, -1], type="response", s = "lambda.min"))
+```
+
+Porównamy szacunki
+
+```{r}
+c(bez = mean(gosp$dochg, na.rm=T), 
+  glm = weighted.mean(gosp$dochg, gosp$w_rho, na.rm=T),
+  lasso = weighted.mean(gosp$dochg, gosp$w_rho_lasso, na.rm=T))
+```
+
+Jak wyglądają wagi?
+
+```{r}
+summary(gosp[, c("w_rho", "w_rho_lasso")])
+```
+
+```{r}
+plot(gosp$w_rho, gosp$w_rho_lasso)
+```
+
+
+## Python
+
+Wczytujemy przykładowe dane
+
+```{python}
+gosp = pd.read_excel("../data/gospodarstwa-zajecia.xlsx")
+gosp['klm'] = gosp['klm'].astype('category')
+gosp['woj'] = gosp['woj'].astype('category')
+print(gosp.head())
+```
+
+W dwóch zmiennych mamy braki danych
+
+```{python}
+gosp[['dochg', 'wydg']].describe()
+```
+
+Zmienna określająca odpowiedź
+
+```{python}
+gosp['R'] = gosp['dochg'].notna()
+```
+
+Model podstawowy
+
+```{python}
+X = pd.get_dummies(gosp[['klm', 'woj']], drop_first=True, dtype=float)
+X = sm.add_constant(X)
+m1 = sm.GLM(gosp['R'].astype(int), X, family=sm.families.Binomial()).fit()
+print(pd.Series(m1.predict(X)).describe())
+
+gosp['w_rho'] = 1 / m1.predict(X)
+```
+
+Porównamy szacunki
+
+```{python}
+mean_unweighted = gosp['dochg'].mean()
+mean_weighted = np.average(gosp.loc[gosp['dochg'].notna(), 'dochg'], 
+                           weights=gosp.loc[gosp['dochg'].notna(), 'w_rho'])
+print([mean_unweighted, mean_weighted])
+```
+
+Teraz LASSO
+
+```{python}
+X_lasso = pd.get_dummies(gosp[['klm', 'woj']], drop_first=True, dtype=float)
+m2 = LogisticRegressionCV(l1_ratios=(1,), solver='saga', cv=10, max_iter=10000, random_state=2026,
+                          scoring='neg_log_loss', use_legacy_attributes=False)
+m2.fit(X_lasso, gosp['R'].astype(int))
+gosp['w_rho_lasso'] = 1 / m2.predict_proba(X_lasso)[:, 1]
+print(f"Intercept: {m2.intercept_}")
+print(f"Coefficients: {dict(zip(X_lasso.columns, m2.coef_[0]))}")
+```
+
+Uwaga: oszacowanie LASSO różni się od R, ponieważ walidacja krzyżowa w `scikit-learn` wybiera silniejszą karę niż `lambda.min` w `glmnet`.
+
+
+```{python}
+mean_bez = gosp['dochg'].mean()
+mean_glm = np.average(gosp.loc[gosp['dochg'].notna(), 'dochg'], 
+                      weights=gosp.loc[gosp['dochg'].notna(), 'w_rho'])
+mean_lasso = np.average(gosp.loc[gosp['dochg'].notna(), 'dochg'], 
+                        weights=gosp.loc[gosp['dochg'].notna(), 'w_rho_lasso'])
+
+print({'bez': mean_bez, 'glm': mean_glm, 'lasso': mean_lasso})
+```
+
+Jak wyglądają wagi?
+
+```{python}
+print(gosp[['w_rho', 'w_rho_lasso']].describe())
+
+plt.scatter(gosp['w_rho'], gosp['w_rho_lasso'])
+plt.xlabel('w_rho')
+plt.ylabel('w_rho_lasso')
+plt.show()
+```
+
+
+:::
+
+## Zadania
+
++ Zadanie 1: Analiza braków danych w zmiennej `wydg`
+
+Powtórz całą analizę (model GLM i LASSO) dla zmiennej `wydg` zamiast `dochg`. Porównaj uzyskane wagi oraz oszacowania średniej. Czy wyniki różnią się istotnie od tych dla zmiennej `dochg`?
+
++ Zadanie 2: Rozszerzenie modelu skłonności
+
+Dodaj do modelu skłonności (`m1`) dodatkowe zmienne objaśniające dostępne w zbiorze danych (np. interakcje między `klm` a `woj`). Sprawdź, jak zmienia się rozkład wag oraz oszacowanie średniej `dochg`. Czy bardziej złożony model daje lepsze wyniki?
+
+

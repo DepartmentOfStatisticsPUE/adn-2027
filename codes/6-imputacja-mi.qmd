@@ -1,0 +1,306 @@
+---
+title: "5. Imputacja wielokrotna"
+format: 
+  html:
+    self-contained: true
+    number-sections: true
+    toc: true
+    toc-title: "Spis treści"
+editor: source
+---
+
+# Wczytanie potrzebych pakietów
+
+::: panel-tabset
+## R
+
+```{r, message = FALSE, warning=FALSE}
+library(mice)
+#library(rMIDAS)
+#set_python_env(x = "/opt/homebrew/bin/python3.10")
+```
+
+## Python
+
+```{python}
+import pandas as pd
+import numpy as np
+from sklearn.experimental import enable_iterative_imputer
+from sklearn.impute import IterativeImputer
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+from statsmodels.imputation import mice
+```
+
+
+:::
+
+# Przykład 1 z zajęć
+
+::: panel-tabset
+## R
+
+Przykładowe dane 
+
+```{r}
+set.seed(2025)
+n_rows <- 20
+df_example <- data.frame(
+  A = seq(1:n_rows)*2, 
+  B = 5 + seq(1:n_rows)*2 + 10*rnorm(n_rows), 
+  C = 2+sqrt(seq(1:n_rows)) + rnorm(n_rows)
+)
+df_example_miss <- df_example
+df_example_miss$A[c(2,5, 13)] <- NA
+df_example_miss$B[c(1,2,8,20)] <- NA
+df_example_miss$C[c(9,10,14:18)] <- NA
+df_example_miss
+```
+
+Imputacja z wykorzystaniem metody wielokrotnej imputacji
+
+```{r}
+df_example_imp <- mice(df_example_miss, m=1, seed = 2025)
+```
+
+Informacja dotycząca metody i zależności w danych
+
+```{r}
+df_example_imp
+```
+
+Pełny zbiór danych
+
+```{r}
+complete(df_example_imp)
+```
+
+Podsumowanie średnich
+
+```{r}
+colMeans(df_example) ## bez braków
+colMeans(df_example_miss, na.rm=T) ## z brakami
+colMeans(complete(df_example_imp)) ## po imputacji
+```
+
+Zmiany:
+
+- zwiększamy liczbę zbiorów
+- określamy inną metodę
+- okreslamy zależnosci w danych (B i C zależne tylko od A)
+
+```{r}
+pred_mat <- df_example_imp$predictorMatrix
+pred_mat["C", "B"] <- 0
+pred_mat["B", "C"] <- 0
+pred_mat
+```
+
+
+
+```{r}
+df_example_imp <- mice(data = df_example_miss, 
+                       m=4, 
+                       method = "rf", 
+                       predictorMatrix = pred_mat, 
+                       seed = 2025)
+```
+
+
+```{r}
+df_example_imp
+```
+
+```{r}
+complete(df_example_imp, 1)
+complete(df_example_imp, 3)
+```
+
+```{r}
+sapply(complete(df_example_imp, "all"), colMeans)
+
+sapply(complete(df_example_imp, "all"), colMeans) |> 
+  apply(MARGIN = 1, FUN = mean)
+```
+
+Bez braków
+```{r}
+colMeans(df_example) ## bez braków
+```
+
+Regresja
+
+```{r}
+lm_results <- with(df_example_imp, lm(C ~ A))
+str(lm_results,1)
+```
+
+```{r}
+pool(lm_results)
+```
+
+```{r}
+summary(pool(lm_results))
+```
+
+```{r}
+coef(summary(lm(C~A, df_example)))
+coef(summary(lm(C~A, df_example_miss)))
+```
+
+## Python
+
+```{python}
+# Set random seed for reproducibility
+np.random.seed(42)
+
+n_rows = 20
+# Create original dataframe
+df_example = pd.DataFrame({
+    'A': np.arange(1, n_rows + 1) * 2,
+    'B': 5 + np.arange(1, n_rows + 1) * 2 + 10 * np.random.normal(size=n_rows),
+    'C': 2 + np.sqrt(np.arange(1, n_rows + 1)) + np.random.normal(size=n_rows)
+})
+
+# Create copy with missing values
+df_example_miss = df_example.copy()
+df_example_miss.loc[[1, 4, 12], 'A'] = np.nan  # R indices 2,5,13
+df_example_miss.loc[[0, 1, 7, 19], 'B'] = np.nan  # R indices 1,2,8,20
+df_example_miss.loc[[8, 9, 13, 14, 15, 16, 17], 'C'] = np.nan  # R indices 9,10,14:18
+df_example_miss
+```
+
+Uwaga: `IterativeImputer` z domyślnymi ustawieniami zwraca jedną, deterministyczną imputację (nie jest to imputacja wielokrotna).
+
+```{python}
+imp = IterativeImputer(random_state=42, max_iter=10, n_nearest_features=None)
+df_example_imp_single = pd.DataFrame(
+    imp.fit_transform(df_example_miss),
+    columns=df_example_miss.columns
+)
+
+df_example_imp_single
+```
+
+Imputacja z wykorzystaniem metody wielokrotnej imputacji (`statsmodels`, odpowiednik `mice`; metoda PMM)
+
+```{python}
+np.random.seed(2025)
+df_example_imp = mice.MICEData(df_example_miss, k_pmm=5)
+df_example_imp.update_all(5)
+```
+
+Pełny zbiór danych
+
+```{python}
+df_example_imp.data
+```
+
+Podsumowanie średnich
+
+```{python}
+print(df_example.mean()) ## bez braków
+print(df_example_miss.mean()) ## z brakami
+print(df_example_imp.data.mean()) ## po imputacji
+```
+
+Zmiany:
+
+- zwiększamy liczbę zbiorów
+- okreslamy zależnosci w danych (B i C zależne tylko od A)
+
+Uwaga: `statsmodels` imputuje wyłącznie metodą PMM (nie ma odpowiednika `method = "rf"`).
+
+```{python}
+np.random.seed(2025)
+df_example_imp = mice.MICEData(df_example_miss, k_pmm=5)
+df_example_imp.set_imputer("B", formula="A")
+df_example_imp.set_imputer("C", formula="A")
+
+m = 4
+df_example_imp_all = []
+for i in range(m):
+    df_example_imp.update_all(5)
+    df_example_imp_all.append(df_example_imp.data.copy())
+```
+
+```{python}
+df_example_imp_all[0]
+```
+
+```{python}
+srednie = pd.concat([d.mean() for d in df_example_imp_all], axis=1)
+print(srednie)
+print(srednie.mean(axis=1))
+```
+
+Bez braków
+
+```{python}
+df_example.mean() ## bez braków
+```
+
+Regresja (estymacja na każdym zbiorze i łączenie wyników regułami Rubina; odpowiednik `with()` i `pool()`)
+
+```{python}
+np.random.seed(2025)
+lm_results = mice.MICE("C ~ A", sm.OLS, df_example_imp).fit(n_burnin=5, n_imputations=m)
+print(lm_results.summary())
+```
+
+```{python}
+print(smf.ols("C ~ A", df_example).fit().summary().tables[1])
+print(smf.ols("C ~ A", df_example_miss).fit().summary().tables[1])
+```
+
+:::
+
+# Przyklad użycia pakietu `MIDAS`
+
+```{r ,eval=FALSE}
+adult <- read.csv("https://raw.githubusercontent.com/MIDASverse/MIDASpy/master/Examples/adult_data.csv",row.names = 1)[1:1000,]
+```
+
+```{r ,eval=FALSE}
+set.seed(89)
+adult <- add_missingness(adult, prop = 0.1)
+```
+
+```{r ,eval=FALSE}
+adult_cat <- c('workclass','marital_status','relationship','race','education','occupation','native_country')
+adult_bin <- c('sex','class_labels')
+
+# Apply rMIDAS preprocessing steps
+adult_conv <- convert(adult, 
+                      bin_cols = adult_bin, 
+                      cat_cols = adult_cat,
+                      minmax_scale = TRUE)
+```
+
+```{r ,eval=FALSE}
+adult_train <- train(adult_conv,
+                       training_epochs = 20,
+                       layer_structure = c(128,128),
+                       input_drop = 0.75,
+                       seed = 89)
+```
+
+```{r ,eval=FALSE}
+adult_complete <- complete(adult_train, m = 10)
+```
+
+```{r ,eval=FALSE}
+adult_model <- combine("class_labels ~ hours_per_week + sex", 
+                    adult_complete,
+                    family = stats::binomial)
+
+adult_model
+```
+
+# Ćwiczenie na zajęcia
+
+1. Proszę wczytać zbiór danych na potrzeby projektu.
+2. Proszę zaimputować dane dla wybranych zmiennych wykorzystując metodę `mi`.
+
+
+

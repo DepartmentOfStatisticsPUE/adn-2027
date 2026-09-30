@@ -1,0 +1,27 @@
+id,wiek,plec,wzrost,czy_pracuje,grupa_krwi,ocena,komentarz
+1,32,M,178.5,TRUE,A+,4.5,Dobry pracownik
+2,NA,K,165.0,FALSE,B-,3.8,NULL
+3,45,M,NULL,TRUE,0+,5.0,Swietny zespolowy gracz
+4,28,K,170.2,FALSE,AB+,NA,Brak danych
+5,-9,M,182.3,TRUE,A-,4.2,
+6,39,K,NULL,TRUE,B+,4.7,Szybko sie uczy
+7,NULL,M,175.8,FALSE,NULL,3.5,Potrzebuje wiecej praktyki
+8,52,K,168.7,TRUE,0-,NA,
+9,33,M,179.0,NA,A+,4.9,Bardzo zaangazowany
+10,41,K,163.5,TRUE,B-,4.1,NULL
+,,,,,,,,
+11,-9,M,NULL,FALSE,AB-,3.2,Wymaga nadzoru
+12,37,K,166.8,TRUE,0+,4.6,Doskonala komunikacja
+13,NA,M,181.2,FALSE,A-,3.9,Potencjal do rozwoju
+14,48,K,172.5,TRUE,B+,NULL,
+15,29,M,177.3,NA,0-,4.3,Kreatywny mysliciel
+16,NULL,K,169.0,FALSE,AB+,3.7,Brak danych
+17,55,M,180.1,TRUE,A+,-9,Doswiadczony lider
+18,31,K,NULL,FALSE,B-,4.0,Potrzebuje wiecej szkolen
+19,43,M,176.4,TRUE,0+,4.8,Najlepszy w zespole
+20,-,K,167.9,NA,AB-,3.6,Do poprawy
+21,36,M,N/D,TRUE,A+,4.4,Solidny pracownik
+22,N/D,K,164.5,FALSE,B+,3.9,Wymaga wsparcia
+23,50,M,179.8,TRUE,0-,N/D,Doswiadczony mentor
+24,27,K,168.3,N/D,AB-,4.1,Obiecujacy talent
+25,42,N/D,175.6,TRUE,A-,4.7,Lider zespolu

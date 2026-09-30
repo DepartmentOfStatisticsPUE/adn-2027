@@ -1,0 +1,395 @@
+---
+title: "4. Imputacja PMM"
+format: 
+  html:
+    self-contained: true
+    number-sections: true
+    toc: true
+    toc-title: "Spis treści"
+editor: source
+---
+
+# Wczytanie potrzebych pakietów
+
+::: panel-tabset
+## R
+
+```{r}
+library(simputation)
+library(FNN) 
+```
+
+## Python
+
+```{python}
+import pandas as pd
+import numpy as np
+from sklearn.linear_model import LinearRegression
+from sklearn.neighbors import NearestNeighbors
+import gower
+```
+
+
+:::
+
+# Przykład 1 z zajęć
+
+::: panel-tabset
+## R
+
+```{r}
+przyklad1 <- data.frame(X = seq(10, 35, by=5),
+                        Y = c(25, 35, NA, 55, 65, NA))
+przyklad1
+```
+
+```{r}
+przyklad1 |>
+  impute_pmm(formula = Y~ X,
+             predictor = impute_lm)
+```
+
+Step-by-step (dla $k=1$)
+
+```{r}
+## model liniowy
+model1 <- lm(formula = Y~X, data=przyklad1)
+## wartości przewidywane
+przyklad1$pred <- predict(model1, przyklad1)
+## wyszukiwanie najbliższego sąsiada
+sasiedzi <- get.knnx(data = przyklad1[!is.na(przyklad1$Y), "pred"], 
+                     query = przyklad1[is.na(przyklad1$Y), "pred"],
+                     k = 1)
+## przepisujemy wartości najbliższego sąsiada
+przyklad1_wynik <- przyklad1
+przyklad1_wynik[is.na(przyklad1$Y), "Y"] <- przyklad1_wynik[!is.na(przyklad1$Y), "Y"][sasiedzi$nn.index[,1]]
+przyklad1_wynik
+```
+
+Step-by-step (dla $k=2$)
+
+```{r}
+## wyszukiwanie najbliższego sąsiada
+sasiedzi <- get.knnx(data = przyklad1[!is.na(przyklad1$Y), "pred"], 
+                     query = przyklad1[is.na(przyklad1$Y), "pred"],
+                     k = 2)
+sasiedzi
+## przepisujemy wartości najbliższego sąsiada
+
+przyklad1_wynik <- przyklad1
+przyklad1_wynik[is.na(przyklad1$Y), "Y"] <- apply(sasiedzi$nn.index, 1, FUN=function(x) mean(przyklad1_wynik[!is.na(przyklad1$Y), "Y"][x]))
+przyklad1_wynik
+```
+
+
+## Python
+
+```{python}
+przyklad1 = pd.DataFrame({
+    'X': np.arange(10, 36, 5),
+    'Y': [25, 35, np.nan, 55, 65, np.nan]
+})
+```
+
+```{python}
+mask = ~przyklad1['Y'].isna()
+X = przyklad1.loc[mask, 'X'].values.reshape(-1, 1)
+y = przyklad1.loc[mask, 'Y'].values
+
+## Zwykła regresja liniowa
+model = LinearRegression()
+model.fit(X, y)
+
+## Wartości przewidywane
+przyklad1['pred'] = model.predict(przyklad1['X'].values.reshape(-1, 1))
+
+# Sąsiadzi
+# Dane obserwowane
+observed_pred = przyklad1.loc[mask, 'pred'].values.reshape(-1, 1)
+# Dane brakujące
+missing_pred = przyklad1.loc[~mask, 'pred'].values.reshape(-1, 1)
+
+# Znajdź najbliższych sąsiadów
+nbrs = NearestNeighbors(n_neighbors=1).fit(observed_pred)
+distances, indices = nbrs.kneighbors(missing_pred)
+
+# Imputacja wartości
+przyklad1.loc[~mask, 'Y'] = przyklad1.loc[mask, 'Y'].values[indices.flatten()]
+
+przyklad1
+```
+
+:::
+
+# Krótkie ćwiczenie
+
+::: panel-tabset
+## R
+
+Prosze wykonać imputację danych dla następującego zbioru danych
+
+```{r}
+set.seed(42)
+n <- 10
+
+df <- data.frame(
+  id = 1:10,
+  plec = c("K", "M", "M", "K", "M", "K", "M", "K", "M", "K"),
+  rok_studiow = c(1, 2, 3, 1, 2, 3, 1, 2, 3, 1),
+  pracuje = c("Tak", "Nie", "Tak", "Nie", "Tak", "Nie", "Tak", "Tak", "Nie", "Tak"),
+  piwa = c(2, 5, 8, NA, 6, NA, 9, 4, 7, NA)
+)
+
+df
+```
+
+
+## Python
+
+Prosze wykonać imputację danych dla następującego zbioru danych
+
+```{python}
+np.random.seed(42)
+n = 10
+
+df = pd.DataFrame({
+    'id': range(1, 11),
+    'plec': ["K", "M", "M", "K", "M", "K", "M", "K", "M", "K"],
+    'rok_studiow': [1, 2, 3, 1, 2, 3, 1, 2, 3, 1],
+    'pracuje': ["Tak", "Nie", "Tak", "Nie", "Tak", "Nie", "Tak", "Tak", "Nie", "Tak"],
+    'piwa': [2, 5, 8, np.nan, 6, np.nan, 9, 4, 7, np.nan]
+})
+
+```
+
+:::
+
+# Przykład 2 -- czytelnictwo
+
+::: panel-tabset
+## R
+
+```{r}
+## reading
+data <- read.csv(file = "../data/data4-czytelnictwo.csv", 
+                 colClasses = c("factor", "numeric", "factor", "logical", "logical"))
+head(data)
+```
+
+```{r}
+summary(data)
+```
+
+Dodajemy kopię kolumny `czyta_ksiazki_z_brakami` aby porównać imputację
+PMM i NNI.
+
+```{r}
+data$czyta_ksiazki_z_brakami_nni <- data$czyta_ksiazki_z_brakami
+data$czyta_ksiazki_z_brakami_pmm <- as.numeric(data$czyta_ksiazki_z_brakami) ## musimy zamienić na braki numeryczny (patrz poniżej)
+```
+
+[![Dlaczego nie ma
+GLM?!?](figs/simputation.png){fig-align="center"}](https://github.com/markvanderloo/simputation/issues/16)
+
+Ograniczenia `simputation`:
+
++ nie ma `impute_glm`
++ nie można ustawić różnej liczby `k` (domyślnie 1)
+
+```{r}
+data |> 
+  impute_pmm(formula = czyta_ksiazki_z_brakami_pmm ~ plec + wiek + wyksztalcenie)  |>
+  impute_knn(czyta_ksiazki_z_brakami_nni ~ plec + wiek + wyksztalcenie, k = 1) -> imputacja_wynik
+```
+
+```{r}
+aggregate(cbind(True=czyta_ksiazki, 
+                NNI=czyta_ksiazki_z_brakami_nni,
+                PMM = czyta_ksiazki_z_brakami_pmm) ~ 1, imputacja_wynik, FUN=mean)
+```
+
+## Python
+
+```{python}
+data = pd.read_csv("../data/data4-czytelnictwo.csv", 
+                   dtype={'plec': 'category', 
+                         'wiek': 'float64',
+                         'wyksztalcenie': 'category',
+                         'czyta_ksiazki': 'float64',  # zmiana z bool
+                         'czyta_ksiazki_z_brakami': 'float64'})  # zmiana z bool
+
+print("Head:")
+print(data.head())
+print("\nSummary:")
+print(data.describe(include='all'))
+```
+
+```{python}
+data['czyta_ksiazki_z_brakami_nni'] = data['czyta_ksiazki_z_brakami']
+data['czyta_ksiazki_z_brakami_pmm'] = data['czyta_ksiazki_z_brakami']
+```
+
+```{python}
+def pmm_imputation(X, y):
+   # Maska dla obserwowanych wartości
+   mask = ~y.isna()
+
+   # Przygotowanie danych do modelu (zmienne jakościowe jako zmienne zero-jedynkowe)
+   X_encoded = pd.get_dummies(X, drop_first=True, dtype=float)
+
+   # Dopasowanie modelu regresji liniowej (jak impute_lm w R)
+   model = LinearRegression()
+   model.fit(X_encoded[mask], y[mask])
+
+   # Przewidywane wartości
+   pred_all = model.predict(X_encoded).reshape(-1, 1)
+
+   # Dla każdej brakującej wartości znajdź najbliższą obserwowaną (wg wartości przewidywanych)
+   nbrs = NearestNeighbors(n_neighbors=1).fit(pred_all[mask])
+   distances, indices = nbrs.kneighbors(pred_all[~mask])
+
+   # Przypisz wartość od najbliższego sąsiada
+   y_imputed = y.copy()
+   y_imputed[~mask] = y[mask].values[indices.flatten()]
+
+   return y_imputed
+
+def nn_imputation(X, y, k=1):
+   # Oblicz macierz odległości Gowera (zmienne jakościowe muszą być typu object)
+   X_gower = X.astype({col: object for col in X.select_dtypes(include=['category']).columns})
+   gower_mat = gower.gower_matrix(X_gower)
+
+   # Maska dla obserwowanych wartości
+   mask = (~y.isna()).to_numpy()
+
+   # Imputacja
+   y_imputed = y.copy()
+   
+   for idx in y[~mask].index:
+       # Weź odległości do wszystkich obserwowanych wartości
+       distances = gower_mat[idx, mask]
+       # Znajdź k najbliższych sąsiadów
+       closest = np.argpartition(distances, k)[:k]
+       # Wybierz losowo jednego z k najbliższych sąsiadów
+       chosen = np.random.choice(closest)
+       # Przypisz wartość od wybranego sąsiada
+       y_imputed[idx] = y[mask].iloc[chosen]
+   
+   return y_imputed
+ 
+```
+
+```{python}
+# Wykonanie imputacji
+X = data[['plec', 'wiek', 'wyksztalcenie']]
+data['czyta_ksiazki_z_brakami_pmm'] = pmm_imputation(X, data['czyta_ksiazki_z_brakami_pmm'])
+data['czyta_ksiazki_z_brakami_nni'] = nn_imputation(X, data['czyta_ksiazki_z_brakami_nni'], k=1)
+
+# Obliczenie średnich
+results = pd.DataFrame({
+   'True': [data['czyta_ksiazki'].mean()],
+   'NNI': [data['czyta_ksiazki_z_brakami_nni'].mean()],
+   'PMM': [data['czyta_ksiazki_z_brakami_pmm'].mean()]
+})
+
+print("\nŚrednie wartości:")
+print(results)
+```
+
+Uwaga: wynik PMM różni się od R, ponieważ wiele jednostek ma identyczne wartości przewidywane, a remisy są rozstrzygane inaczej.
+
+:::
+
+# Symulacja
+
+
+```{r symulacja1}
+# Ustawienie ziarna losowości dla reprodukowalności
+set.seed(123)
+
+# Parametry symulacji
+N <- 50000  # rozmiar populacji
+n <- 400    # rozmiar próby
+
+# Generowanie zmiennych objaśniających
+x1 <- runif(N, 0, 1)
+x2 <- runif(N, 0, 1)
+x3 <- runif(N, 0, 1)
+x4 <- rnorm(N, 0, 1)
+x5 <- rnorm(N, 0, 1)
+x6 <- rnorm(N, 0, 1)
+e <- rnorm(N, 0, 1)
+
+# Generowanie zmiennej y dla trzech modeli
+y1 <- -1 + x1 + x2 + e
+y2 <- -1.167 + x1 + x2 + (x1-0.5)^2 + (x2-0.5)^2 + e
+y3 <- -1.5 + x1 + x2 + x3 + x4 + x5 + x6 + e
+
+# Tworzenie wskaźnika odpowiedzi (mechanizm braków danych)
+logit_p <- 0.2 + x1 + x2
+p <- exp(logit_p)/(1 + exp(logit_p))
+
+
+# Tworzenie ramki danych
+populacja <- data.frame(
+ id = 1:N,
+ x1 = x1,
+ x2 = x2,
+ x3 = x3,
+ x4 = x4,
+ x5 = x5,
+ x6 = x6,
+ y1 = y1,
+ y2 = y2,
+ y3 = y3,
+ p = p
+)
+y_true <- colMeans(populacja[, c("y1", "y2", "y3")]) 
+
+## sumulacja (2000 razy)
+R <- 2000
+results <- matrix(0, R, 9)
+colnames(results) <- paste0(rep(c("naive", "nn", "pmm"), each = 3), 
+                            rep(c("_y1", "_y2", "_y3"), times=3))
+
+for (r in 1:R) {
+  set.seed(r)
+  proba <- populacja[sample(1:N, n), ]
+  proba$delta <- rbinom(nrow(proba), 1, proba$p)
+  proba$y1[proba$delta == 0] <- NA
+  proba$y2[proba$delta == 0] <- NA
+  proba$y3[proba$delta == 0] <- NA
+  
+  results[r, 1:3] <- colMeans(proba[, c(c("y1", "y2", "y3"))], na.rm=T)
+  
+  results_nn <- proba |>
+    impute_knn(y1 + y2  ~ x1 + x2, k=5) |>
+    impute_knn(y3 ~ x1 + x2 + x3 + x4 + x5 + x6, k=5)
+ 
+  results_pmm <- proba |>
+    impute_pmm(y1 + y2  ~ x1 + x2, predictor = impute_lm) |>
+    impute_pmm(y3 ~ x1 + x2 + x3 + x4 + x5 + x6, predictor = impute_lm)
+
+  proba$y1_nn <- results_nn$y1
+  proba$y2_nn <- results_nn$y2
+  proba$y3_nn <- results_nn$y3
+  
+  proba$y1_pmm <- results_pmm$y1
+  proba$y2_pmm <- results_pmm$y2
+  proba$y3_pmm <- results_pmm$y3
+  
+  results[r, 4:9] <- colMeans(proba[, c("y1_nn", "y2_nn", "y3_nn", "y1_pmm", "y2_pmm", "y3_pmm")])
+   
+}
+
+boxplot(results - matrix(rep(y_true, times = 3), byrow=T, ncol = 9, nrow=R), 
+        xlab = "Estymator", ylab = "Obciążenie",
+        main = "Obciążenie estymatorów: naiwny, NN i PMM")
+abline(a=0,b=0,col="red")
+```
+Obciążenie
+
+```{r}
+(colMeans(results) - rep(y_true, times = 3))*100
+```
+

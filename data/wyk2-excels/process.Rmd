@@ -1,0 +1,61 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(readxl)
+library(dplyr)
+library(tidyr)
+```
+
+Ludnosc 
+
+```{r}
+lud <- read_excel("LUDN_2425_XPIV_20241020170820.xlsx", sheet = 2, na = c("", "-"))
+head(lud)
+```
+
+```{r}
+lud |> 
+  select(gmina = Kod, gmina_nazwa = Nazwa, rok=Rok, lud_na_1k=Wartosc) |>
+  mutate(rok = as.integer(rok)) |>
+  filter(rok >= 2000, substr(gmina, 1,2)== "30") -> lud_przyklad
+```
+
+```{r}
+panelview(data = lud_przyklad, 
+          formula = lud_na_1k ~ 1, 
+          index = c("gmina", "rok"), 
+          type = "missing")
+```
+
+
+```{r}
+write.csv(x = lud_przyklad, file = "../data2-zajecia-przyklad1.csv", quote = T, row.names = F)
+```
+
+## ceny wg wielkosci
+
+Znak '-' oznacza brak informacji z powodu: zmiany poziomu prezentacji, zmian wprowadzonych do wykazu jednostek terytorialnych lub modyfikacji listy cech w danym okresie sprawozdawczym; n - Dana jeszcze niedostępna, będzie dostępna; x - Brak informacji, konieczność zachowania tajemnicy statystycznej lub wypełnienie pozycji jest niemożliwe albo niecelowe; X - Zmiany metodologiczne, brak informacji, konieczność zachowania tajemnicy statystycznej lub wypełnienie pozycji jest niemożliwe albo niecelowe
+
+```{r}
+nieruch <- read_excel("RYNE_3792_XPIV_20241020194346.xlsx", sheet = 2)
+
+nieruch |> 
+  
+  filter(Rok == "2021", Okresy == "1 kwartał",
+         substr(Kod, 1,2) == "30")  |>
+  select(kod=Kod, powiat=Nazwa, typ=`Transakcje rynkowe`, pow = `Powierzchnia użytkowa lokali mieszkalnych`, Wartosc) |>
+  mutate(Wartosc = ifelse(Wartosc ==0, NA, Wartosc),
+         pow = janitor::make_clean_names(pow),
+         typ = ifelse(grepl("pierwo", typ), "ryn_pier_", "ryn_wt_"),
+         typ_pow = paste0(typ,pow)) |>
+  select(-typ, -pow) |>
+  pivot_wider(id_cols = c("kod", "powiat"), names_from = "typ_pow", values_from = "Wartosc") -> nieruch_do_wiz
+```
+
+```{r}
+VIM::aggr(nieruch_do_wiz)
+```
+

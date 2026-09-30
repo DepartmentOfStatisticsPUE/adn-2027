@@ -1,0 +1,195 @@
+---
+title: "1. Problematyka braków danych"
+format: 
+  html:
+    self-contained: true
+    number-sections: true
+    toc: true
+    toc-title: "Spis treści"
+editor: source
+---
+
+# Wczytanie potrzebych pakietów
+
+::: panel-tabset
+## R
+
+```{r packages, message=F, warning=F}
+library(VIM)
+library(naniar)
+library(panelView)
+library(ggplot2)
+library(data.table)
+library(tidyverse)
+```
+
+## Python
+
+```{python}
+import pandas as pd
+import numpy as np
+import missingno as msno
+import matplotlib.pyplot as plt
+import seaborn as sns
+from upsetty import Upset
+```
+
+:::
+
+
+# Przykład 1: dane przekrojowe
+
+
+Wczytujemy zbiór danych `data2-cross_sectional.csv`
+
+::: panel-tabset
+## R
+
+```{r}
+df_cross <- read.csv("../data/data2-cross_sectional.csv")
+head(df_cross)
+```
+
+Proste podsumowanie
+
+```{r}
+summary(df_cross)
+```
+
+Wizualizacja z pakietem `VIM`
+
+```{r}
+vim_result <- aggr(x = df_cross)
+```
+
+```{r}
+summary(vim_result)
+```
+
+Wizualizacja z pakietem `naniar`.
+
+```{r}
+vis_miss(df_cross)
+```
+```{r}
+vis_miss(df_cross, cluster = T, sort_miss = T)
+```
+```{r}
+gg_miss_var(df_cross)
+```
+```{r}
+gg_miss_upset(df_cross)
+```
+
+```{r}
+ggplot(data=df_cross, aes(x = x1, y)) + geom_point()
+```
+
+```{r}
+ggplot(data=df_cross, aes(x = x1, y)) + geom_miss_point()
+```
+
+
+## Python
+
+```{python}
+df_cross = pd.read_csv("../data/data2-cross_sectional.csv")
+df_cross.head()
+```
+
+```{python}
+miss_plot = msno.matrix(df_cross)
+plt.show()
+plt.ioff()
+```
+
+```{python}
+miss_dendro = msno.dendrogram(df_cross)
+plt.show()
+```
+```{python}
+upset = Upset.generate_plot(df_cross.isnull())
+upset.show()
+```
+
+:::
+
+# Przykład 2: dane panelowe
+
+Wczytujemy dane w dwóch formatach: `data/data2-panel_long.csv`, `data/data2-panel_wide.csv`
+
+::: panel-tabset
+## R
+
+```{r}
+df_long <- read.csv("../data/data2-panel_long.csv")
+head(df_long)
+```
+
+```{r}
+df_wide <- read.csv("../data/data2-panel_wide.csv")
+head(df_wide)
+```
+
+```{r}
+VIM::aggr(df_wide)
+```
+
+Przykład przejścia z danych long na wide (z `data.table`)
+
+```{r}
+df_long |>
+  subset(select=c(unit_id, year, y)) |>
+  setDT() |> 
+  dcast(unit_id ~ year, value.var = "y") |>
+  VIM::aggr(plot = F)  |>
+  summary()
+```
+
+Przykład przejścia z danych long na wide (z `tidyverse`)
+
+```{r}
+df_long |>
+  select(unit_id, year, y) |>
+  pivot_wider(names_from = year, values_from = y) |>
+  VIM::aggr(plot = F) |>
+  summary()
+```
+
+```{r}
+panelview(data = df_long, formula = y ~ 1, index = c("unit_id", "year"), type = "missing")
+```
+
+```{r}
+panelview(data = df_long, formula = x2 ~ 1, index = c("unit_id", "year"), type = "missing")
+```
+```{r}
+panelview(data = df_long, formula = 1 ~ y + x1 + x2, index = c("unit_id", "year"), type = "missing")
+```
+
+## Python
+
+```{python}
+df_long = pd.read_csv("../data/data2-panel_long.csv")
+df_long.head()
+```
+
+```{python}
+df_wide = pd.read_csv("../data/data2-panel_wide.csv")
+df_wide.head()
+```
+
+```{python}
+missing_pattern = df_long.pivot(index='unit_id', columns='year', values='y').isnull()
+plt.figure(figsize=(12, 8))
+sns.heatmap(missing_pattern, cbar=True, cmap='binary')
+plt.title('Panel View of Missing Data')
+plt.show()
+```
+
+
+
+
+:::
+
+

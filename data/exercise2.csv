@@ -1,0 +1,16 @@
+StudentID,Name,GPA,AttendanceRate,MathScore
+S001,Alice Johnson,3.85,92,88
+S002,Bob Smith,NA,85,NA
+S003,Charlie Brown,3.45,-9,92
+S004,Diana Prince,3.92,-1,-1
+S005,Evan Davis,3.21,88,76
+S006,Fiona Green,,95,85
+S007,George Wilson,3.78,NA,-9
+S008,Hannah Lee,3.56,90,82
+S009,Isaac Martinez,-9,87,NA
+S010,Jasmine Taylor,3.91,93,96
+S011,Kevin Chen,3.34,NULL,89
+S012,Lucy Wong,3.67,86,NULL
+S013,Marcus Stone,3.45,91,84
+S014,Nina Patel,,NA,91
+S015,Oscar Johnson,3.88,94,95

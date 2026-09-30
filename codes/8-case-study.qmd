@@ -1,0 +1,200 @@
+---
+title: "Case Study 2025"
+format: 
+  html:
+    self-contained: true
+    number-sections: true
+    toc: true
+    toc-title: "Spis treści"
+editor: source
+---
+
+1. Proszę wczytać zbiór danych `gospodarstwa-zajecia.xlsx` [2 min]
+
+2. Proszę sprawdzić rozkłady zmiennych `los`, `dochg` i `wydg`. Co możemy o nich powiedzieć? [8 min]
+   - Sprawdźcie: typ rozkładu, asymetrię, wartości odstające
+   - Proszę obliczyć podstawowe statystyki (średnia, mediana, odch. std.)
+   - Jaki % obserwacji jest brakujących?
+
+3. Które zmienne i jak korelują z `los`, `dochg` i `wydg`? [15 min]
+   Proszę przejrzeć zmienne dostępne w zbiorze danych i zastanowić się, 
+   które zmienne warto rozważyć jako pomocnicze.
+   
+   Sugerowane analizy:
+   - Korelacje dla zmiennych numerycznych
+   - Boxploty dla zmiennych kategorycznych
+   - Dla wybranych zmiennych: porównanie rozkładów lub wstępna regresja
+   
+   Cel: zidentyfikować 3-5 najważniejszych zmiennych dla każdej zmiennej.
+   
+4. Jakie modele można rozważyć dla tych 3 zmiennych? [5 min]
+   Dyskusja - proszę uwzględnić:
+   - Typ zmiennej (ciągła, dyskretna, ograniczona?)
+   - Rozkład (normalny, skośny, z wartościami skrajnymi?)
+   - Możliwe modele (regresja liniowa, log-liniowa, inne?)
+   
+5. Proszę zaimputować brakujące dane w zmiennych `los`, `dochg` i `wydg` [40 min]
+   
+   Metody do zastosowania:
+   a) Regresyjna deterministyczna
+   b) Regresyjna stochastyczna
+   c) k-NN z k=5 sąsiadów
+   d) Predictive Mean Matching (PMM)
+   
+   Wskazówki:
+   - Można użyć pakietu `mice` w R lub `sklearn` w Pythonie
+   - Proszę używać tych samych zmiennych pomocniczych dla wszystkich metod (dla porównywalności)
+   - Dla metod stochastycznych: ustalić seed dla powtarzalności
+
+6. Dla wybranej metody proszę ocenić z wykorzystaniem wizualizacji danych jak wyglądają dane zaimputowane w porównaniu z tymi, które obserwujemy. Czy imputacja zachowuje rozkład? [5 min]
+
+7. Dla każdej zmiennej i każdej metody imputacji proszę oszacować 
+   i zaraportować [10 min]:
+   - Średnią z pełnego zbioru (po imputacji)
+   - Średnią tylko z wartości oryginalnych (przed imputacją)
+   - Średnią tylko z wartości zaimputowanych
+   
+   Proszę przedstawić wyniki w formie tabeli.
+
+8. Porównanie i wnioski [5 min]:
+   - Która metoda wydaje się najbardziej odpowiednia dla każdej zmiennej i dlaczego?
+   - Czy któraś metoda systematycznie zawyża/zaniża wartości?
+   - Jakie są implikacje dla dalszych analiz?
+
+::: panel-tabset
+## R
+
+
+Kod na wczytanie pakietu do wczytania danych
+
+```{r}
+library(readxl)
+library(simputation)
+library(VIM)
+library(data.table)
+library(ggplot2)
+library(patchwork)
+```
+
+```{r}
+gosp <- read_excel("../data/gospodarstwa-zajecia.xlsx") |> setDT()
+head(gosp)
+```
+
+Kod na wizualizacje i ocenę danych
+
+```{r}
+hist(gosp$wydg)
+hist(gosp$wydg, breaks = "fd")
+hist(gosp$dochg, breaks = "fd")
+plot(gosp$dochg, gosp$wydg)
+table(gosp$los)
+table(gosp$dochg<0)
+summary(gosp$los)
+boxplot(wydg ~ round(los), gosp)
+summary(aggr(gosp[, c("los", "wydg", "dochg")]))
+```
+
+```{r}
+gosp[, names(gosp)[1:13] := lapply(.SD, as.factor), .SDcols = names(gosp)[1:13]]
+gosp[, los:= floor(los)]
+table(gosp$d38, gosp$los)
+boxplot(log(wydg) ~ klm, data=gosp)
+summary(lm(log(los) ~ trb + zut, data=gosp))
+summary(lm(log(dochg+22000) ~ trb + zut, data=gosp))
+car::Anova(lm(log(wydg) ~ d61 + klm + woj + trb + zut, data=gosp))
+```
+
+
+Kod na imputację danych
+
+```{r}
+set.seed(2025)
+gosp$flag <- is.na(gosp$los)
+gosp_naraz_pmm <- gosp |>
+  impute_pmm(los + wydg + dochg ~ zut + trb + d61 + d63 + klm)
+
+gosp_naraz_knn <- gosp |>
+  impute_knn(los + wydg + dochg ~ zut + trb + d61 + d63 + klm)
+
+gosp_naraz_regd <- gosp |>
+  impute_lm(los + wydg + dochg ~ zut + trb + d61 + d63 + klm)
+
+gosp_naraz_regs <- gosp |>
+  impute_lm(los + wydg + dochg ~ zut + trb + d61 + d63 + klm, add_residual = "observed")
+
+
+gosp_pokolei_pmm <- gosp |>
+  impute_pmm(los ~ zut + trb + d61 + d63 + klm) |>
+  impute_pmm(dochg ~ los + zut + trb + d61 + d63 + klm) |>
+  impute_pmm(wydg ~ dochg + los + zut + trb + d61 + d63 + klm)
+
+gosp_pokolei_knn <- gosp |>
+  impute_knn(los ~ zut + trb + d61 + d63 + klm) |>
+  impute_knn(dochg ~ los + zut + trb + d61 + d63 + klm) |>
+  impute_knn(wydg ~ dochg + los + zut + trb + d61 + d63 + klm)
+
+gosp_pokolei_regd <- gosp |>
+  impute_lm(los ~ zut + trb + d61 + d63 + klm) |>
+  impute_lm(dochg ~ los + zut + trb + d61 + d63 + klm) |>
+  impute_lm(wydg ~ dochg + los + zut + trb + d61 + d63 + klm)
+
+gosp_pokolei_regs <- gosp |>
+  impute_lm(los ~ zut + trb + d61 + d63 + klm, add_residual = "observed") |>
+  impute_lm(dochg ~ los + zut + trb + d61 + d63 + klm, add_residual = "observed") |>
+  impute_lm(wydg ~ dochg + los + zut + trb + d61 + d63 + klm, add_residual = "observed")
+
+```
+
+Kod na podsumowanie danych
+
+```{r}
+tab_wyniki <- rbind(
+  colMeans(gosp_naraz_pmm[, c("los", "dochg", "wydg")]),
+  colMeans(gosp_naraz_knn[, c("los", "dochg", "wydg")]),
+  colMeans(gosp_naraz_regd[, c("los", "dochg", "wydg")]),
+  colMeans(gosp_naraz_regs[, c("los", "dochg", "wydg")]),
+  colMeans(gosp_pokolei_pmm[, c("los", "dochg", "wydg")]),
+  colMeans(gosp_pokolei_knn[, c("los", "dochg", "wydg")]),
+  colMeans(gosp_pokolei_regd[, c("los", "dochg", "wydg")]),
+  colMeans(gosp_pokolei_regs[, c("los", "dochg", "wydg")])
+)
+tab_wyniki <- as.data.frame(tab_wyniki)
+tab_wyniki$jak <- rep(c("naraz", "pokolei"), each  = 4)
+tab_wyniki$metoda <- rep(c("pmm", "knn", "regd", "regs"), times = 2)
+tab_wyniki
+mean(gosp$los,na.rm=T)
+```
+
+```{r}
+p1 <- ggplot(data=gosp_naraz_knn, aes(x = log(wydg), fill = flag)) +
+  geom_density(alpha = 0.5) + labs(title = "knn")
+p2 <- ggplot(data=gosp_naraz_pmm, aes(x = log(wydg), fill = flag)) +
+  geom_density(alpha = 0.5) + labs(title = "pmm")
+p3 <- ggplot(data=gosp_naraz_regd, aes(x = log(wydg), fill = flag)) +
+  geom_density(alpha = 0.5) + labs(title = "reg-determ")
+p4 <- ggplot(data=gosp_naraz_regs, aes(x = log(wydg), fill = flag)) +
+  geom_density(alpha = 0.5) + labs(title = "reg-stoch")
+
+(p1 + p2) / (p3 + p4)
+```
+
+## Python
+
+Kod na wczytanie pakietu do wczytania danych
+
+```{python}
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.impute import KNNImputer
+from sklearn.linear_model import LinearRegression
+from scipy import stats
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+from statsmodels.stats.anova import anova_lm
+```
+
+:::
+

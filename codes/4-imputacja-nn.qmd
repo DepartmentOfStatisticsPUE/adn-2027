@@ -1,0 +1,336 @@
+---
+title: "3. Imputacja NN"
+format: 
+  html:
+    self-contained: true
+    number-sections: true
+    toc: true
+    toc-title: "Spis treści"
+editor: source
+---
+
+# Wczytanie potrzebych pakietów
+
+::: panel-tabset
+## R
+
+```{r pakiety, message=F, warning=F}
+library(simputation)
+library(VIM)
+```
+
+
+## Python
+
+```{python moduly}
+import numpy as np
+import pandas as pd
+from scipy.stats import norm
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.neighbors import NearestNeighbors
+import matplotlib.pyplot as plt
+import gower
+```
+
+:::
+
+# Przykład 1 -- symulacja
+
+::: panel-tabset
+
+## R
+
+```{r symulacja1}
+# Ustawienie ziarna losowości dla reprodukowalności
+set.seed(123)
+
+# Parametry symulacji
+N <- 50000  # rozmiar populacji
+n <- 1000    # rozmiar próby
+
+# Generowanie zmiennych objaśniających
+x1 <- runif(N, 0, 1)
+x2 <- runif(N, 0, 1)
+x3 <- runif(N, 0, 1)
+x4 <- rnorm(N, 0, 1)
+x5 <- rnorm(N, 0, 1)
+x6 <- rnorm(N, 0, 1)
+e <- rnorm(N, 0, 1)
+
+# Generowanie zmiennej y dla trzech modeli
+y1 <- -1 + x1 + x2 + e
+y2 <- -1.167 + x1 + x2 + (x1-0.5)^2 + (x2-0.5)^2 + e
+y3 <- -1.5 + x1 + x2 + x3 + x4 + x5 + x6 + e
+
+# Tworzenie wskaźnika odpowiedzi (mechanizm braków danych)
+logit_p <- 0.2 + x1 + x2
+p <- exp(logit_p)/(1 + exp(logit_p))
+
+
+# Tworzenie ramki danych
+populacja <- data.frame(
+ id = 1:N,
+ x1 = x1,
+ x2 = x2,
+ x3 = x3,
+ x4 = x4,
+ x5 = x5,
+ x6 = x6,
+ y1 = y1,
+ y2 = y2,
+ y3 = y3,
+ p = p
+)
+y_true <- colMeans(populacja[, c("y1", "y2", "y3")]) 
+
+## sumulacja (2000 razy)
+R <- 2000
+results <- matrix(0, R, 9)
+colnames(results) <- paste0(rep(c("naive", "nn", "nn_new"), each = 3), 
+                            rep(c("_y1", "_y2", "_y3"), times=3))
+
+for (r in 1:R) {
+  proba <- populacja[sample(1:N, n), ]
+  proba$delta <- rbinom(nrow(proba), 1, proba$p)
+  proba$y1[proba$delta == 0] <- NA
+  proba$y2[proba$delta == 0] <- NA
+  proba$y3[proba$delta == 0] <- NA
+  
+  results[r, 1:3] <- colMeans(proba[, c(c("y1", "y2", "y3"))], na.rm=T)
+  
+  res_y1_y2 <- impute_knn(proba, y1 + y2  ~ x1 + x2, k=1)
+  res_y3 <- impute_knn(proba, y3  ~ x1 + x2 + x3  + x4 + x5 + x6, k=1)
+  
+  res_y1_y2_new <- impute_knn(proba, y1 + y2  ~ x1 + x2, 
+                              k=floor(sum(proba$delta)^(2/(2+2)))) ## k=31 optmalne
+  res_y3_new <- impute_knn(proba, y3  ~ x1 + x2 + x3 + x4 + x5 + x6, 
+                           k=floor(sum(proba$delta)^(2/(2+6)))) ## k=5 - optymalne
+ 
+  proba$y1 <- res_y1_y2$y1
+  proba$y2 <- res_y1_y2$y2
+  proba$y3 <- res_y3$y3
+  
+  proba$y1_new <- res_y1_y2_new$y1
+  proba$y2_new <- res_y1_y2_new$y2
+  proba$y3_new <- res_y3_new$y3
+  
+  results[r, 4:6] <- colMeans(proba[, c("y1", "y2", "y3")], na.rm=T)
+  results[r, 7:9] <- colMeans(proba[, c("y1_new", "y2_new", "y3_new")], na.rm=T)
+   
+}
+
+boxplot(results -  matrix(rep(y_true, times = 3), byrow=T, ncol = 9, nrow=R),  
+        xlab = "Estymator", ylab = "Obciążenie",
+        main = "Wpływ liczby zmiennych w imputacji NN na obciązenie",
+        las = 2) 
+abline(a=0,b=0,col="red")
+```
+
+Obciążenie estymatora (x100)
+
+```{r}
+round((colMeans(results) - rep(y_true, times = 3))*100,2)
+```
+Wariancja
+
+```{r}
+round(apply(results, 2, var)*100,4)
+```
+
+RMSE
+
+```{r}
+bias <- (colMeans(results) - rep(y_true, times = 3))
+round(sqrt(bias^2 + apply(results, 2, var))*100,2)
+```
+
+## Python
+
+```{python symulacja1-py}
+# Ustawienie ziarna losowości
+np.random.seed(123)
+
+# Parametry symulacji
+N = 50000  # rozmiar populacji
+n = 1000    # rozmiar próby
+
+# Generowanie zmiennych objaśniających
+x1 = np.random.uniform(0, 1, N)
+x2 = np.random.uniform(0, 1, N)
+x3 = np.random.uniform(0, 1, N)
+x4 = np.random.normal(0, 1, N)
+x5 = np.random.normal(0, 1, N)
+x6 = np.random.normal(0, 1, N)
+e = np.random.normal(0, 1, N)
+
+# Generowanie zmiennej y dla trzech modeli
+y1 = -1 + x1 + x2 + e
+y2 = -1.167 + x1 + x2 + (x1-0.5)**2 + (x2-0.5)**2 + e
+y3 = -1.5 + x1 + x2 + x3 + x4 + x5 + x6 + e
+
+# Tworzenie wskaźnika odpowiedzi
+logit_p = 0.2 + x1 + x2
+p = np.exp(logit_p)/(1 + np.exp(logit_p))
+# Tworzenie ramki danych
+populacja = pd.DataFrame({
+   'id': range(N),
+   'x1': x1,
+   'x2': x2,
+   'x3': x3,
+   'x4': x4,
+   'x5': x5,
+   'x6': x6,
+   'y1': y1,
+   'y2': y2,
+   'y3': y3,
+   'p': p
+})
+
+y_true = populacja[['y1', 'y2', 'y3']].mean()
+
+# Imputacja NN: dawca losowany spośród k najbliższych sąsiadów (jak impute_knn w R)
+# Dla zmiennych ilościowych odległość Gowera = odległość Manhattan na zmiennych przeskalowanych rozstępem
+def impute_nn(proba, y_cols, x_cols, k):
+   obs = proba[y_cols[0]].notna().to_numpy()
+   X = MinMaxScaler().fit_transform(proba[x_cols])
+   nn = NearestNeighbors(n_neighbors=k, metric='manhattan').fit(X[obs])
+   idx = nn.kneighbors(X[~obs], return_distance=False)
+   donor = idx[np.arange(idx.shape[0]), np.random.randint(0, k, idx.shape[0])]
+   y = proba[y_cols].to_numpy().copy()
+   y[~obs] = y[obs][donor]
+   return y
+
+# Symulacja (2000 razy)
+R = 2000
+results = np.zeros((R, 9))
+columns = [f"{t}_{y}" for t in ['naive', 'nn', 'nn_new'] for y in ['y1', 'y2', 'y3']]
+
+for r in range(R):
+   # Losowanie próby
+   proba = populacja.sample(n=n)
+
+   # Generowanie braków danych
+   delta = np.random.binomial(1, proba['p'])
+   proba.loc[delta == 0, ['y1', 'y2', 'y3']] = np.nan
+
+   # Średnie dla metody naiwnej
+   results[r, 0:3] = proba[['y1', 'y2', 'y3']].mean()
+
+   # Imputacja NN (k=1)
+   results[r, 3:5] = impute_nn(proba, ['y1', 'y2'], ['x1', 'x2'], k=1).mean(axis=0)
+   results[r, 5] = impute_nn(proba, ['y3'], ['x1', 'x2', 'x3', 'x4', 'x5', 'x6'], k=1).mean()
+
+   # Imputacja NN (k zależne od liczby respondentów i liczby zmiennych)
+   n_resp = delta.sum()
+   results[r, 6:8] = impute_nn(proba, ['y1', 'y2'], ['x1', 'x2'],
+                               k=int(np.floor(n_resp**(2/(2+2))))).mean(axis=0)
+   results[r, 8] = impute_nn(proba, ['y3'], ['x1', 'x2', 'x3', 'x4', 'x5', 'x6'],
+                             k=int(np.floor(n_resp**(2/(2+6))))).mean()
+
+plt.figure(figsize=(10, 6))
+bias = results - np.tile(y_true, 3)
+plt.boxplot(bias)
+plt.axhline(y=0, color='r', linestyle='-')
+plt.xlabel('Estymator')
+plt.ylabel('Obciążenie')
+plt.title('Wpływ liczby zmiennych w imputacji NN na obciążenie')
+plt.xticks(range(1, 10), columns, rotation=90)
+plt.show()
+```
+
+Obciążenie estymatora (x100), wariancja (x100) i RMSE (x100)
+
+```{python}
+bias = results.mean(axis=0) - np.tile(y_true, 3)
+pd.DataFrame({'bias': np.round(bias*100, 2),
+              'var': np.round(results.var(axis=0, ddof=1)*100, 4),
+              'rmse': np.round(np.sqrt(bias**2 + results.var(axis=0, ddof=1))*100, 2)},
+             index=columns)
+```
+
+
+:::
+
+
+# Przykład 2 -- Gower
+
+::: panel-tabset
+
+## R
+
+```{r data-example2}
+dane <- data.frame(
+   plec = factor(c("K", "M", "K")),                     # zmienna nominalna
+   wyksztalcenie = factor(                              # zmienna porządkowa
+       c("wyższe", "średnie", "podstawowe"),
+       levels = c("podstawowe", "średnie", "wyższe"),   # określamy porządek poziomów
+       ordered = TRUE
+   ),
+   wiek = c(25, 35, 45)                                 # zmienna ilorazowa
+)
+
+```
+
+```{r gower}
+VIM::gowerD(data.x = dane,
+            factors = "plec",
+            numerical = "wiek",
+            orders = "wyksztalcenie",
+            levOrders = 3)
+```
+
+```{r gower2}
+## odległość pierwszej obserwacji od wszystkich (rozstęp liczony na całym zbiorze)
+gower::gower_dist(x = dane[1, ],
+                  y = dane)
+```
+
+## Python
+
+```{python}
+dane = pd.DataFrame({
+   'plec': pd.Categorical(["K", "M", "K"]),                          # zmienna nominalna
+   'wyksztalcenie': pd.Categorical(                                  # zmienna porządkowa
+       ["wyższe", "średnie", "podstawowe"],
+       categories=["podstawowe", "średnie", "wyższe"],
+       ordered=True
+   ),
+   'wiek': [25, 35, 45]                                             # zmienna ilorazowa
+})
+
+```
+
+Pakiet `gower` traktuje zmienną porządkową jak nominalną (tak jak pakiet `gower` w R, inaczej niż `VIM::gowerD`), a zmienne jakościowe muszą być typu `object`.
+
+```{python}
+gower.gower_matrix(dane.astype({'plec': object, 'wyksztalcenie': object}))
+```
+
+:::
+
+
+# Przyklad 3
+
+::: panel-tabset
+
+## R
+
+```{r}
+## reading
+data <- read.csv(file = "../data/data4-czytelnictwo.csv", 
+                 colClasses = c("factor", "numeric", "factor", "logical", "logical"))
+
+```
+
+```{r}
+glm(I(is.na(czyta_ksiazki_z_brakami)) ~ plec + wiek + wyksztalcenie,
+    data = data, family = binomial()) |>
+  summary()
+```
+
+
+
+## Python
+
+TBA
+:::

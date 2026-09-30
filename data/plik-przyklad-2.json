@@ -1,0 +1,59 @@
+{
+  "dane_ekonomiczne": [
+    {
+      "id": 1,
+      "rok": 2020,
+      "pkb": {"wartosc": 594.2, "jednostka": "mld PLN"},
+      "inflacja": {"wartosc": 3.4, "jednostka": "%"},
+      "bezrobocie": {"wartosc": 5.9, "jednostka": "%"},
+      "eksport": {"wartosc": 237.5, "jednostka": "mld PLN"}
+    },
+    {
+      "id": 2,
+      "rok": 2019,
+      "pkb": {"wartosc": 2293.2, "jednostka": "mld USD"},
+      "inflacja": {"wartosc": null, "jednostka": "%"},
+      "bezrobocie": {"wartosc": 5.2, "jednostka": "%"},
+      "eksport": {"wartosc": 264.8, "jednostka": "mld USD"}
+    },
+    {
+      "id": 3,
+      "rok": "2018",
+      "pkb": {"wartosc": "N/D", "jednostka": "mld PLN"},
+      "inflacja": {"wartosc": 1.6, "jednostka": "%"},
+      "bezrobocie": {"wartosc": 5.8, "jednostka": "%"},
+      "eksport": {"wartosc": 951.3, "jednostka": "mld PLN"}
+    },
+    {
+      "id": 4,
+      "rok": 2017,
+      "pkb": {"wartosc": 526.5, "jednostka": "mld PLN"},
+      "inflacja": {"wartosc": 2.0, "jednostka": "%"},
+      "bezrobocie": {"wartosc": "brak danych", "jednostka": "%"},
+      "eksport": {"wartosc": 882.6}
+    },
+    {
+      "id": 5,
+      "rok": 2016,
+      "pkb": {"wartosc": 2126.5, "jednostka": "mld USD"},
+      "inflacja": {"wartosc": -0.6, "jednostka": "%"},
+      "bezrobocie": {"wartosc": 8.2},
+      "eksport": {"wartosc": "-", "jednostka": "mld PLN"}
+    },
+    {
+      "id": "brak",
+      "rok": 2015,
+      "pkb": {"wartosc": 477.3, "jednostka": "mld PLN"},
+      "inflacja": {"wartosc": -0.9, "jednostka": "%"},
+      "eksport": {"wartosc": 798.2, "jednostka": "mld PLN"}
+    },
+    {
+      "id": 7,
+      "rok": 2014,
+      "pkb": {"jednostka": "mld PLN"},
+      "inflacja": {"wartosc": 0.0, "jednostka": "%"},
+      "bezrobocie": {"wartosc": 9.0, "jednostka": "%"},
+      "eksport": {"wartosc": 693.5, "jednostka": "mld PLN"}
+    }
+  ]
+}

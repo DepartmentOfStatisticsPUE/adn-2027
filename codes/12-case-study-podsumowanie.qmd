@@ -1,0 +1,48 @@
+---
+title: "9. Case study -- podsumowanie zajęć"
+format: 
+  html:
+    self-contained: true
+    number-sections: true
+    toc: true
+    toc-title: "Spis treści"
+editor: source
+---
+
+```{r}
+library(haven)
+library(tidyverse)
+```
+
+Wczytanie danych
+
+```{r, eval = FALSE}
+## źródło: https://www.parp.gov.pl/images/publications/BKL/nowy-uklad/Baza_danych_z_badania_ludnoci_BKL_edycja_2021_SAV-SPSS.sav
+## (strona blokuje pobieranie z poziomu R, dlatego wczytujemy kopię lokalną)
+bkl2021 <- read_spss("../data/downloaded_data.sav", user_na = T)
+```
+
+Pytanie o dochód i wiązanie końca z końcem
+
+```r
+> str(bkl2021$m13)
+ dbl+lbl [1:2529]  3,  5,  4,  2,  5,  2,  3, -7,  4,  3,  4, -7,  4,  4,  4,  4,  2,  3, -7, -7, -7,  5,  5,  3,  4,  5,  4,  6, -7,  4,  6,  4,  4,  2,  2,  ...
+ @ label        : chr "Przy aktualnym dochodzie gosp. domowego związanie końca z końcem jest…"
+ @ na_values    : num 8
+ @ na_range     : num [1:2] -8 -1
+ @ format.spss  : chr "F1.0"
+ @ display_width: int 6
+ @ labels       : Named num [1:11] -8 -7 -3 -1 1 2 3 4 5 6 ...
+  ..- attr(*, "names")= chr [1:11] "trudno powiedzieć" "odmowa odpowiedzi" "brak danych" "NDT" ...
+```
+
+```r
+> str(bkl2021$m10_dane)
+ dbl+lbl [1:2529]  1, -7,  1,  1,  2,  2,  2, -7,  2, -7,  1,  2,  2,  2,  2,  1, -7, -7,  2, -7, -7,  1,  2, -7,  2,  2,  2,  1,  2,  2,  1,  1,  2, -7,  1,  1,  1,  2,  2, -7,  1,  2,  1,  2,  ...
+ @ label      : chr "Dochody całego gosp. domowego - typ danych"
+ @ na_range   : num [1:2] -9 0
+ @ format.spss: chr "F8.0"
+ @ labels     : Named num [1:3] -7 1 2
+  ..- attr(*, "names")= chr [1:3] "odmowa ujawnienia zarobków" "dane dokładne" "dane przedziałowe"
+```
+

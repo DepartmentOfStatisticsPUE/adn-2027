@@ -1,0 +1,255 @@
+---
+title: "7. Kalibracja -- case study"
+format: 
+  html:
+    self-contained: true
+    number-sections: true
+    toc: true
+    toc-title: "Spis treści"
+editor: source
+---
+
+# Wczytanie potrzebnych pakietów
+
+::: panel-tabset
+## R
+
+```{r pakiety, message=F, warning=F}
+library(readxl)
+library(survey)
+```
+
+
+## Python
+
+```{python moduly}
+import numpy as np
+import pandas as pd
+import polars as pl ## svy pracuje na ramkach danych polars
+import svy
+```
+
+:::
+
+
+# Kalibracja 
+
+W tym przykładie pokażę jak można wykorzystac pakiet `survey` do kalibracji uwzględniajacej różne zmienne pomocnicze i ich kombinacje.
+
+::: panel-tabset
+## R
+
+Wczytujemy przykładowe dane
+
+```{r}
+gosp <- read_excel("../data/gospodarstwa-zajecia.xlsx")
+gosp <- transform(gosp, 
+                  klm = as.factor(klm),
+                  woj = as.factor(woj))
+head(gosp)
+```
+
+W trzech zmiennych (`los`, `dochg`, `wydg`) mamy braki danych ale nie chcemy zastosować imputacji.
+
+```{r}
+summary(gosp[, c("los", "dochg", "wydg")])
+```
+
+**Zadanie 1**: w ilu przypadkach brak danych występuje we wszystkich trzech kolumnach?
+
+```{r}
+## miejsce na rozwiązanie
+```
+
+
+
+W związku z tym musimy zastosować kalibrację ale mamy pewne informacje o zmiennych pomocniczych dla wszystkich zmiennych. Na potrzeby tego ćwiczenia pokaże jak skalibrować wagi wg zmiennej klm, woj i interakcji. Zobaczymy tez jak zmieniają się wyniki
+
+Tworzymy zbiór danych z pełnymi odpowiedziami
+
+```{r}
+gosp_resp <- gosp[complete.cases(gosp),]
+```
+
+Tworzymy informacje o wartościach globalnych zmiennych pomocniczych
+
+```{r}
+pop_klm <- xtabs(~klm, gosp)
+pop_woj <- xtabs(~woj, gosp)
+pop_klm_woj <- xtabs(~klm+woj, gosp)
+```
+
+**Zadanie 2**: czy klm i woj różnicuje `dochg` i `wydg`? Jak to sprawdzić?
+
+```{r}
+## miejsce na rozwiązanie
+```
+
+
+Tworzymy obiekt svydesign
+
+```{r}
+gosp_resp_svy <- svydesign(ids=~1, data=gosp_resp)
+```
+
+Jeżeli nie podamy domyślnie tworzone są wagi =1
+
+```{r}
+table(weights(gosp_resp_svy))
+```
+
+Przeprowadzamy kalibrację wg klm:
+
+```{r}
+gosp_resp_svy_klm <- calibrate(design = gosp_resp_svy, 
+                               formula = list(~klm),
+                               population = list(pop_klm))
+```
+
+**Zadanie 3**: prosz sprawdzić rozkład wag korzystając z `weights(gosp_resp_svy_klm)`. Ile różnych wag powstało? Dlaczego tyle?
+
+```{r}
+## miejsce na rozwiązanie
+```
+
+
+Przeprowadzamy kalibrację wg woj
+
+```{r}
+gosp_resp_svy_woj <- calibrate(design = gosp_resp_svy, 
+                               formula = list(~woj),
+                               population = list(pop_woj))
+```
+
+**Zadanie 4**: prosz sprawdzić rozkład wag korzystając z `weights(gosp_resp_svy_woj)`. Jak to wygląda w porównaniu do wcześniejszego zadania?
+
+```{r}
+## miejsce na rozwiązanie
+```
+
+Przeprowadzamy kalibrację wg klm i woj ale bez interakcji
+
+```{r}
+gosp_resp_svy_klm_woj_noint <- calibrate(design = gosp_resp_svy, 
+                                         formula = list(~klm, ~woj),
+                                         population = list(pop_klm, pop_woj))
+```
+
+**Zadanie 5**: czy ta kalibracja odtworzy wagi w przekrojach klm x woj?
+
+
+
+Przeprowadzamy kalibrację wg klm i woj z interakcją 
+
+```{r}
+## przy liniowej jest problem numeryczny bo są zera w pop_klm_woj
+gosp_resp_svy_klm_woj_int <- calibrate(design = gosp_resp_svy, 
+                                       formula = list(~klm+woj),
+                                       population = list(pop_klm_woj),
+                                       calfun = "raking") 
+```
+
+Porównanmy oszacowania [wartości prawdziwe: `dochg=2127`, `wydg=2012.7`]
+
+```{r}
+svymean(~dochg+wydg, gosp_resp_svy)
+```
+
+```{r}
+svymean(~dochg+wydg, gosp_resp_svy_klm)
+svymean(~dochg+wydg, gosp_resp_svy_woj)
+svymean(~dochg+wydg, gosp_resp_svy_klm_woj_noint)
+svymean(~dochg+wydg, gosp_resp_svy_klm_woj_int)
+```
+
+
+## Python
+
+```{python}
+gosp = pd.read_excel("../data/gospodarstwa-zajecia.xlsx")
+gosp['klm'] = gosp['klm'].astype('category')
+gosp['woj'] = gosp['woj'].astype('category')
+print(gosp.head())
+```
+
+```{python}
+print(gosp[['dochg', 'wydg']].describe())
+print("\nMissing values:")
+print(gosp[['dochg', 'wydg']].isnull().sum())
+```
+
+```{python}
+gosp_resp = gosp.dropna(subset=['dochg', 'wydg']).copy()
+```
+
+```{python}
+pop_klm = gosp['klm'].value_counts().to_dict()
+pop_woj = gosp['woj'].value_counts().to_dict()
+```
+
+```{python}
+pop_klm_woj = gosp.groupby(['klm', 'woj'], observed=False).size().to_dict() ## wszystkie przekroje (także puste), jak xtabs w R
+```
+
+```{python}
+gosp_resp['weight'] = 1.0
+```
+
+```{python}
+print(f"\nPoczątkowe wagi: {gosp_resp['weight'].unique()}")
+```
+
+Tworzymy obiekt `svy.Sample` (odpowiednik `svydesign`)
+
+```{python}
+gosp_resp_svy = svy.Sample(pl.from_pandas(gosp_resp), svy.Design(wgt="weight"))
+```
+
+Przeprowadzamy kalibrację wg klm
+
+```{python}
+gosp_resp_svy_klm = gosp_resp_svy.weighting.calibrate(
+    controls={svy.Cat("klm"): pop_klm},
+    wgt_name="w_klm")
+```
+
+Przeprowadzamy kalibrację wg woj
+
+```{python}
+gosp_resp_svy_woj = gosp_resp_svy.weighting.calibrate(
+    controls={svy.Cat("woj"): pop_woj},
+    wgt_name="w_woj")
+```
+
+Przeprowadzamy kalibrację wg klm i woj ale bez interakcji
+
+```{python}
+gosp_resp_svy_klm_woj_noint = gosp_resp_svy.weighting.calibrate(
+    controls={svy.Cat("klm"): pop_klm, svy.Cat("woj"): pop_woj},
+    wgt_name="w_klm_woj_noint")
+```
+
+Przeprowadzamy kalibrację wg klm i woj z interakcją (poststratyfikacja w przekrojach klm x woj)
+
+```{python}
+gosp_resp_svy_klm_woj_int = gosp_resp_svy.weighting.poststratify(
+    controls={k: v for k, v in pop_klm_woj.items() if v > 0}, ## pomijamy puste przekroje
+    cells=["klm", "woj"],
+    wgt_name="w_klm_woj_int")
+```
+
+Porównanmy oszacowania [wartości prawdziwe: `dochg=2127`, `wydg=2012.7`]
+
+```{python}
+print(gosp_resp_svy.estimation.mean(["dochg", "wydg"]))
+```
+
+```{python}
+print(gosp_resp_svy_klm.estimation.mean(["dochg", "wydg"]))
+print(gosp_resp_svy_woj.estimation.mean(["dochg", "wydg"]))
+print(gosp_resp_svy_klm_woj_noint.estimation.mean(["dochg", "wydg"]))
+print(gosp_resp_svy_klm_woj_int.estimation.mean(["dochg", "wydg"]))
+```
+
+
+:::
