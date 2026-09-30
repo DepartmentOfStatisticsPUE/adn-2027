@@ -16,3 +16,7 @@
 # Python
 __pycache__/
 .ipynb_checkpoints/
+
+# local helpers
+render-all.sh
+render-logs/

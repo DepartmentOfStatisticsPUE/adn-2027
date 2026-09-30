@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>2. Imputacja dedukcyjna</title>
+<title>9. Case study – podsumowanie zajęć</title>
 <style>
 
 code{white-space: pre-wrap;}
@@ -2202,26 +2202,14 @@ vertical-align: -.125em;
 <body class="quarto-light">
 
 <div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
-<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-  <nav id="TOC" role="doc-toc" class="toc-active">
-    <h2 id="toc-title">Spis treści</h2>
-   
-  <ul>
-  <li><a href="#wczytanie-potrzebych-pakietów" id="toc-wczytanie-potrzebych-pakietów" class="nav-link active" data-scroll-target="#wczytanie-potrzebych-pakietów"><span class="header-section-number">1</span> Wczytanie potrzebych pakietów</a></li>
-  <li><a href="#przykład-imputacji-dedukcyjnej" id="toc-przykład-imputacji-dedukcyjnej" class="nav-link" data-scroll-target="#przykład-imputacji-dedukcyjnej"><span class="header-section-number">2</span> Przykład imputacji dedukcyjnej</a></li>
-  <li><a href="#imputacja-dedukcyjna-z-ograniczeniami" id="toc-imputacja-dedukcyjna-z-ograniczeniami" class="nav-link" data-scroll-target="#imputacja-dedukcyjna-z-ograniczeniami"><span class="header-section-number">3</span> Imputacja dedukcyjna z ograniczeniami</a>
-  <ul class="collapse">
-  <li><a href="#bez-wykorzystania-dodatkowych-pakietów" id="toc-bez-wykorzystania-dodatkowych-pakietów" class="nav-link" data-scroll-target="#bez-wykorzystania-dodatkowych-pakietów"><span class="header-section-number">3.1</span> Bez wykorzystania dodatkowych pakietów</a></li>
-  <li><a href="#wykorystanie-odpowiednich-pakietow" id="toc-wykorystanie-odpowiednich-pakietow" class="nav-link" data-scroll-target="#wykorystanie-odpowiednich-pakietow"><span class="header-section-number">3.2</span> Wykorystanie odpowiednich pakietow</a></li>
-  </ul></li>
-  </ul>
-</nav>
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+  
 </div>
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">2. Imputacja dedukcyjna</h1>
+<h1 class="title">9. Case study – podsumowanie zajęć</h1>
 </div>
 
 
@@ -2238,583 +2226,45 @@ vertical-align: -.125em;
 </header>
 
 
-<section id="wczytanie-potrzebych-pakietów" class="level1" data-number="1">
-<h1 data-number="1"><span class="header-section-number">1</span> Wczytanie potrzebych pakietów</h1>
-<div class="tabset-margin-container"></div><div class="panel-tabset">
-<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href>R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href>Python</a></li></ul>
-<div class="tab-content">
-<div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(data.table)</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyr) <span class="do">## funkcja fill</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(stringr)</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(zoo)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(MASS)</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(validate)</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(deductive)</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ellmer) <span class="do">## do modeli jezykowych</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(haven)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
+✔ dplyr     1.2.1     ✔ readr     2.2.0
+✔ forcats   1.0.1     ✔ stringr   1.6.0
+✔ ggplot2   4.0.3     ✔ tibble    3.3.1
+✔ lubridate 1.9.5     ✔ tidyr     1.3.2
+✔ purrr     1.2.2     
+── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+✖ dplyr::filter() masks stats::filter()
+✖ dplyr::lag()    masks stats::lag()
+ℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors</code></pre>
 </div>
 </div>
-<div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
+<p>Wczytanie danych</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> re</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> numpy.linalg <span class="im">import</span> pinv</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sympy <span class="im">import</span> symbols, solve, Eq</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-</div>
-</div>
-</div>
-</section>
-<section id="przykład-imputacji-dedukcyjnej" class="level1" data-number="2">
-<h1 data-number="2"><span class="header-section-number">2</span> Przykład imputacji dedukcyjnej</h1>
-<p>Dane są posortowane wg liczby pokoi (<code>liczba_pokoi</code>) i zawierają następujące kolumny:</p>
-<ul>
-<li><code>id</code> – identyfikator</li>
-<li><code>liczba_pokoi</code> – liczba pokoi</li>
-<li><code>województwo</code> – województwo (słownie)</li>
-<li><code>powiat</code> – numer teryt (7 cyfrowy)</li>
-<li><code>cena</code> – cena nieruchomości</li>
-<li><code>powierzchnia</code> – powierzchnia nieruchomości</li>
-<li><code>tytul</code> – tytuł ogłoszenia</li>
-</ul>
-<p>Cel: zaimputowanie brakujących wartości.</p>
-<div class="tabset-margin-container"></div><div class="panel-tabset">
-<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-2-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-1" role="tab" aria-controls="tabset-2-1" aria-selected="true" href>R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-2" role="tab" aria-controls="tabset-2-2" aria-selected="false" href>Python</a></li></ul>
-<div class="tab-content">
-<div id="tabset-2-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-2-1-tab">
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>dane <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">&quot;../data/data3-przyklad-imputacji.csv&quot;</span>)</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(dane)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>  id liczba_pokoi   wojewodztwo  powiat   cena powierzchnia
-1  1            1  dolnoslaskie  213011 320000           32
-2  2           NA          &lt;NA&gt;  406011 310000           NA
-3  3           NA   mazowieckie  208011 315000           29
-4  4           NA          &lt;NA&gt;  208021 305000           NA
-5  5           NA wielkopolskie  208011 318000           30
-6  6            2   mazowieckie 1465011 450000           45
-                                              tytul
-1    Przytulna kawalerka 32,1m2, 1 pokój w centrum!
-2 Kompaktowe mieszkanie 30m2 w świetnej lokalizacji
-3                Kawalerka 29 mkw, idealna na start
-4             Nowoczesne studio 31 metrów w centrum
-5                 1-pok. mieszkanie 30m2 z balkonem
-6              2 pokoje, 45m2, słoneczne mieszkanie</code></pre>
-</div>
-</div>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>dane <span class="sc">|&gt;</span> </span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fill</span>(liczba_pokoi)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>   id liczba_pokoi   wojewodztwo  powiat   cena powierzchnia
-1   1            1  dolnoslaskie  213011 320000           32
-2   2            1          &lt;NA&gt;  406011 310000           NA
-3   3            1   mazowieckie  208011 315000           29
-4   4            1          &lt;NA&gt;  208021 305000           NA
-5   5            1 wielkopolskie  208011 318000           30
-6   6            2   mazowieckie 1465011 450000           45
-7   7            2          &lt;NA&gt; 1465011 460000           NA
-8   8            2   mazowieckie 1465011 455000           46
-9   9            2          &lt;NA&gt; 1465012 465000           NA
-10 10            2 wielkopolskie 1465011 458000           45
-11 11            3     lubelskie 3064011 520000           65
-12 12            3          &lt;NA&gt; 3064011 530000           NA
-13 13            3 wielkopolskie 3064011 525000           64
-14 14            3          &lt;NA&gt; 3064011 535000           NA
-15 15            3  dolnoslaskie   22101 528000           67
-16 16            4 wielkopolskie 3061011 680000           85
-17 17            4          &lt;NA&gt;  661011 670000           NA
-18 18            4     lubelskie  661011 675000           82
-19 19            4          &lt;NA&gt;  661031 685000           NA
-20 20            4     lubelskie  661011 678000           84
-                                               tytul
-1     Przytulna kawalerka 32,1m2, 1 pokój w centrum!
-2  Kompaktowe mieszkanie 30m2 w świetnej lokalizacji
-3                 Kawalerka 29 mkw, idealna na start
-4              Nowoczesne studio 31 metrów w centrum
-5                  1-pok. mieszkanie 30m2 z balkonem
-6               2 pokoje, 45m2, słoneczne mieszkanie
-7               Przestronne 2-pok., 48 mkw z garażem
-8                          2 pokoje 46m2 z ogródkiem
-9      Nowoczesne 2-pokojowe mieszkanie 47,95 metrów
-10               Komfortowe 45mkw, 2-pok. z balkonem
-11            3 pokoje, 65m2, przestronne mieszkanie
-12              Rodzinne 68mkw, 3-pokojowe z tarasem
-13               3-pok. apartament 64.5m2 z widokiem
-14         Słoneczne 3 pokoje 66.40 metrów z garażem
-15                        3-pokojowe 67mkw z ogrodem
-16               Luksusowy apartament 85m2, 4 pokoje
-17      4-pokojowe mieszkanie 88.50 metrów z tarasem
-18                Przestronne 4 pok, 82mkw z garażem
-19                 Komfortowe 4-pok. mieszkanie 86m2
-20               4 pokoje, 84 metrów, centrum miasta</code></pre>
-</div>
-</div>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>zoo<span class="sc">::</span><span class="fu">na.locf</span>(dane<span class="sc">$</span>liczba_pokoi)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code> [1] 1 1 1 1 1 2 2 2 2 2 3 3 3 3 3 4 4 4 4 4</code></pre>
-</div>
-</div>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>data.table<span class="sc">::</span><span class="fu">nafill</span>(dane<span class="sc">$</span>liczba_pokoi, <span class="st">&quot;locf&quot;</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code> [1] 1 1 1 1 1 2 2 2 2 2 3 3 3 3 3 4 4 4 4 4</code></pre>
-</div>
-</div>
-<p>Operacja typu <code>inplace</code>.</p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>data.table<span class="sc">::</span><span class="fu">setnafill</span>(dane, <span class="st">&quot;locf&quot;</span>, <span class="at">cols =</span> <span class="fu">c</span>(<span class="st">&quot;liczba_pokoi&quot;</span>))</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>dane</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>   id liczba_pokoi   wojewodztwo  powiat   cena powierzchnia
-1   1            1  dolnoslaskie  213011 320000           32
-2   2            1          &lt;NA&gt;  406011 310000           NA
-3   3            1   mazowieckie  208011 315000           29
-4   4            1          &lt;NA&gt;  208021 305000           NA
-5   5            1 wielkopolskie  208011 318000           30
-6   6            2   mazowieckie 1465011 450000           45
-7   7            2          &lt;NA&gt; 1465011 460000           NA
-8   8            2   mazowieckie 1465011 455000           46
-9   9            2          &lt;NA&gt; 1465012 465000           NA
-10 10            2 wielkopolskie 1465011 458000           45
-11 11            3     lubelskie 3064011 520000           65
-12 12            3          &lt;NA&gt; 3064011 530000           NA
-13 13            3 wielkopolskie 3064011 525000           64
-14 14            3          &lt;NA&gt; 3064011 535000           NA
-15 15            3  dolnoslaskie   22101 528000           67
-16 16            4 wielkopolskie 3061011 680000           85
-17 17            4          &lt;NA&gt;  661011 670000           NA
-18 18            4     lubelskie  661011 675000           82
-19 19            4          &lt;NA&gt;  661031 685000           NA
-20 20            4     lubelskie  661011 678000           84
-                                               tytul
-1     Przytulna kawalerka 32,1m2, 1 pokój w centrum!
-2  Kompaktowe mieszkanie 30m2 w świetnej lokalizacji
-3                 Kawalerka 29 mkw, idealna na start
-4              Nowoczesne studio 31 metrów w centrum
-5                  1-pok. mieszkanie 30m2 z balkonem
-6               2 pokoje, 45m2, słoneczne mieszkanie
-7               Przestronne 2-pok., 48 mkw z garażem
-8                          2 pokoje 46m2 z ogródkiem
-9      Nowoczesne 2-pokojowe mieszkanie 47,95 metrów
-10               Komfortowe 45mkw, 2-pok. z balkonem
-11            3 pokoje, 65m2, przestronne mieszkanie
-12              Rodzinne 68mkw, 3-pokojowe z tarasem
-13               3-pok. apartament 64.5m2 z widokiem
-14         Słoneczne 3 pokoje 66.40 metrów z garażem
-15                        3-pokojowe 67mkw z ogrodem
-16               Luksusowy apartament 85m2, 4 pokoje
-17      4-pokojowe mieszkanie 88.50 metrów z tarasem
-18                Przestronne 4 pok, 82mkw z garażem
-19                 Komfortowe 4-pok. mieszkanie 86m2
-20               4 pokoje, 84 metrów, centrum miasta</code></pre>
-</div>
-</div>
-<p>Na podstawie nr identyfikatora powiatu -&gt; województwo</p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">substr</span>(<span class="st">&quot;1465011&quot;</span>, <span class="dv">1</span>, <span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] &quot;14&quot;</code></pre>
-</div>
-</div>
-<p><code>powierzchnia</code> – na podstwie wyrażen regularnych</p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">str_extract</span>(<span class="st">&quot;Przytulna kawalerka 32,1m2, 1 pokój w centrum!&quot;</span>, <span class="st">&quot;</span><span class="sc">\\</span><span class="st">d{2},</span><span class="sc">\\</span><span class="st">d{1}&quot;</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] &quot;32,1&quot;</code></pre>
-</div>
-</div>
-<p>Nowe: oczywiście można wykorzystać w tym celu modele językowe, ale po co strzelać z armaty do wróbla?</p>
-<p>Przykład promptu do modelu Antropic Haiku 4.5</p>
-<pre><code>Wyciągnij z tekstu powierzchnię, typ i liczbę pokoi: `Przytulna kawalerka 32,1m2, 1 pokój w centrum!` i zapisz w postaci data.frame R</code></pre>
-<p>Wynik:</p>
-<pre><code>mieszkanie &lt;- data.frame(
-  powierzchnia = 32.1,
-  typ = &quot;kawalerka&quot;,
-  liczba_pokoi = 1
-)</code></pre>
-<p>Wykorzystanie <a href="https://ollama.com">ollama</a>, małego modelu <code>qwen3:4b</code> oraz pakietu <a href="https://ellmer.tidyverse.org"><code>ellmer</code></a> i strukturyzowanej odpowiedzi.</p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>chat <span class="ot">&lt;-</span> <span class="fu">chat_ollama</span>(<span class="at">model =</span> <span class="st">&quot;qwen3:4b&quot;</span>,</span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">params =</span> <span class="fu">params</span>(<span class="at">temperature =</span> <span class="dv">0</span>, <span class="at">seed =</span> <span class="dv">2025</span>))</span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>type_apartment <span class="ot">&lt;-</span> <span class="fu">type_object</span>(</span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">floor_area =</span> <span class="fu">type_number</span>(),</span>
-<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">is_studio =</span> <span class="fu">type_boolean</span>(),</span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">number_of_rooms =</span> <span class="fu">type_number</span>()</span>
-<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>wynik <span class="ot">&lt;-</span> chat<span class="sc">$</span><span class="fu">chat_structured</span>(</span>
-<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Przytulna kawalerka 32,1m2, 1 pokój w centrum!`&quot;</span>,</span>
-<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">type =</span> type_apartment</span>
-<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<p>Wynik</p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="sc">$</span>floor_area</span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>[<span class="dv">1</span>] <span class="fl">32.1</span></span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="sc">$</span>is_studio</span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>[<span class="dv">1</span>] <span class="cn">TRUE</span></span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="sc">$</span>number_of_rooms</span>
-<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>[<span class="dv">1</span>] <span class="dv">1</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<p>Dla tego przykładu</p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>wynik <span class="ot">&lt;-</span> chat<span class="sc">$</span><span class="fu">chat_structured</span>(</span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>     <span class="st">&quot;Luksusowy apartament 85m2, 4 pokoje&quot;</span>,</span>
-<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">type =</span> type_apartment</span>
-<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<p>Dostajemy</p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="sc">&gt;</span> wynik</span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="sc">$</span>floor_area</span>
-<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>[<span class="dv">1</span>] <span class="dv">85</span></span>
-<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="sc">$</span>is_studio</span>
-<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>[<span class="dv">1</span>] <span class="cn">FALSE</span></span>
-<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a><span class="sc">$</span>number_of_rooms</span>
-<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>[<span class="dv">1</span>] <span class="dv">4</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<p>ale dla tego</p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>wynik <span class="ot">&lt;-</span> chat<span class="sc">$</span><span class="fu">chat_structured</span>(</span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>     <span class="st">&quot;Kompaktowe mieszkanie 30m2 w świetnej lokalizacji&quot;</span>,</span>
-<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">type =</span> type_apartment</span>
-<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<p>zwraca informacje o tym, że jest to kawalerka (nie wiemy tego) oraz liczbie pokoi (tez nie ma tej informacji)</p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="sc">&gt;</span> wynik</span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="sc">$</span>floor_area</span>
-<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>[<span class="dv">1</span>] <span class="dv">30</span></span>
-<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a><span class="sc">$</span>is_studio </span>
-<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>[<span class="dv">1</span>] <span class="cn">TRUE</span></span>
-<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a><span class="sc">$</span>number_of_rooms</span>
-<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>[<span class="dv">1</span>] <span class="dv">1</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-</div>
-<div id="tabset-2-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-2-tab">
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>dane <span class="op">=</span> pd.read_csv(<span class="st">&quot;../data/data3-przyklad-imputacji.csv&quot;</span>)</span>
-<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(dane.head())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>   id  ...                                              tytul
-0   1  ...     Przytulna kawalerka 32,1m2, 1 pokój w centrum!
-1   2  ...  Kompaktowe mieszkanie 30m2 w świetnej lokalizacji
-2   3  ...                 Kawalerka 29 mkw, idealna na start
-3   4  ...              Nowoczesne studio 31 metrów w centrum
-4   5  ...                  1-pok. mieszkanie 30m2 z balkonem
-
-[5 rows x 7 columns]</code></pre>
-</div>
-</div>
-<p>Odpowiednik <code>fill()</code> z <code>tidyverse</code></p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>dane.assign(liczba_pokoi<span class="op">=</span>dane[<span class="st">&#39;liczba_pokoi&#39;</span>].ffill())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>    id  ...                                              tytul
-0    1  ...     Przytulna kawalerka 32,1m2, 1 pokój w centrum!
-1    2  ...  Kompaktowe mieszkanie 30m2 w świetnej lokalizacji
-2    3  ...                 Kawalerka 29 mkw, idealna na start
-3    4  ...              Nowoczesne studio 31 metrów w centrum
-4    5  ...                  1-pok. mieszkanie 30m2 z balkonem
-5    6  ...               2 pokoje, 45m2, słoneczne mieszkanie
-6    7  ...               Przestronne 2-pok., 48 mkw z garażem
-7    8  ...                          2 pokoje 46m2 z ogródkiem
-8    9  ...      Nowoczesne 2-pokojowe mieszkanie 47,95 metrów
-9   10  ...                Komfortowe 45mkw, 2-pok. z balkonem
-10  11  ...             3 pokoje, 65m2, przestronne mieszkanie
-11  12  ...               Rodzinne 68mkw, 3-pokojowe z tarasem
-12  13  ...                3-pok. apartament 64.5m2 z widokiem
-13  14  ...          Słoneczne 3 pokoje 66.40 metrów z garażem
-14  15  ...                         3-pokojowe 67mkw z ogrodem
-15  16  ...                Luksusowy apartament 85m2, 4 pokoje
-16  17  ...       4-pokojowe mieszkanie 88.50 metrów z tarasem
-17  18  ...                 Przestronne 4 pok, 82mkw z garażem
-18  19  ...                  Komfortowe 4-pok. mieszkanie 86m2
-19  20  ...                4 pokoje, 84 metrów, centrum miasta
-
-[20 rows x 7 columns]</code></pre>
-</div>
-</div>
-<p>Odpowiednik <code>zoo::na.locf()</code></p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb29"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>dane[<span class="st">&#39;liczba_pokoi&#39;</span>].ffill()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>0     1.0
-1     1.0
-2     1.0
-3     1.0
-4     1.0
-5     2.0
-6     2.0
-7     2.0
-8     2.0
-9     2.0
-10    3.0
-11    3.0
-12    3.0
-13    3.0
-14    3.0
-15    4.0
-16    4.0
-17    4.0
-18    4.0
-19    4.0
-Name: liczba_pokoi, dtype: float64</code></pre>
-</div>
-</div>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb31"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="co">&quot;1465011&quot;</span>[:<span class="dv">2</span>]  <span class="co"># pierwsze 2 znaki</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>&#39;14&#39;</code></pre>
-</div>
-</div>
-<p>Odpowiednik <code>str_extract()</code></p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb33"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>tekst <span class="op">=</span> <span class="st">&quot;Przytulna kawalerka 32,1m2, 1 pokój w centrum!&quot;</span></span>
-<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>pattern <span class="op">=</span> <span class="vs">r&#39;</span><span class="dv">\d</span><span class="op">{2}</span><span class="vs">,</span><span class="dv">\d</span><span class="op">{1}</span><span class="vs">&#39;</span></span>
-<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>match <span class="op">=</span> re.search(pattern, tekst)</span>
-<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> match:</span>
-<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(match.group())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>32,1</code></pre>
-</div>
-</div>
-<p>Alternatywnie z pandas</p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb35"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>s <span class="op">=</span> pd.Series([<span class="st">&quot;Przytulna kawalerka 32,1m2, 1 pokój w centrum!&quot;</span>])</span>
-<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>s.<span class="bu">str</span>.extract(<span class="vs">r&#39;</span><span class="kw">(</span><span class="dv">\d</span><span class="op">{2}</span><span class="vs">,</span><span class="dv">\d</span><span class="op">{1}</span><span class="kw">)</span><span class="vs">&#39;</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>      0
-0  32,1</code></pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-</section>
-<section id="imputacja-dedukcyjna-z-ograniczeniami" class="level1" data-number="3">
-<h1 data-number="3"><span class="header-section-number">3</span> Imputacja dedukcyjna z ograniczeniami</h1>
-<section id="bez-wykorzystania-dodatkowych-pakietów" class="level2" data-number="3.1">
-<h2 data-number="3.1" class="anchored" data-anchor-id="bez-wykorzystania-dodatkowych-pakietów"><span class="header-section-number">3.1</span> Bez wykorzystania dodatkowych pakietów</h2>
-<div class="tabset-margin-container"></div><div class="panel-tabset">
-<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-3-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-1" role="tab" aria-controls="tabset-3-1" aria-selected="true" href>R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-3-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-2" role="tab" aria-controls="tabset-3-2" aria-selected="false" href>Python</a></li></ul>
-<div class="tab-content">
-<div id="tabset-3-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-3-1-tab">
-<p>Przykład 1 z zajęć</p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Znane wartości</span></span>
-<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>x1 <span class="ot">&lt;-</span> <span class="dv">100</span></span>
-<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>x4 <span class="ot">&lt;-</span> <span class="dv">40</span></span>
-<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>x3 <span class="ot">&lt;-</span> <span class="dv">150</span></span>
-<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Definiujemy macierze dla układu równań:</span></span>
-<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a><span class="co"># x1 + x2 = x3</span></span>
-<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a><span class="co"># x4 + x5 = x1</span></span>
-<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Macierz dla niewiadomych [x2, x5]</span></span>
-<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a>Am <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>), <span class="at">nrow =</span> <span class="dv">2</span>, <span class="at">byrow =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a> </span>
-<span id="cb37-11"><a href="#cb37-11" aria-hidden="true" tabindex="-1"></a> <span class="co"># Macierz dla znanych wartości [x1, x3, x4]</span></span>
-<span id="cb37-12"><a href="#cb37-12" aria-hidden="true" tabindex="-1"></a>Ao <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">0</span>, </span>
-<span id="cb37-13"><a href="#cb37-13" aria-hidden="true" tabindex="-1"></a>               <span class="sc">-</span><span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>), </span>
-<span id="cb37-14"><a href="#cb37-14" aria-hidden="true" tabindex="-1"></a>             <span class="at">nrow =</span> <span class="dv">2</span>, <span class="at">byrow =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb37-15"><a href="#cb37-15" aria-hidden="true" tabindex="-1"></a> </span>
-<span id="cb37-16"><a href="#cb37-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Wektor znanych wartości</span></span>
-<span id="cb37-17"><a href="#cb37-17" aria-hidden="true" tabindex="-1"></a>xo <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">100</span>, <span class="dv">150</span>, <span class="dv">40</span>), <span class="at">nrow =</span> <span class="dv">3</span>)</span>
-<span id="cb37-18"><a href="#cb37-18" aria-hidden="true" tabindex="-1"></a> </span>
-<span id="cb37-19"><a href="#cb37-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Wektor wyrazów wolnych</span></span>
-<span id="cb37-20"><a href="#cb37-20" aria-hidden="true" tabindex="-1"></a>b <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>), <span class="at">nrow =</span> <span class="dv">2</span>)</span>
-<span id="cb37-21"><a href="#cb37-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb37-22"><a href="#cb37-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Obliczamy prawą stronę równania</span></span>
-<span id="cb37-23"><a href="#cb37-23" aria-hidden="true" tabindex="-1"></a>b_star <span class="ot">&lt;-</span> b <span class="sc">-</span> Ao <span class="sc">%*%</span> xo</span>
-<span id="cb37-24"><a href="#cb37-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Rozwiązujemy używając pseudoodwrotności Moore-Penrose</span></span>
-<span id="cb37-25"><a href="#cb37-25" aria-hidden="true" tabindex="-1"></a>x_m <span class="ot">&lt;-</span> <span class="fu">ginv</span>(Am) <span class="sc">%*%</span> b_star</span>
-<span id="cb37-26"><a href="#cb37-26" aria-hidden="true" tabindex="-1"></a>x_m</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>     [,1]
-[1,]   50
-[2,]   60</code></pre>
-</div>
-</div>
-<p>Przykład 2 z zajęć</p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Definiujemy macierze</span></span>
-<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>Am <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="sc">-</span><span class="dv">1</span>, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">0</span>), <span class="at">nrow =</span> <span class="dv">2</span>, <span class="at">byrow =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>Ao <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>), <span class="at">nrow =</span> <span class="dv">2</span>, <span class="at">ncol =</span> <span class="dv">1</span>)</span>
-<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>xo <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">10</span>, <span class="at">nrow =</span> <span class="dv">1</span>)</span>
-<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a>b <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>), <span class="at">nrow =</span> <span class="dv">2</span>)</span>
-<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a>b_star <span class="ot">&lt;-</span> b <span class="sc">-</span> Ao <span class="sc">%*%</span> xo</span>
-<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a>xm <span class="ot">&lt;-</span> <span class="fu">solve</span>(Am, b_star)</span>
-<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a>xm</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>     [,1]
-[1,]   20
-[2,]   30</code></pre>
-</div>
-</div>
-</div>
-<div id="tabset-3-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-3-2-tab">
-<p>Przykład 1 z zajęć</p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb41"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>x1 <span class="op">=</span> <span class="dv">100</span></span>
-<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>x4 <span class="op">=</span> <span class="dv">40</span></span>
-<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>x3 <span class="op">=</span> <span class="dv">150</span></span>
-<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Definiujemy macierze dla układu równań:</span></span>
-<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a><span class="co"># x2 = x3 - x1      →  x2 + (-1)x3 + x1 = 0</span></span>
-<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a><span class="co"># x5 = x1 - x4      →  x5 + (-1)x1 + x4 = 0</span></span>
-<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Macierz dla niewiadomych [x2, x5]</span></span>
-<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a>Am <span class="op">=</span> np.array([</span>
-<span id="cb41-11"><a href="#cb41-11" aria-hidden="true" tabindex="-1"></a>        [<span class="dv">1</span>, <span class="dv">0</span>],     <span class="co"># przy x2</span></span>
-<span id="cb41-12"><a href="#cb41-12" aria-hidden="true" tabindex="-1"></a>        [<span class="dv">0</span>, <span class="dv">1</span>]      <span class="co"># przy x5</span></span>
-<span id="cb41-13"><a href="#cb41-13" aria-hidden="true" tabindex="-1"></a>        ])</span>
-<span id="cb41-14"><a href="#cb41-14" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb41-15"><a href="#cb41-15" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Macierz dla znanych wartości [x1, x3, x4]</span></span>
-<span id="cb41-16"><a href="#cb41-16" aria-hidden="true" tabindex="-1"></a>Ao <span class="op">=</span> np.array([</span>
-<span id="cb41-17"><a href="#cb41-17" aria-hidden="true" tabindex="-1"></a>        [<span class="dv">1</span>, <span class="op">-</span><span class="dv">1</span>, <span class="dv">0</span>],    <span class="co"># przy x1, x3, x4 w równaniu dla x2</span></span>
-<span id="cb41-18"><a href="#cb41-18" aria-hidden="true" tabindex="-1"></a>        [<span class="op">-</span><span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>]     <span class="co"># przy x1, x3, x4 w równaniu dla x5</span></span>
-<span id="cb41-19"><a href="#cb41-19" aria-hidden="true" tabindex="-1"></a>        ])</span>
-<span id="cb41-20"><a href="#cb41-20" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb41-21"><a href="#cb41-21" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Wektor znanych wartości [x1, x3, x4]</span></span>
-<span id="cb41-22"><a href="#cb41-22" aria-hidden="true" tabindex="-1"></a>xo <span class="op">=</span> np.array([x1, x3, x4])</span>
-<span id="cb41-23"><a href="#cb41-23" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb41-24"><a href="#cb41-24" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Wektor wyrazów wolnych</span></span>
-<span id="cb41-25"><a href="#cb41-25" aria-hidden="true" tabindex="-1"></a>b <span class="op">=</span> np.zeros(<span class="dv">2</span>)</span>
-<span id="cb41-26"><a href="#cb41-26" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb41-27"><a href="#cb41-27" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Obliczamy prawą stronę równania</span></span>
-<span id="cb41-28"><a href="#cb41-28" aria-hidden="true" tabindex="-1"></a>b_star <span class="op">=</span> b <span class="op">-</span> np.dot(Ao, xo)</span>
-<span id="cb41-29"><a href="#cb41-29" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb41-30"><a href="#cb41-30" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Obliczamy rozwiązanie używając pseudoodwrotności Moore-Penrose</span></span>
-<span id="cb41-31"><a href="#cb41-31" aria-hidden="true" tabindex="-1"></a>x_m <span class="op">=</span> np.dot(pinv(Am), b_star)</span>
-<span id="cb41-32"><a href="#cb41-32" aria-hidden="true" tabindex="-1"></a>x_m</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>array([50., 60.])</code></pre>
-</div>
-</div>
-<p>Przykład 2 z zajęć</p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb43"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>Am <span class="op">=</span> np.array([[<span class="dv">1</span>, <span class="op">-</span><span class="dv">1</span>],[<span class="op">-</span><span class="dv">1</span>, <span class="dv">0</span>]])</span>
-<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>Ao <span class="op">=</span> np.array([[<span class="dv">1</span>], [<span class="dv">2</span>]])</span>
-<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>xo <span class="op">=</span> np.array([<span class="dv">10</span>])</span>
-<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>b <span class="op">=</span> np.array([<span class="dv">0</span>, <span class="dv">0</span>])</span>
-<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a>b_star <span class="op">=</span> b <span class="op">-</span> np.dot(Ao, xo)</span>
-<span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a>xm <span class="op">=</span> np.linalg.solve(Am, b_star)</span>
-<span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a>xm</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>array([20., 30.])</code></pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-</section>
-<section id="wykorystanie-odpowiednich-pakietow" class="level2" data-number="3.2">
-<h2 data-number="3.2" class="anchored" data-anchor-id="wykorystanie-odpowiednich-pakietow"><span class="header-section-number">3.2</span> Wykorystanie odpowiednich pakietow</h2>
-<div class="tabset-margin-container"></div><div class="panel-tabset">
-<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-4-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-4-1" role="tab" aria-controls="tabset-4-1" aria-selected="true" href>R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-4-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-4-2" role="tab" aria-controls="tabset-4-2" aria-selected="false" href>Python</a></li></ul>
-<div class="tab-content">
-<div id="tabset-4-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-4-1-tab">
-<p>Z wykorzystaniem pakietu <code>validate</code> i <code>deductive</code> (tylko R)</p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a>v <span class="ot">&lt;-</span> validate<span class="sc">::</span><span class="fu">validator</span>(</span>
-<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a>      x1 <span class="sc">+</span> x2 <span class="sc">==</span> x3,</span>
-<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a>      x4 <span class="sc">+</span> x5 <span class="sc">==</span> x1)</span>
-<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a>v</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>Object of class &#39;validator&#39; with 2 elements:
- V1: x1 + x2 == x3
- V2: x4 + x5 == x1</code></pre>
-</div>
-</div>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>dat <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">x1 =</span> <span class="dv">100</span>, <span class="at">x2=</span><span class="cn">NA_real_</span>, <span class="at">x3=</span><span class="dv">150</span>, <span class="at">x4 =</span> <span class="dv">40</span>, <span class="at">x5 =</span> <span class="cn">NA_real_</span>)</span>
-<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>dat</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>   x1 x2  x3 x4 x5
-1 100 NA 150 40 NA</code></pre>
-</div>
-</div>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="fu">impute_lr</span>(dat,v)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>   x1 x2  x3 x4 x5
-1 100 50 150 40 60</code></pre>
-</div>
-</div>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>v1 <span class="ot">&lt;-</span> validate<span class="sc">::</span><span class="fu">validator</span>(</span>
-<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a>      x1 <span class="sc">+</span> x2 <span class="sc">==</span> x3,</span>
-<span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a>      x4 <span class="sc">+</span> x5 <span class="sc">==</span> x1,</span>
-<span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a>      x6 <span class="sc">+</span> x7 <span class="sc">==</span> x2,</span>
-<span id="cb51-5"><a href="#cb51-5" aria-hidden="true" tabindex="-1"></a>      x8 <span class="sc">+</span> x9 <span class="sc">==</span> x3)</span>
-<span id="cb51-6"><a href="#cb51-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb51-7"><a href="#cb51-7" aria-hidden="true" tabindex="-1"></a><span class="fu">impute_lr</span>(<span class="fu">data.frame</span>(<span class="at">x1=</span><span class="dv">80</span>, <span class="at">x5=</span><span class="dv">50</span>, <span class="at">x8=</span><span class="dv">10</span>, <span class="at">x9=</span><span class="dv">20</span>,</span>
-<span id="cb51-8"><a href="#cb51-8" aria-hidden="true" tabindex="-1"></a>                     <span class="at">x2=</span><span class="cn">NA</span>, <span class="at">x3=</span><span class="cn">NA</span>, <span class="at">x4=</span><span class="cn">NA</span>, <span class="at">x6=</span><span class="cn">NA</span>, <span class="at">x7=</span><span class="cn">NA</span>),</span>
-<span id="cb51-9"><a href="#cb51-9" aria-hidden="true" tabindex="-1"></a>          v1)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>  x1 x5 x8 x9  x2 x3 x4 x6 x7
-1 80 50 10 20 -50 30 30 NA NA</code></pre>
-</div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a>v2 <span class="ot">&lt;-</span> validate<span class="sc">::</span><span class="fu">validator</span>(</span>
-<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a>      x1 <span class="sc">+</span> x2 <span class="sc">==</span> x3,</span>
-<span id="cb53-3"><a href="#cb53-3" aria-hidden="true" tabindex="-1"></a>      x4 <span class="sc">+</span> x5 <span class="sc">+</span> x6 <span class="sc">==</span> x2,</span>
-<span id="cb53-4"><a href="#cb53-4" aria-hidden="true" tabindex="-1"></a>      x7 <span class="sc">+</span> x8 <span class="sc">==</span> x1,</span>
-<span id="cb53-5"><a href="#cb53-5" aria-hidden="true" tabindex="-1"></a>      x9 <span class="sc">+</span> x10 <span class="sc">==</span> x3,</span>
-<span id="cb53-6"><a href="#cb53-6" aria-hidden="true" tabindex="-1"></a>      x4 <span class="sc">+</span> x7 <span class="sc">==</span> x9)</span>
-<span id="cb53-7"><a href="#cb53-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb53-8"><a href="#cb53-8" aria-hidden="true" tabindex="-1"></a><span class="fu">impute_lr</span>(<span class="fu">data.frame</span>(<span class="at">x2=</span><span class="dv">90</span>, <span class="at">x4=</span><span class="dv">30</span>, <span class="at">x5=</span><span class="dv">40</span>, <span class="at">x7=</span><span class="dv">45</span>, <span class="at">x10=</span><span class="dv">10</span> ,</span>
-<span id="cb53-9"><a href="#cb53-9" aria-hidden="true" tabindex="-1"></a>                     <span class="at">x1=</span><span class="cn">NA</span>, <span class="at">x3=</span><span class="cn">NA</span>, <span class="at">x6=</span><span class="cn">NA</span>, <span class="at">x8=</span><span class="cn">NA</span>, <span class="at">x9=</span><span class="cn">NA</span>),</span>
-<span id="cb53-10"><a href="#cb53-10" aria-hidden="true" tabindex="-1"></a>          v2)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>  x2 x4 x5 x7 x10 x1 x3 x6  x8 x9
-1 90 30 40 45  10 -5 85 20 -50 75</code></pre>
-</div>
-</div>
-</div>
-<div id="tabset-4-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-4-2-tab">
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb55"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a>x1, x2, x3, x4, x5 <span class="op">=</span> symbols(<span class="st">&#39;x1 x2 x3 x4 x5&#39;</span>)</span>
-<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a>eq1 <span class="op">=</span> Eq(x1 <span class="op">+</span> x2, x3)  <span class="co"># x1 + x2 = x3</span></span>
-<span id="cb55-4"><a href="#cb55-4" aria-hidden="true" tabindex="-1"></a>eq2 <span class="op">=</span> Eq(x4 <span class="op">+</span> x5, x1)  <span class="co"># x4 + x5 = x1</span></span>
-<span id="cb55-5"><a href="#cb55-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb55-6"><a href="#cb55-6" aria-hidden="true" tabindex="-1"></a>known_values <span class="op">=</span> {</span>
-<span id="cb55-7"><a href="#cb55-7" aria-hidden="true" tabindex="-1"></a>        x1: <span class="dv">100</span>,  <span class="co"># x1 = 100</span></span>
-<span id="cb55-8"><a href="#cb55-8" aria-hidden="true" tabindex="-1"></a>        x4: <span class="dv">40</span>,   <span class="co"># x4 = 40</span></span>
-<span id="cb55-9"><a href="#cb55-9" aria-hidden="true" tabindex="-1"></a>        x3: <span class="dv">150</span>   <span class="co"># x3 = 150</span></span>
-<span id="cb55-10"><a href="#cb55-10" aria-hidden="true" tabindex="-1"></a>        }</span>
-<span id="cb55-11"><a href="#cb55-11" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb55-12"><a href="#cb55-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Tworzymy system równań</span></span>
-<span id="cb55-13"><a href="#cb55-13" aria-hidden="true" tabindex="-1"></a>system <span class="op">=</span> [eq1.subs(known_values), eq2.subs(known_values)]</span>
-<span id="cb55-14"><a href="#cb55-14" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb55-15"><a href="#cb55-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Rozwiązujemy system</span></span>
-<span id="cb55-16"><a href="#cb55-16" aria-hidden="true" tabindex="-1"></a>solution <span class="op">=</span> solve(system, [x2, x5])</span>
-<span id="cb55-17"><a href="#cb55-17" aria-hidden="true" tabindex="-1"></a>solution</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>{x2: 50, x5: 60}</code></pre>
-</div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb57"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Tworzymy pełne rozwiązanie dodając znane wartości</span></span>
-<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a>full_solution <span class="op">=</span> {<span class="op">**</span>known_values, <span class="op">**</span>solution}</span>
-<span id="cb57-3"><a href="#cb57-3" aria-hidden="true" tabindex="-1"></a>full_solution</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>{x1: 100, x4: 40, x3: 150, x2: 50, x5: 60}</code></pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-</section>
-</section>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="do">## źródło: https://www.parp.gov.pl/images/publications/BKL/nowy-uklad/Baza_danych_z_badania_ludnoci_BKL_edycja_2021_SAV-SPSS.sav</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="do">## (strona blokuje pobieranie z poziomu R, dlatego wczytujemy kopię lokalną)</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>bkl2021 <span class="ot">&lt;-</span> <span class="fu">read_spss</span>(<span class="st">&quot;../data/downloaded_data.sav&quot;</span>, <span class="at">user_na =</span> T)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Pytanie o dochód i wiązanie końca z końcem</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="sc">&gt;</span> <span class="fu">str</span>(bkl2021<span class="sc">$</span>m13)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a> dbl<span class="sc">+</span>lbl [<span class="dv">1</span><span class="sc">:</span><span class="dv">2529</span>]  <span class="dv">3</span>,  <span class="dv">5</span>,  <span class="dv">4</span>,  <span class="dv">2</span>,  <span class="dv">5</span>,  <span class="dv">2</span>,  <span class="dv">3</span>, <span class="sc">-</span><span class="dv">7</span>,  <span class="dv">4</span>,  <span class="dv">3</span>,  <span class="dv">4</span>, <span class="sc">-</span><span class="dv">7</span>,  <span class="dv">4</span>,  <span class="dv">4</span>,  <span class="dv">4</span>,  <span class="dv">4</span>,  <span class="dv">2</span>,  <span class="dv">3</span>, <span class="sc">-</span><span class="dv">7</span>, <span class="sc">-</span><span class="dv">7</span>, <span class="sc">-</span><span class="dv">7</span>,  <span class="dv">5</span>,  <span class="dv">5</span>,  <span class="dv">3</span>,  <span class="dv">4</span>,  <span class="dv">5</span>,  <span class="dv">4</span>,  <span class="dv">6</span>, <span class="sc">-</span><span class="dv">7</span>,  <span class="dv">4</span>,  <span class="dv">6</span>,  <span class="dv">4</span>,  <span class="dv">4</span>,  <span class="dv">2</span>,  <span class="dv">2</span>,  ...</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a> <span class="sc">@</span> label        <span class="sc">:</span> chr <span class="st">&quot;Przy aktualnym dochodzie gosp. domowego związanie końca z końcem jest…&quot;</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a> <span class="sc">@</span> na_values    <span class="sc">:</span> num <span class="dv">8</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a> <span class="sc">@</span> na_range     <span class="sc">:</span> num [<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>] <span class="sc">-</span><span class="dv">8</span> <span class="sc">-</span><span class="dv">1</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a> <span class="sc">@</span> format.spss  <span class="sc">:</span> chr <span class="st">&quot;F1.0&quot;</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a> <span class="sc">@</span> display_width<span class="sc">:</span> int <span class="dv">6</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a> <span class="sc">@</span> labels       <span class="sc">:</span> Named num [<span class="dv">1</span><span class="sc">:</span><span class="dv">11</span>] <span class="sc">-</span><span class="dv">8</span> <span class="sc">-</span><span class="dv">7</span> <span class="sc">-</span><span class="dv">3</span> <span class="sc">-</span><span class="dv">1</span> <span class="dv">1</span> <span class="dv">2</span> <span class="dv">3</span> <span class="dv">4</span> <span class="dv">5</span> <span class="dv">6</span> ...</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  ..<span class="sc">-</span> <span class="fu">attr</span>(<span class="sc">*</span>, <span class="st">&quot;names&quot;</span>)<span class="ot">=</span> chr [<span class="dv">1</span><span class="sc">:</span><span class="dv">11</span>] <span class="st">&quot;trudno powiedzieć&quot;</span> <span class="st">&quot;odmowa odpowiedzi&quot;</span> <span class="st">&quot;brak danych&quot;</span> <span class="st">&quot;NDT&quot;</span> ...</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="sc">&gt;</span> <span class="fu">str</span>(bkl2021<span class="sc">$</span>m10_dane)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a> dbl<span class="sc">+</span>lbl [<span class="dv">1</span><span class="sc">:</span><span class="dv">2529</span>]  <span class="dv">1</span>, <span class="sc">-</span><span class="dv">7</span>,  <span class="dv">1</span>,  <span class="dv">1</span>,  <span class="dv">2</span>,  <span class="dv">2</span>,  <span class="dv">2</span>, <span class="sc">-</span><span class="dv">7</span>,  <span class="dv">2</span>, <span class="sc">-</span><span class="dv">7</span>,  <span class="dv">1</span>,  <span class="dv">2</span>,  <span class="dv">2</span>,  <span class="dv">2</span>,  <span class="dv">2</span>,  <span class="dv">1</span>, <span class="sc">-</span><span class="dv">7</span>, <span class="sc">-</span><span class="dv">7</span>,  <span class="dv">2</span>, <span class="sc">-</span><span class="dv">7</span>, <span class="sc">-</span><span class="dv">7</span>,  <span class="dv">1</span>,  <span class="dv">2</span>, <span class="sc">-</span><span class="dv">7</span>,  <span class="dv">2</span>,  <span class="dv">2</span>,  <span class="dv">2</span>,  <span class="dv">1</span>,  <span class="dv">2</span>,  <span class="dv">2</span>,  <span class="dv">1</span>,  <span class="dv">1</span>,  <span class="dv">2</span>, <span class="sc">-</span><span class="dv">7</span>,  <span class="dv">1</span>,  <span class="dv">1</span>,  <span class="dv">1</span>,  <span class="dv">2</span>,  <span class="dv">2</span>, <span class="sc">-</span><span class="dv">7</span>,  <span class="dv">1</span>,  <span class="dv">2</span>,  <span class="dv">1</span>,  <span class="dv">2</span>,  ...</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a> <span class="sc">@</span> label      <span class="sc">:</span> chr <span class="st">&quot;Dochody całego gosp. domowego - typ danych&quot;</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a> <span class="sc">@</span> na_range   <span class="sc">:</span> num [<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>] <span class="sc">-</span><span class="dv">9</span> <span class="dv">0</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a> <span class="sc">@</span> format.spss<span class="sc">:</span> chr <span class="st">&quot;F8.0&quot;</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a> <span class="sc">@</span> labels     <span class="sc">:</span> Named num [<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>] <span class="sc">-</span><span class="dv">7</span> <span class="dv">1</span> <span class="dv">2</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  ..<span class="sc">-</span> <span class="fu">attr</span>(<span class="sc">*</span>, <span class="st">&quot;names&quot;</span>)<span class="ot">=</span> chr [<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>] <span class="st">&quot;odmowa ujawnienia zarobków&quot;</span> <span class="st">&quot;dane dokładne&quot;</span> <span class="st">&quot;dane przedziałowe&quot;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 
 </main>
 <!-- /main column -->
