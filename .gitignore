@@ -1,0 +1,18 @@
+# macOS
+.DS_Store
+
+# R / RStudio
+.Rhistory
+.RData
+.Rapp.history
+.Rproj.user/
+*.nb.html
+
+# Quarto / knitr
+.quarto/
+*_cache/
+*_files/
+
+# Python
+__pycache__/
+.ipynb_checkpoints/
