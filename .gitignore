@@ -20,3 +20,6 @@ __pycache__/
 # local helpers
 render-all.sh
 render-logs/
+
+# kwestie zaliczenia
+zaliczenie/
