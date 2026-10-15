@@ -28,7 +28,7 @@
   + [kody na zajecia](https://htmlpreview.github.io/?https://raw.githubusercontent.com/DepartmentOfStatisticsPUE/adn-2027/refs/heads/main/codes/qmd/1-problematyka-brakow-danych.html)
   + Kody: [R](codes/R/1-problematyka-brakow-danych.R), [Python](codes/python/1-problematyka-brakow-danych.py), [Quarto](codes/qmd/1-problematyka-brakow-danych.qmd)
   + Zbiory danych na potrzeby zajęć:
-    + `csv`
+    + `csv` -- [exercise2.csc](data/exercise2.csv)
     + `sav` -- [Bilans Kapitału Ludzkiego](https://www.parp.gov.pl/component/site/site/bilans-kapitalu-ludzkiego) -- [zbiór](), [kwestionariusz](https://www.parp.gov.pl/images/publications/BKL/Kwestionariusz_z_badania_ludnoci_BKL_edycja_2021_1.docx)
 
 ### 3. Metody wizualizacji braków danych
