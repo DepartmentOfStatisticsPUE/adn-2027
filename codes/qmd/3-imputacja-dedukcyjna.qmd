@@ -57,7 +57,7 @@ Cel: zaimputowanie brakujących wartości.
 
 
 ```{r}
-dane <- read.csv("../data/data3-przyklad-imputacji.csv")
+dane <- read.csv("../../data/data3-przyklad-imputacji.csv")
 head(dane)
 ```
 
@@ -190,7 +190,7 @@ $number_of_rooms
 ## Python
 
 ```{python}
-dane = pd.read_csv("../data/data3-przyklad-imputacji.csv")
+dane = pd.read_csv("../../data/data3-przyklad-imputacji.csv")
 print(dane.head())
 ```
 

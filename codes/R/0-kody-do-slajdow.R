@@ -1,0 +1,163 @@
+# 1. Problematyka braków danych
+# Kod wyodrębniony z notatnika codes/qmd/0-kody-do-slajdow.qmd
+# Ścieżki do danych są względne względem głównego folderu repozytorium (adn-2027/).
+
+# Wizualizacja braków danych ----
+# Ustawiamy ziarno losowości dla powtarzalności wyników
+set.seed(123)
+
+# Wczytanie biblioteki do obsługi polskich znaków w PDF
+library(xtable)
+pdf.options(encoding = "CP1250")
+
+# Generowanie danych
+n <- 1000  # liczba obserwacji
+x <- rnorm(n, mean = 50, sd = 10)  # X z rozkładu normalnego
+y <- 5 * x + rnorm(n, mean = 0, sd = 20)  # Wzmocniona zależność Y od X
+
+# Funkcja do generowania braków danych
+generate_missing <- function(y, x, mechanism, prob = 0.3) {
+  n <- length(y)
+  missing <- rep(FALSE, n)
+  
+  if (mechanism == "MCAR") {
+    missing <- runif(n) < prob
+  } else if (mechanism == "MAR") {
+    prob_missing <- plogis(2*scale(x))  # Prawdopodobieństwo braku zależy od X
+    missing <- runif(n) < prob_missing
+  } else if (mechanism == "NMAR") {
+    prob_missing <- plogis(2*scale(y))  # Prawdopodobieństwo braku zależy od Y
+    missing <- runif(n) < prob_missing
+  }
+  
+  y[missing] <- NA
+  return(y)
+}
+
+# Generowanie braków danych dla każdego mechanizmu
+y_mcar <- generate_missing(y, x, "MCAR")
+y_mar <- generate_missing(y, x, "MAR")
+y_nmar <- generate_missing(y, x, "NMAR")
+
+# Funkcja do tworzenia wykresu porównawczego rozkładów gęstości
+plot_density_comparison <- function(y_full, y_obs, title, y_max) {
+  dens_full <- density(y_full)
+  dens_obs <- density(y_obs[!is.na(y_obs)])
+  
+  plot(dens_full, main = title, xlab = "Y", ylab = "Gęstość",
+       col = "blue", lwd = 2, cex.main = 1, cex.lab = 1, cex.axis = 1,
+       ylim = c(0, y_max))
+  lines(dens_obs, col = "red", lwd = 2)
+  legend("topright", legend = c("Pełne dane", "Obserwowane dane"),
+         col = c("blue", "red"), lwd = 2,  cex = 1)
+}
+
+# Obliczenie maksymalnej wartości gęstości dla wszystkich przypadków
+y_max <- max(c(
+  max(density(y)$y),
+  max(density(y_mcar[!is.na(y_mcar)])$y),
+  max(density(y_mar[!is.na(y_mar)])$y),
+  max(density(y_nmar[!is.na(y_nmar)])$y)
+))
+
+# Tworzenie wykresów
+pdf("fig-missing-examples.pdf", width = 12, height = 4)
+par(mfrow = c(1, 3), oma = c(0, 0, 2, 0), mar = c(4, 4, 2, 2))
+
+plot_density_comparison(y, y_mcar, "MCAR", y_max)
+plot_density_comparison(y, y_mar, "MAR", y_max)
+plot_density_comparison(y, y_nmar, "NMAR", y_max)
+
+dev.off()
+
+# Tworzymy ramkę danych z wynikami
+results <- data.frame(
+  Statystyka = c("Procent brakujących danych", "Średnia Y", "Odchylenie standardowe Y", "Korelacja między X i Y"),
+  Pelne_dane = c(0, mean(y), sd(y), cor(x, y)),
+  MCAR = c(mean(is.na(y_mcar)) * 100, mean(y_mcar, na.rm = TRUE), sd(y_mcar, na.rm = TRUE), cor(x, y_mcar, use = "complete.obs")),
+  MAR = c(mean(is.na(y_mar)) * 100, mean(y_mar, na.rm = TRUE), sd(y_mar, na.rm = TRUE), cor(x, y_mar, use = "complete.obs")),
+  NMAR = c(mean(is.na(y_nmar)) * 100, mean(y_nmar, na.rm = TRUE), sd(y_nmar, na.rm = TRUE), cor(x, y_nmar, use = "complete.obs"))
+)
+
+# Tworzymy tabelę xtable
+xtable_results <- xtable(results, 
+                         caption = "Porównanie statystyk dla różnych mechanizmów braków danych",
+                         label = "tab:missing-data-stats",
+                         digits = 2)
+
+# Generujemy kod LaTeX
+latex_code <- print(xtable_results, 
+                    include.rownames = FALSE,
+                    floating = TRUE,
+                    table.placement = "htbp",
+                    caption.placement = "top",
+                    print.results = FALSE)
+
+# Wyświetlamy kod LaTeX
+cat(latex_code)
+
+# Load required libraries
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(patchwork)
+
+# Create the dataset
+data <- data.frame(
+  Gender = rep(c("Male", "Female"), each = 4),
+  Age_group = rep(c("20-29", "30-39", "40-49", "50+"), 2),
+  Voted_A = c(93, 104, 146, 560, 106, 129, 170, 501),
+  Voted_B = c(115, 233, 295, 350, 159, 242, 262, 218),
+  Other = c(4, 8, 5, 3, 8, 5, 5, 7),
+  Refusal = c(28, 82, 49, 174, 62, 70, 69, 211)
+)
+
+# Process the data
+data_processed <- data |>
+  mutate(Voted = Voted_A + Voted_B + Other,
+         Total = Voted + Refusal) |>
+  pivot_longer(cols = c(Voted, Refusal), names_to = "Category", values_to = "Count") |>
+  group_by(Gender, Age_group) |>
+  mutate(Percentage = Count / sum(Count) * 100)
+
+# Function to create a basic plot
+create_plot <- function(data, x_var, title) {
+  ggplot(data, aes(x = .data[[x_var]], y = Percentage, fill = Category)) +
+    geom_bar(stat = "identity", color = "black") + 
+    scale_fill_brewer(type = "seq", palette = "Paired") + 
+    #scale_fill_manual(values = c("Voted" = "#4CAF50", "Refusal" = "#FFA500")) +
+    labs(title = title, x = x_var, y = "Percentage") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    scale_y_continuous(labels = scales::percent_format(scale = 1))
+}
+
+# Create the combined plot
+plot_combined <- create_plot(data_processed, "Age_group", "By Age Group and Gender") +
+  facet_wrap(~ Gender, scales = "free_x", nrow = 1)  +
+  labs(x = "")
+
+# Create the age group plot
+plot_age <- data_processed %>%
+  group_by(Age_group, Category) %>%
+  summarise(Percentage = sum(Count) / sum(Total) * 100, .groups = "drop") %>%
+  create_plot("Age_group", "By Age Group") +
+  labs(x = "")
+
+# Create the gender plot
+plot_gender <- data_processed %>%
+  group_by(Gender, Category) %>%
+  summarise(Percentage = sum(Count) / sum(Total) * 100, .groups = "drop") %>%
+  create_plot("Gender", "By Gender") +
+  labs(x = "")
+
+# Combine all plots using patchwork
+final_plot <- (plot_combined + plot_age + plot_gender) +
+  plot_layout(ncol = 3, widths = c(2, 1, 1)) +
+  plot_annotation(
+    title = "Exit Poll Results for Gangdong-Gap",
+    theme = theme(plot.title = element_text(hjust = 0.5, size = 16))
+  ) + plot_layout(guides = "collect")
+
+# Save the combined plot as a PDF
+ggsave("fig-riddles.pdf", final_plot, width = 10, height = 7, units = "in")

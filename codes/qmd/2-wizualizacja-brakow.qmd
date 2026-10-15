@@ -46,7 +46,7 @@ Wczytujemy zbiór danych `data2-cross_sectional.csv`
 ## R
 
 ```{r}
-df_cross <- read.csv("../data/data2-cross_sectional.csv")
+df_cross <- read.csv("../../data/data2-cross_sectional.csv")
 head(df_cross)
 ```
 
@@ -93,7 +93,7 @@ ggplot(data=df_cross, aes(x = x1, y)) + geom_miss_point()
 ## Python
 
 ```{python}
-df_cross = pd.read_csv("../data/data2-cross_sectional.csv")
+df_cross = pd.read_csv("../../data/data2-cross_sectional.csv")
 df_cross.head()
 ```
 
@@ -122,12 +122,12 @@ Wczytujemy dane w dwóch formatach: `data/data2-panel_long.csv`, `data/data2-pan
 ## R
 
 ```{r}
-df_long <- read.csv("../data/data2-panel_long.csv")
+df_long <- read.csv("../../data/data2-panel_long.csv")
 head(df_long)
 ```
 
 ```{r}
-df_wide <- read.csv("../data/data2-panel_wide.csv")
+df_wide <- read.csv("../../data/data2-panel_wide.csv")
 head(df_wide)
 ```
 
@@ -170,12 +170,12 @@ panelview(data = df_long, formula = 1 ~ y + x1 + x2, index = c("unit_id", "year"
 ## Python
 
 ```{python}
-df_long = pd.read_csv("../data/data2-panel_long.csv")
+df_long = pd.read_csv("../../data/data2-panel_long.csv")
 df_long.head()
 ```
 
 ```{python}
-df_wide = pd.read_csv("../data/data2-panel_wide.csv")
+df_wide = pd.read_csv("../../data/data2-panel_wide.csv")
 df_wide.head()
 ```
 

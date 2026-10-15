@@ -364,7 +364,7 @@ gower.gower_matrix(dane.astype({'plec': object, 'wyksztalcenie': object}))
 
 ```{r}
 ## reading
-data <- read.csv(file = "../data/data4-czytelnictwo.csv", 
+data <- read.csv(file = "../../data/data4-czytelnictwo.csv", 
                  colClasses = c("factor", "numeric", "factor", "logical", "logical"))
 
 ```

@@ -77,7 +77,7 @@ library(patchwork)
 ```
 
 ```{r}
-gosp <- read_excel("../data/gospodarstwa-zajecia.xlsx") |> setDT()
+gosp <- read_excel("../../data/gospodarstwa-zajecia.xlsx") |> setDT()
 head(gosp)
 ```
 

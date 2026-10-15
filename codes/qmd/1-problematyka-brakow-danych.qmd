@@ -1,0 +1,354 @@
+---
+title: "1. Braki danych w pakietach statystycznych"
+format: 
+  html:
+    self-contained: true
+    number-sections: true
+    toc: true
+    toc-title: "Spis treści"
+editor: source
+---
+
+# Braki danych w pakietach statystycznych
+
+## Kodowanie braków danych
+
+::: panel-tabset
+## R
+
+```{r}
+x1 <- c(1,2,3,NA)
+summary(x1)
+```
+
+```{r}
+table(x1)
+```
+
+```{r}
+table(x1, useNA = "ifany")
+```
+
+```{r}
+mean(x1)
+```
+
+```{r}
+mean(x1, na.rm = T)
+```
+
+```{r}
+na.omit(x1)
+```
+
+```{r}
+x2 <- c(1,2,3, NA, NaN)
+```
+
+```{r}
+summary(x2)
+```
+
+```{r}
+mean(x2, na.rm=T)
+```
+
+```{r}
+table(x2)
+table(x2, useNA = "ifany")
+```
+
+```{r}
+na.omit(x2)
+```
+
+## Python
+
+```{python}
+import pandas as pd
+import numpy as np
+import polars as pl
+```
+
+
+```{python}
+x1 = pd.Series([1, 2, 3, np.nan])
+x1.describe()
+```
+
+```{python}
+x1.value_counts()
+```
+
+```{python}
+x1.value_counts(dropna=False)
+```
+
+
+W `pandas` braki danych są domyślnie pomijane (`skipna=True`), inaczej niż w R.
+
+```{python}
+x1.mean(skipna=False)
+```
+
+
+```{python}
+x1.mean()
+```
+
+
+```{python}
+x1.dropna()
+```
+
+`np.nan` nie jest równy samemu sobie, dlatego braki sprawdzamy funkcją `isna()` (alias `isnull()`) -- odpowiednik `is.na()` w R.
+
+```{python}
+np.nan == np.nan
+```
+
+```{python}
+x1.isna()
+```
+
+W Pythonie brak danych może mieć kilka postaci: `None`, `np.nan`, `pd.NA` oraz `pd.NaT` (dla dat). Wszystkie rozpoznaje `pd.isna()`.
+
+```{python}
+pd.isna(None), pd.isna(np.nan), pd.isna(pd.NA), pd.isna(pd.NaT)
+```
+
+**Typ zmiennej a braki danych.** Brak w kolumnie liczb całkowitych zmienia jej typ na `float64` (bo `np.nan` jest liczbą zmiennoprzecinkową). Typ całkowity zachowują tylko typy *nullable* (`Int64`, `boolean`, `string`), w których brakiem jest `pd.NA` -- odpowiednik `NA_integer_` czy `NA_character_` w R.
+
+```{python}
+pd.Series([1, 2, 3, None])
+```
+
+```{python}
+pd.Series([1, 2, 3, None], dtype="Int64")
+```
+
+```{python}
+pd.Series([True, False, None])
+```
+
+```{python}
+pd.Series([True, False, None], dtype="boolean")
+```
+
+W `pandas` 3.0 domyślnym typem dla tekstu jest `str`, a brak w nim zapisywany jest jako `nan`.
+
+```{python}
+pd.Series(["a", "b", None])
+```
+
+```{python}
+pd.to_datetime(["2024-10-01", None])
+```
+
+`pd.NA` działa jak `NA` w R w logice trójwartościowej: wynik jest znany tylko wtedy, gdy nie zależy od brakującej wartości.
+
+```{python}
+pd.NA | True, pd.NA & False, pd.NA & True
+```
+
+**Nieskończoność nie jest brakiem danych** (podobnie jak `Inf` w R).
+
+```{python}
+x3 = pd.Series([1, 2, np.inf, np.nan])
+x3.isna()
+```
+
+```{python}
+x3.mean()
+```
+
+```{python}
+np.isinf(x3)
+```
+
+**Korelacja a braki danych.** W R `cor(x, y)` zwraca `NA`, jeżeli występuje brak (domyślnie `use = "everything"`). W `pandas` metoda `corr()` po cichu pomija braki i liczy korelację na parach kompletnych obserwacji (odpowiednik `use = "pairwise.complete.obs"`).
+
+```{python}
+df_kor = pd.DataFrame({"x": [1, 2, 3, 4, np.nan], "y": [2, np.nan, 5, 4, 6]})
+df_kor["x"].corr(df_kor["y"])
+```
+
+Ile obserwacji faktycznie wykorzystano?
+
+```{python}
+df_kor.dropna().shape[0]
+```
+
+**Pakiet `polars`** rozróżnia brak danych (`null`) od wartości `NaN` (wynik niedozwolonej operacji, np. `0/0`) -- `NaN` nie jest tam traktowany jako brak.
+
+```{python}
+x_pl = pl.Series([1.0, None, np.nan])
+x_pl.is_null()
+```
+
+```{python}
+x_pl.is_nan()
+```
+
+:::
+
+## Praca z brakami danych
+
+### Dane wczytywane z plików
+
+::: panel-tabset
+## R
+
+```{r}
+dane <- read.csv("../../data/plik-przyklad.csv")
+head(dane)
+```
+
+```{r}
+tail(dane)
+```
+
+Plik zawiera różne sposoby kodowania braków danych? Jakie? Jak to ustawić (hint `na.strings`)
+
+Co z korelacją? Jak wyznaczyć korelację między np. wiekiem, wzrostem i oceną gdy występują braki danych?
+
+```{r, eval = FALSE}
+with(dane, cor(wzrost, ocena))
+```
+
+## Python
+
+```{python, python-read-data}
+dane = pd.read_csv(
+    "../../data/plik-przyklad.csv",
+    skip_blank_lines=True,
+    on_bad_lines="skip"
+)
+dane.head()
+```
+
+```{python, python-tail}
+dane.tail()
+```
+
+Jakie typy mają kolumny? Dlaczego `wiek`, `wzrost` i `ocena` nie zostały wczytane jako liczby?
+
+```{python}
+dane.dtypes
+```
+
+Ile braków danych `pandas` rozpoznał domyślnie?
+
+```{python}
+dane.isna().sum()
+```
+
+Plik zawiera różne sposoby kodowania braków danych? Jakie? Jak to ustawić (hint `na_values`, sprawdź też co robi `keep_default_na`)
+
+Po ustawieniu braków sprawdź ponownie `dane.dtypes`. Jaki typ ma teraz `czy_pracuje`? Co zmienia argument `dtype_backend="numpy_nullable"`?
+
+Co z korelacją? Jak wyznaczyć korelację między np. wiekiem, wzrostem i oceną gdy występują braki danych? Ile obserwacji zostanie wykorzystanych w `pandas`, a ile w R?
+
+```{python, python-cor, eval = F}
+correlation = dane["wiek"].corr(
+    dane["ocena"],
+    method="pearson"
+)
+```
+
+:::
+
+### Dane ankietowe
+
+W tym miejscu omówiony zostanie zbiór danych z Badania Kapitału Ludzkiego.
+
+::: panel-tabset
+## R
+
+```{r}
+library(haven)
+```
+
+```{r}
+## źródło: https://www.parp.gov.pl/images/publications/BKL/nowy-uklad/Baza_danych_z_badania_ludnoci_BKL_edycja_2021_SAV-SPSS.sav
+## (strona blokuje pobieranie z poziomu R, dlatego wczytujemy kopię lokalną)
+doc <- read_spss("../../data/downloaded_data.sav")
+str(doc$m9_1,2)
+```
+
+```{r}
+table(doc$m9_1)
+table(doc$m9_1, useNA = "ifany")
+```
+
+```{r}
+doc <- read_spss("../../data/downloaded_data.sav", user_na = T)
+str(doc$m9_1,2)
+```
+
+```{r}
+table(doc$m9_1)
+table(doc$m9_1, useNA = "ifany")
+```
+## Python
+
+```{python}
+import pandas as pd
+import pyreadstat
+import numpy as np
+```
+
+```{python}
+## źródło: https://www.parp.gov.pl/images/publications/BKL/nowy-uklad/Baza_danych_z_badania_ludnoci_BKL_edycja_2021_SAV-SPSS.sav
+## (strona blokuje pobieranie z poziomu Pythona, dlatego wczytujemy kopię lokalną)
+file_name = "../../data/downloaded_data.sav"
+```
+
+```{python}
+df, meta = pyreadstat.read_sav(file_name)
+# Print structure of m9_1
+print(df['m9_1'].dtype)
+print(df['m9_1'].head(2))
+
+```
+
+
+```{python}
+print(df['m9_1'].value_counts())
+print(df['m9_1'].value_counts(dropna=False))
+```
+
+
+```{python}
+df2, meta2 = pyreadstat.read_sav(file_name, user_missing=True, usecols = ["m9_1"])
+print(df2['m9_1'].dtype)
+print(df2['m9_1'].head(2))
+```
+
+```{python}
+print(df2['m9_1'].value_counts())
+print(df2['m9_1'].value_counts(dropna=False))
+```
+
+Informacje o brakach zdefiniowanych w SPSS (*user-defined missing*) zapisane są w metadanych: zakres wartości traktowanych jako braki oraz etykiety kodów (odpowiednik `na_range` i `labels` z `haven`).
+
+```{python}
+meta2.missing_ranges["m9_1"]
+```
+
+```{python}
+meta2.variable_value_labels["m9_1"]
+```
+
+Ile braków jest w obu wersjach danych?
+
+```{python}
+df['m9_1'].isna().sum(), df2['m9_1'].isna().sum()
+```
+
+Zadanie: korzystając z `meta2.missing_ranges` zamień w `df2` wartości z zakresu braków na `np.nan` i porównaj wynik `value_counts(dropna=False)` z `df`.
+
+:::
+
+
+

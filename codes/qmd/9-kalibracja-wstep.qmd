@@ -43,7 +43,7 @@ import svy
 Wczytujemy dane
 
 ```{r}
-dane <- read.csv2("../data/data5-kalibracja.csv")
+dane <- read.csv2("../../data/data5-kalibracja.csv")
 head(dane)
 ```
 
@@ -120,7 +120,7 @@ all.equal(round(w1,3),  round(wynik_poprawny,3))
 ## Python
 
 ```{python}
-dane = pd.read_csv("../data/data5-kalibracja.csv", sep=';')
+dane = pd.read_csv("../../data/data5-kalibracja.csv", sep=';')
 dane.head()
 ```
 

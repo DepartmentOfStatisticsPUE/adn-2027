@@ -42,7 +42,7 @@ W tym przykładie pokażę jak można wykorzystac pakiet `survey` do kalibracji 
 Wczytujemy przykładowe dane
 
 ```{r}
-gosp <- read_excel("../data/gospodarstwa-zajecia.xlsx")
+gosp <- read_excel("../../data/gospodarstwa-zajecia.xlsx")
 gosp <- transform(gosp, 
                   klm = as.factor(klm),
                   woj = as.factor(woj))
@@ -166,7 +166,7 @@ svymean(~dochg+wydg, gosp_resp_svy_klm_woj_int)
 ## Python
 
 ```{python}
-gosp = pd.read_excel("../data/gospodarstwa-zajecia.xlsx")
+gosp = pd.read_excel("../../data/gospodarstwa-zajecia.xlsx")
 gosp['klm'] = gosp['klm'].astype('category')
 gosp['woj'] = gosp['woj'].astype('category')
 print(gosp.head())

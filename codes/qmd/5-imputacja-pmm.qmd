@@ -171,7 +171,7 @@ df = pd.DataFrame({
 
 ```{r}
 ## reading
-data <- read.csv(file = "../data/data4-czytelnictwo.csv", 
+data <- read.csv(file = "../../data/data4-czytelnictwo.csv", 
                  colClasses = c("factor", "numeric", "factor", "logical", "logical"))
 head(data)
 ```
@@ -211,7 +211,7 @@ aggregate(cbind(True=czyta_ksiazki,
 ## Python
 
 ```{python}
-data = pd.read_csv("../data/data4-czytelnictwo.csv", 
+data = pd.read_csv("../../data/data4-czytelnictwo.csv", 
                    dtype={'plec': 'category', 
                          'wiek': 'float64',
                          'wyksztalcenie': 'category',

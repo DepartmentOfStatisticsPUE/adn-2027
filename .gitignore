@@ -24,3 +24,5 @@ render-logs/
 # kwestie zaliczenia
 zaliczenie/
 moodle/
+
+.conda/
