@@ -7,7 +7,7 @@
 .Rapp.history
 .Rproj.user/
 *.nb.html
-.Rproj
+*.Rproj
 
 # Quarto / knitr
 .quarto/
