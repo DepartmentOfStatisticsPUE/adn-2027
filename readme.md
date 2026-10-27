@@ -43,12 +43,18 @@
   
 ### 4. Imputacja danych
 
-+ Imputacja dedukcyjna:
-    + R: `zoo::na.locf`, `tidyr::fill`, `data.table::nafill`, `validate`, `deductive`
-    + Python: `fillna` z `pandas`
-    + Zbiór danych na ćwiczenia [data3-zajecia-przyklad1.csv](data/data3-przyklad-imputacji.csv)
-    + [Notatnik](https://htmlpreview.github.io/?https://raw.githubusercontent.com/DepartmentOfStatisticsPUE/adn-2027/refs/heads/main/codes/qmd/3-imputacja-dedukcyjna.html)
-    + Kody: [R](codes/R/3-imputacja-dedukcyjna.R), [Python](codes/python/3-imputacja-dedukcyjna.py), [Quarto](codes/qmd/3-imputacja-dedukcyjna.qmd)
++ Imputacja dedukcyjna z wykorzystaniem ograniczeń liniowych:
+    + R: `MASS::ginv`, `validate`, `deductive`
+    + Python: `numpy.linalg.pinv`, `sympy`
+    + [Notatnik](https://htmlpreview.github.io/?https://raw.githubusercontent.com/DepartmentOfStatisticsPUE/adn-2027/refs/heads/main/codes/qmd/3a-imputacja-dedukcyjna-ograniczenia.html)
+    + Kody: [R](codes/R/3a-imputacja-dedukcyjna-ograniczenia.R), [Python](codes/python/3a-imputacja-dedukcyjna-ograniczenia.py), [Quarto](codes/qmd/3a-imputacja-dedukcyjna-ograniczenia.qmd)
+
++ Imputacja dedukcyjna na podstawie danych tekstowych:
+    + R: `zoo::na.locf`, `tidyr::fill`, `data.table::nafill`, `stringr`, `ellmer`
+    + Python: `ffill` z `pandas`, `re`
+    + Zbiór danych na ćwiczenia [data3-przyklad-imputacji.csv](data/data3-przyklad-imputacji.csv)
+    + [Notatnik](https://htmlpreview.github.io/?https://raw.githubusercontent.com/DepartmentOfStatisticsPUE/adn-2027/refs/heads/main/codes/qmd/3b-imputacja-dedukcyjna-tekst.html)
+    + Kody: [R](codes/R/3b-imputacja-dedukcyjna-tekst.R), [Python](codes/python/3b-imputacja-dedukcyjna-tekst.py), [Quarto](codes/qmd/3b-imputacja-dedukcyjna-tekst.qmd)
 
 + Imputacja metodą najbliższego sąsiada:
     + R: `simputation`, `VIM`

@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>2. Imputacja dedukcyjna</title>
+<title>2b. Imputacja dedukcyjna na podstawie danych tekstowych</title>
 <style>
 
 code{white-space: pre-wrap;}
@@ -2207,13 +2207,8 @@ vertical-align: -.125em;
     <h2 id="toc-title">Spis treści</h2>
    
   <ul>
-  <li><a href="#wczytanie-potrzebych-pakietów" id="toc-wczytanie-potrzebych-pakietów" class="nav-link active" data-scroll-target="#wczytanie-potrzebych-pakietów"><span class="header-section-number">1</span> Wczytanie potrzebych pakietów</a></li>
+  <li><a href="#wczytanie-potrzebnych-pakietów" id="toc-wczytanie-potrzebnych-pakietów" class="nav-link active" data-scroll-target="#wczytanie-potrzebnych-pakietów"><span class="header-section-number">1</span> Wczytanie potrzebnych pakietów</a></li>
   <li><a href="#przykład-imputacji-dedukcyjnej" id="toc-przykład-imputacji-dedukcyjnej" class="nav-link" data-scroll-target="#przykład-imputacji-dedukcyjnej"><span class="header-section-number">2</span> Przykład imputacji dedukcyjnej</a></li>
-  <li><a href="#imputacja-dedukcyjna-z-ograniczeniami" id="toc-imputacja-dedukcyjna-z-ograniczeniami" class="nav-link" data-scroll-target="#imputacja-dedukcyjna-z-ograniczeniami"><span class="header-section-number">3</span> Imputacja dedukcyjna z ograniczeniami</a>
-  <ul class="collapse">
-  <li><a href="#bez-wykorzystania-dodatkowych-pakietów" id="toc-bez-wykorzystania-dodatkowych-pakietów" class="nav-link" data-scroll-target="#bez-wykorzystania-dodatkowych-pakietów"><span class="header-section-number">3.1</span> Bez wykorzystania dodatkowych pakietów</a></li>
-  <li><a href="#wykorystanie-odpowiednich-pakietow" id="toc-wykorystanie-odpowiednich-pakietow" class="nav-link" data-scroll-target="#wykorystanie-odpowiednich-pakietow"><span class="header-section-number">3.2</span> Wykorystanie odpowiednich pakietow</a></li>
-  </ul></li>
   </ul>
 </nav>
 </div>
@@ -2221,7 +2216,7 @@ vertical-align: -.125em;
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">2. Imputacja dedukcyjna</h1>
+<h1 class="title">2b. Imputacja dedukcyjna na podstawie danych tekstowych</h1>
 </div>
 
 
@@ -2238,8 +2233,8 @@ vertical-align: -.125em;
 </header>
 
 
-<section id="wczytanie-potrzebych-pakietów" class="level1" data-number="1">
-<h1 data-number="1"><span class="header-section-number">1</span> Wczytanie potrzebych pakietów</h1>
+<section id="wczytanie-potrzebnych-pakietów" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> Wczytanie potrzebnych pakietów</h1>
 <div class="tabset-margin-container"></div><div class="panel-tabset">
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href>R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href>Python</a></li></ul>
 <div class="tab-content">
@@ -2249,19 +2244,13 @@ vertical-align: -.125em;
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyr) <span class="do">## funkcja fill</span></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(stringr)</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(zoo)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(MASS)</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(validate)</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(deductive)</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ellmer) <span class="do">## do modeli jezykowych</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ellmer) <span class="do">## do modeli jezykowych</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </div>
 <div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> re</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> numpy.linalg <span class="im">import</span> pinv</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sympy <span class="im">import</span> symbols, solve, Eq</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> re</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </div>
 </div>
@@ -2285,7 +2274,7 @@ vertical-align: -.125em;
 <div class="tab-content">
 <div id="tabset-2-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-2-1-tab">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>dane <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">&quot;../data/data3-przyklad-imputacji.csv&quot;</span>)</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>dane <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">&quot;../../data/data3-przyklad-imputacji.csv&quot;</span>)</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(dane)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>  id liczba_pokoi   wojewodztwo  powiat   cena powierzchnia
@@ -2305,7 +2294,7 @@ vertical-align: -.125em;
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>dane <span class="sc">|&gt;</span> </span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>dane <span class="sc">|&gt;</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fill</span>(liczba_pokoi)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>   id liczba_pokoi   wojewodztwo  powiat   cena powierzchnia
@@ -2495,7 +2484,7 @@ vertical-align: -.125em;
 <span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="sc">$</span>floor_area</span>
 <span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>[<span class="dv">1</span>] <span class="dv">30</span></span>
 <span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a><span class="sc">$</span>is_studio </span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a><span class="sc">$</span>is_studio</span>
 <span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>[<span class="dv">1</span>] <span class="cn">TRUE</span></span>
 <span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a><span class="sc">$</span>number_of_rooms</span>
@@ -2504,7 +2493,7 @@ vertical-align: -.125em;
 </div>
 <div id="tabset-2-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-2-tab">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>dane <span class="op">=</span> pd.read_csv(<span class="st">&quot;../data/data3-przyklad-imputacji.csv&quot;</span>)</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>dane <span class="op">=</span> pd.read_csv(<span class="st">&quot;../../data/data3-przyklad-imputacji.csv&quot;</span>)</span>
 <span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(dane.head())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>   id  ...                                              tytul
@@ -2602,218 +2591,6 @@ Name: liczba_pokoi, dtype: float64</code></pre>
 </div>
 </div>
 </div>
-</section>
-<section id="imputacja-dedukcyjna-z-ograniczeniami" class="level1" data-number="3">
-<h1 data-number="3"><span class="header-section-number">3</span> Imputacja dedukcyjna z ograniczeniami</h1>
-<section id="bez-wykorzystania-dodatkowych-pakietów" class="level2" data-number="3.1">
-<h2 data-number="3.1" class="anchored" data-anchor-id="bez-wykorzystania-dodatkowych-pakietów"><span class="header-section-number">3.1</span> Bez wykorzystania dodatkowych pakietów</h2>
-<div class="tabset-margin-container"></div><div class="panel-tabset">
-<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-3-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-1" role="tab" aria-controls="tabset-3-1" aria-selected="true" href>R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-3-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-2" role="tab" aria-controls="tabset-3-2" aria-selected="false" href>Python</a></li></ul>
-<div class="tab-content">
-<div id="tabset-3-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-3-1-tab">
-<p>Przykład 1 z zajęć</p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Znane wartości</span></span>
-<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>x1 <span class="ot">&lt;-</span> <span class="dv">100</span></span>
-<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>x4 <span class="ot">&lt;-</span> <span class="dv">40</span></span>
-<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>x3 <span class="ot">&lt;-</span> <span class="dv">150</span></span>
-<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Definiujemy macierze dla układu równań:</span></span>
-<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a><span class="co"># x1 + x2 = x3</span></span>
-<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a><span class="co"># x4 + x5 = x1</span></span>
-<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Macierz dla niewiadomych [x2, x5]</span></span>
-<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a>Am <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>), <span class="at">nrow =</span> <span class="dv">2</span>, <span class="at">byrow =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a> </span>
-<span id="cb37-11"><a href="#cb37-11" aria-hidden="true" tabindex="-1"></a> <span class="co"># Macierz dla znanych wartości [x1, x3, x4]</span></span>
-<span id="cb37-12"><a href="#cb37-12" aria-hidden="true" tabindex="-1"></a>Ao <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">0</span>, </span>
-<span id="cb37-13"><a href="#cb37-13" aria-hidden="true" tabindex="-1"></a>               <span class="sc">-</span><span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>), </span>
-<span id="cb37-14"><a href="#cb37-14" aria-hidden="true" tabindex="-1"></a>             <span class="at">nrow =</span> <span class="dv">2</span>, <span class="at">byrow =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb37-15"><a href="#cb37-15" aria-hidden="true" tabindex="-1"></a> </span>
-<span id="cb37-16"><a href="#cb37-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Wektor znanych wartości</span></span>
-<span id="cb37-17"><a href="#cb37-17" aria-hidden="true" tabindex="-1"></a>xo <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">100</span>, <span class="dv">150</span>, <span class="dv">40</span>), <span class="at">nrow =</span> <span class="dv">3</span>)</span>
-<span id="cb37-18"><a href="#cb37-18" aria-hidden="true" tabindex="-1"></a> </span>
-<span id="cb37-19"><a href="#cb37-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Wektor wyrazów wolnych</span></span>
-<span id="cb37-20"><a href="#cb37-20" aria-hidden="true" tabindex="-1"></a>b <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>), <span class="at">nrow =</span> <span class="dv">2</span>)</span>
-<span id="cb37-21"><a href="#cb37-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb37-22"><a href="#cb37-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Obliczamy prawą stronę równania</span></span>
-<span id="cb37-23"><a href="#cb37-23" aria-hidden="true" tabindex="-1"></a>b_star <span class="ot">&lt;-</span> b <span class="sc">-</span> Ao <span class="sc">%*%</span> xo</span>
-<span id="cb37-24"><a href="#cb37-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Rozwiązujemy używając pseudoodwrotności Moore-Penrose</span></span>
-<span id="cb37-25"><a href="#cb37-25" aria-hidden="true" tabindex="-1"></a>x_m <span class="ot">&lt;-</span> <span class="fu">ginv</span>(Am) <span class="sc">%*%</span> b_star</span>
-<span id="cb37-26"><a href="#cb37-26" aria-hidden="true" tabindex="-1"></a>x_m</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>     [,1]
-[1,]   50
-[2,]   60</code></pre>
-</div>
-</div>
-<p>Przykład 2 z zajęć</p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Definiujemy macierze</span></span>
-<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>Am <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="sc">-</span><span class="dv">1</span>, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">0</span>), <span class="at">nrow =</span> <span class="dv">2</span>, <span class="at">byrow =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>Ao <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>), <span class="at">nrow =</span> <span class="dv">2</span>, <span class="at">ncol =</span> <span class="dv">1</span>)</span>
-<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>xo <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">10</span>, <span class="at">nrow =</span> <span class="dv">1</span>)</span>
-<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a>b <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>), <span class="at">nrow =</span> <span class="dv">2</span>)</span>
-<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a>b_star <span class="ot">&lt;-</span> b <span class="sc">-</span> Ao <span class="sc">%*%</span> xo</span>
-<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a>xm <span class="ot">&lt;-</span> <span class="fu">solve</span>(Am, b_star)</span>
-<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a>xm</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>     [,1]
-[1,]   20
-[2,]   30</code></pre>
-</div>
-</div>
-</div>
-<div id="tabset-3-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-3-2-tab">
-<p>Przykład 1 z zajęć</p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb41"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>x1 <span class="op">=</span> <span class="dv">100</span></span>
-<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>x4 <span class="op">=</span> <span class="dv">40</span></span>
-<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>x3 <span class="op">=</span> <span class="dv">150</span></span>
-<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Definiujemy macierze dla układu równań:</span></span>
-<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a><span class="co"># x2 = x3 - x1      →  x2 + (-1)x3 + x1 = 0</span></span>
-<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a><span class="co"># x5 = x1 - x4      →  x5 + (-1)x1 + x4 = 0</span></span>
-<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Macierz dla niewiadomych [x2, x5]</span></span>
-<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a>Am <span class="op">=</span> np.array([</span>
-<span id="cb41-11"><a href="#cb41-11" aria-hidden="true" tabindex="-1"></a>        [<span class="dv">1</span>, <span class="dv">0</span>],     <span class="co"># przy x2</span></span>
-<span id="cb41-12"><a href="#cb41-12" aria-hidden="true" tabindex="-1"></a>        [<span class="dv">0</span>, <span class="dv">1</span>]      <span class="co"># przy x5</span></span>
-<span id="cb41-13"><a href="#cb41-13" aria-hidden="true" tabindex="-1"></a>        ])</span>
-<span id="cb41-14"><a href="#cb41-14" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb41-15"><a href="#cb41-15" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Macierz dla znanych wartości [x1, x3, x4]</span></span>
-<span id="cb41-16"><a href="#cb41-16" aria-hidden="true" tabindex="-1"></a>Ao <span class="op">=</span> np.array([</span>
-<span id="cb41-17"><a href="#cb41-17" aria-hidden="true" tabindex="-1"></a>        [<span class="dv">1</span>, <span class="op">-</span><span class="dv">1</span>, <span class="dv">0</span>],    <span class="co"># przy x1, x3, x4 w równaniu dla x2</span></span>
-<span id="cb41-18"><a href="#cb41-18" aria-hidden="true" tabindex="-1"></a>        [<span class="op">-</span><span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>]     <span class="co"># przy x1, x3, x4 w równaniu dla x5</span></span>
-<span id="cb41-19"><a href="#cb41-19" aria-hidden="true" tabindex="-1"></a>        ])</span>
-<span id="cb41-20"><a href="#cb41-20" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb41-21"><a href="#cb41-21" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Wektor znanych wartości [x1, x3, x4]</span></span>
-<span id="cb41-22"><a href="#cb41-22" aria-hidden="true" tabindex="-1"></a>xo <span class="op">=</span> np.array([x1, x3, x4])</span>
-<span id="cb41-23"><a href="#cb41-23" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb41-24"><a href="#cb41-24" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Wektor wyrazów wolnych</span></span>
-<span id="cb41-25"><a href="#cb41-25" aria-hidden="true" tabindex="-1"></a>b <span class="op">=</span> np.zeros(<span class="dv">2</span>)</span>
-<span id="cb41-26"><a href="#cb41-26" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb41-27"><a href="#cb41-27" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Obliczamy prawą stronę równania</span></span>
-<span id="cb41-28"><a href="#cb41-28" aria-hidden="true" tabindex="-1"></a>b_star <span class="op">=</span> b <span class="op">-</span> np.dot(Ao, xo)</span>
-<span id="cb41-29"><a href="#cb41-29" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb41-30"><a href="#cb41-30" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Obliczamy rozwiązanie używając pseudoodwrotności Moore-Penrose</span></span>
-<span id="cb41-31"><a href="#cb41-31" aria-hidden="true" tabindex="-1"></a>x_m <span class="op">=</span> np.dot(pinv(Am), b_star)</span>
-<span id="cb41-32"><a href="#cb41-32" aria-hidden="true" tabindex="-1"></a>x_m</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>array([50., 60.])</code></pre>
-</div>
-</div>
-<p>Przykład 2 z zajęć</p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb43"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>Am <span class="op">=</span> np.array([[<span class="dv">1</span>, <span class="op">-</span><span class="dv">1</span>],[<span class="op">-</span><span class="dv">1</span>, <span class="dv">0</span>]])</span>
-<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>Ao <span class="op">=</span> np.array([[<span class="dv">1</span>], [<span class="dv">2</span>]])</span>
-<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>xo <span class="op">=</span> np.array([<span class="dv">10</span>])</span>
-<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>b <span class="op">=</span> np.array([<span class="dv">0</span>, <span class="dv">0</span>])</span>
-<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a>b_star <span class="op">=</span> b <span class="op">-</span> np.dot(Ao, xo)</span>
-<span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a>xm <span class="op">=</span> np.linalg.solve(Am, b_star)</span>
-<span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a>xm</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>array([20., 30.])</code></pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-</section>
-<section id="wykorystanie-odpowiednich-pakietow" class="level2" data-number="3.2">
-<h2 data-number="3.2" class="anchored" data-anchor-id="wykorystanie-odpowiednich-pakietow"><span class="header-section-number">3.2</span> Wykorystanie odpowiednich pakietow</h2>
-<div class="tabset-margin-container"></div><div class="panel-tabset">
-<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-4-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-4-1" role="tab" aria-controls="tabset-4-1" aria-selected="true" href>R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-4-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-4-2" role="tab" aria-controls="tabset-4-2" aria-selected="false" href>Python</a></li></ul>
-<div class="tab-content">
-<div id="tabset-4-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-4-1-tab">
-<p>Z wykorzystaniem pakietu <code>validate</code> i <code>deductive</code> (tylko R)</p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a>v <span class="ot">&lt;-</span> validate<span class="sc">::</span><span class="fu">validator</span>(</span>
-<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a>      x1 <span class="sc">+</span> x2 <span class="sc">==</span> x3,</span>
-<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a>      x4 <span class="sc">+</span> x5 <span class="sc">==</span> x1)</span>
-<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a>v</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>Object of class &#39;validator&#39; with 2 elements:
- V1: x1 + x2 == x3
- V2: x4 + x5 == x1</code></pre>
-</div>
-</div>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>dat <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">x1 =</span> <span class="dv">100</span>, <span class="at">x2=</span><span class="cn">NA_real_</span>, <span class="at">x3=</span><span class="dv">150</span>, <span class="at">x4 =</span> <span class="dv">40</span>, <span class="at">x5 =</span> <span class="cn">NA_real_</span>)</span>
-<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>dat</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>   x1 x2  x3 x4 x5
-1 100 NA 150 40 NA</code></pre>
-</div>
-</div>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="fu">impute_lr</span>(dat,v)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>   x1 x2  x3 x4 x5
-1 100 50 150 40 60</code></pre>
-</div>
-</div>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>v1 <span class="ot">&lt;-</span> validate<span class="sc">::</span><span class="fu">validator</span>(</span>
-<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a>      x1 <span class="sc">+</span> x2 <span class="sc">==</span> x3,</span>
-<span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a>      x4 <span class="sc">+</span> x5 <span class="sc">==</span> x1,</span>
-<span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a>      x6 <span class="sc">+</span> x7 <span class="sc">==</span> x2,</span>
-<span id="cb51-5"><a href="#cb51-5" aria-hidden="true" tabindex="-1"></a>      x8 <span class="sc">+</span> x9 <span class="sc">==</span> x3)</span>
-<span id="cb51-6"><a href="#cb51-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb51-7"><a href="#cb51-7" aria-hidden="true" tabindex="-1"></a><span class="fu">impute_lr</span>(<span class="fu">data.frame</span>(<span class="at">x1=</span><span class="dv">80</span>, <span class="at">x5=</span><span class="dv">50</span>, <span class="at">x8=</span><span class="dv">10</span>, <span class="at">x9=</span><span class="dv">20</span>,</span>
-<span id="cb51-8"><a href="#cb51-8" aria-hidden="true" tabindex="-1"></a>                     <span class="at">x2=</span><span class="cn">NA</span>, <span class="at">x3=</span><span class="cn">NA</span>, <span class="at">x4=</span><span class="cn">NA</span>, <span class="at">x6=</span><span class="cn">NA</span>, <span class="at">x7=</span><span class="cn">NA</span>),</span>
-<span id="cb51-9"><a href="#cb51-9" aria-hidden="true" tabindex="-1"></a>          v1)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>  x1 x5 x8 x9  x2 x3 x4 x6 x7
-1 80 50 10 20 -50 30 30 NA NA</code></pre>
-</div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a>v2 <span class="ot">&lt;-</span> validate<span class="sc">::</span><span class="fu">validator</span>(</span>
-<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a>      x1 <span class="sc">+</span> x2 <span class="sc">==</span> x3,</span>
-<span id="cb53-3"><a href="#cb53-3" aria-hidden="true" tabindex="-1"></a>      x4 <span class="sc">+</span> x5 <span class="sc">+</span> x6 <span class="sc">==</span> x2,</span>
-<span id="cb53-4"><a href="#cb53-4" aria-hidden="true" tabindex="-1"></a>      x7 <span class="sc">+</span> x8 <span class="sc">==</span> x1,</span>
-<span id="cb53-5"><a href="#cb53-5" aria-hidden="true" tabindex="-1"></a>      x9 <span class="sc">+</span> x10 <span class="sc">==</span> x3,</span>
-<span id="cb53-6"><a href="#cb53-6" aria-hidden="true" tabindex="-1"></a>      x4 <span class="sc">+</span> x7 <span class="sc">==</span> x9)</span>
-<span id="cb53-7"><a href="#cb53-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb53-8"><a href="#cb53-8" aria-hidden="true" tabindex="-1"></a><span class="fu">impute_lr</span>(<span class="fu">data.frame</span>(<span class="at">x2=</span><span class="dv">90</span>, <span class="at">x4=</span><span class="dv">30</span>, <span class="at">x5=</span><span class="dv">40</span>, <span class="at">x7=</span><span class="dv">45</span>, <span class="at">x10=</span><span class="dv">10</span> ,</span>
-<span id="cb53-9"><a href="#cb53-9" aria-hidden="true" tabindex="-1"></a>                     <span class="at">x1=</span><span class="cn">NA</span>, <span class="at">x3=</span><span class="cn">NA</span>, <span class="at">x6=</span><span class="cn">NA</span>, <span class="at">x8=</span><span class="cn">NA</span>, <span class="at">x9=</span><span class="cn">NA</span>),</span>
-<span id="cb53-10"><a href="#cb53-10" aria-hidden="true" tabindex="-1"></a>          v2)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>  x2 x4 x5 x7 x10 x1 x3 x6  x8 x9
-1 90 30 40 45  10 -5 85 20 -50 75</code></pre>
-</div>
-</div>
-</div>
-<div id="tabset-4-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-4-2-tab">
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb55"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a>x1, x2, x3, x4, x5 <span class="op">=</span> symbols(<span class="st">&#39;x1 x2 x3 x4 x5&#39;</span>)</span>
-<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a>eq1 <span class="op">=</span> Eq(x1 <span class="op">+</span> x2, x3)  <span class="co"># x1 + x2 = x3</span></span>
-<span id="cb55-4"><a href="#cb55-4" aria-hidden="true" tabindex="-1"></a>eq2 <span class="op">=</span> Eq(x4 <span class="op">+</span> x5, x1)  <span class="co"># x4 + x5 = x1</span></span>
-<span id="cb55-5"><a href="#cb55-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb55-6"><a href="#cb55-6" aria-hidden="true" tabindex="-1"></a>known_values <span class="op">=</span> {</span>
-<span id="cb55-7"><a href="#cb55-7" aria-hidden="true" tabindex="-1"></a>        x1: <span class="dv">100</span>,  <span class="co"># x1 = 100</span></span>
-<span id="cb55-8"><a href="#cb55-8" aria-hidden="true" tabindex="-1"></a>        x4: <span class="dv">40</span>,   <span class="co"># x4 = 40</span></span>
-<span id="cb55-9"><a href="#cb55-9" aria-hidden="true" tabindex="-1"></a>        x3: <span class="dv">150</span>   <span class="co"># x3 = 150</span></span>
-<span id="cb55-10"><a href="#cb55-10" aria-hidden="true" tabindex="-1"></a>        }</span>
-<span id="cb55-11"><a href="#cb55-11" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb55-12"><a href="#cb55-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Tworzymy system równań</span></span>
-<span id="cb55-13"><a href="#cb55-13" aria-hidden="true" tabindex="-1"></a>system <span class="op">=</span> [eq1.subs(known_values), eq2.subs(known_values)]</span>
-<span id="cb55-14"><a href="#cb55-14" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb55-15"><a href="#cb55-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Rozwiązujemy system</span></span>
-<span id="cb55-16"><a href="#cb55-16" aria-hidden="true" tabindex="-1"></a>solution <span class="op">=</span> solve(system, [x2, x5])</span>
-<span id="cb55-17"><a href="#cb55-17" aria-hidden="true" tabindex="-1"></a>solution</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>{x2: 50, x5: 60}</code></pre>
-</div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb57"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Tworzymy pełne rozwiązanie dodając znane wartości</span></span>
-<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a>full_solution <span class="op">=</span> {<span class="op">**</span>known_values, <span class="op">**</span>solution}</span>
-<span id="cb57-3"><a href="#cb57-3" aria-hidden="true" tabindex="-1"></a>full_solution</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>{x1: 100, x4: 40, x3: 150, x2: 50, x5: 60}</code></pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-</section>
 </section>
 
 </main>

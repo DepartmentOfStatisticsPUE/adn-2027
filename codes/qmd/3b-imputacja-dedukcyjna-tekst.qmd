@@ -1,0 +1,226 @@
+---
+title: "2b. Imputacja dedukcyjna na podstawie danych tekstowych"
+format:
+  html:
+    self-contained: true
+    number-sections: true
+    toc: true
+    toc-title: "Spis treści"
+editor: source
+---
+
+# Wczytanie potrzebnych pakietów
+
+::: panel-tabset
+## R
+
+
+```{r packages, message=F, warning=F}
+library(data.table)
+library(tidyr) ## funkcja fill
+library(stringr)
+library(zoo)
+library(ellmer) ## do modeli jezykowych
+```
+
+## Python
+
+```{python}
+import pandas as pd
+import re
+```
+:::
+
+
+# Przykład imputacji dedukcyjnej
+
+Dane są posortowane wg liczby pokoi (`liczba_pokoi`) i zawierają następujące kolumny:
+
++ `id` -- identyfikator
++ `liczba_pokoi` -- liczba pokoi
++ `województwo` -- województwo (słownie)
++ `powiat` -- numer teryt (7 cyfrowy)
++ `cena` -- cena nieruchomości
++ `powierzchnia` -- powierzchnia nieruchomości
++ `tytul` -- tytuł ogłoszenia
+
+Cel: zaimputowanie brakujących wartości.
+
+::: panel-tabset
+## R
+
+
+```{r}
+dane <- read.csv("../../data/data3-przyklad-imputacji.csv")
+head(dane)
+```
+
+```{r}
+dane |>
+  fill(liczba_pokoi)
+```
+
+```{r}
+zoo::na.locf(dane$liczba_pokoi)
+```
+
+```{r}
+data.table::nafill(dane$liczba_pokoi, "locf")
+```
+
+Operacja typu `inplace`.
+
+```{r}
+data.table::setnafill(dane, "locf", cols = c("liczba_pokoi"))
+dane
+```
+
+Na podstawie nr identyfikatora powiatu -> województwo
+
+```{r}
+substr("1465011", 1, 2)
+```
+
+`powierzchnia` -- na podstwie wyrażen regularnych
+
+```{r}
+str_extract("Przytulna kawalerka 32,1m2, 1 pokój w centrum!", "\\d{2},\\d{1}")
+```
+
+Nowe: oczywiście można wykorzystać w tym celu modele językowe, ale po co strzelać z armaty do wróbla?
+
+Przykład promptu do modelu Antropic Haiku 4.5
+
+```
+Wyciągnij z tekstu powierzchnię, typ i liczbę pokoi: `Przytulna kawalerka 32,1m2, 1 pokój w centrum!` i zapisz w postaci data.frame R
+```
+
+Wynik:
+
+```
+mieszkanie <- data.frame(
+  powierzchnia = 32.1,
+  typ = "kawalerka",
+  liczba_pokoi = 1
+)
+```
+
+Wykorzystanie [ollama](https://ollama.com), małego modelu `qwen3:4b` oraz pakietu [`ellmer`](https://ellmer.tidyverse.org) i strukturyzowanej odpowiedzi.
+
+```{r, eval=FALSE}
+chat <- chat_ollama(model = "qwen3:4b",
+                    params = params(temperature = 0, seed = 2025))
+
+type_apartment <- type_object(
+  floor_area = type_number(),
+  is_studio = type_boolean(),
+  number_of_rooms = type_number()
+)
+
+wynik <- chat$chat_structured(
+  "Przytulna kawalerka 32,1m2, 1 pokój w centrum!`",
+  type = type_apartment
+)
+```
+Wynik
+
+```{r, eval = F}
+$floor_area
+[1] 32.1
+
+$is_studio
+[1] TRUE
+
+$number_of_rooms
+[1] 1
+```
+
+Dla tego przykładu
+
+```{r, eval = FALSE}
+wynik <- chat$chat_structured(
+     "Luksusowy apartament 85m2, 4 pokoje",
+     type = type_apartment
+)
+```
+
+Dostajemy
+
+```{r, eval = FALSE}
+> wynik
+$floor_area
+[1] 85
+
+$is_studio
+[1] FALSE
+
+$number_of_rooms
+[1] 4
+```
+
+ale dla tego
+
+```{r, eval = F}
+wynik <- chat$chat_structured(
+     "Kompaktowe mieszkanie 30m2 w świetnej lokalizacji",
+     type = type_apartment
+)
+```
+
+zwraca informacje o tym, że jest to kawalerka (nie wiemy tego) oraz liczbie pokoi (tez nie ma tej informacji)
+
+```{r, eval = F}
+> wynik
+$floor_area
+[1] 30
+
+$is_studio
+[1] TRUE
+
+$number_of_rooms
+[1] 1
+```
+
+## Python
+
+```{python}
+dane = pd.read_csv("../../data/data3-przyklad-imputacji.csv")
+print(dane.head())
+```
+
+Odpowiednik `fill()` z `tidyverse`
+
+```{python}
+dane.assign(liczba_pokoi=dane['liczba_pokoi'].ffill())
+```
+
+Odpowiednik `zoo::na.locf()`
+
+```{python}
+dane['liczba_pokoi'].ffill()
+```
+
+
+```{python}
+"1465011"[:2]  # pierwsze 2 znaki
+```
+
+Odpowiednik `str_extract()`
+
+```{python}
+tekst = "Przytulna kawalerka 32,1m2, 1 pokój w centrum!"
+pattern = r'\d{2},\d{1}'
+match = re.search(pattern, tekst)
+if match:
+    print(match.group())
+```
+
+Alternatywnie z pandas
+
+```{python}
+s = pd.Series(["Przytulna kawalerka 32,1m2, 1 pokój w centrum!"])
+s.str.extract(r'(\d{2},\d{1})')
+```
+
+
+:::
