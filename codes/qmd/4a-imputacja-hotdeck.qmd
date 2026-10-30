@@ -1,0 +1,497 @@
+---
+title: "3a. Imputacja hot-deck"
+format:
+  html:
+    self-contained: true
+    number-sections: true
+    toc: true
+    toc-title: "Spis treści"
+editor: source
+---
+
+# Wczytanie potrzebnych pakietów
+
+::: panel-tabset
+## R
+
+```{r, message=F, warning=F}
+library(simputation)
+library(VIM)
+```
+
+## Python
+
+```{python}
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+```
+
+:::
+
+# Przykład 1 z zajęć
+
+Brakującą wartość zastępujemy wartością obserwowaną u innej jednostki z tego samego zbioru (dawcy). Omawiamy trzy warianty:
+
++ losowy hot-deck -- dawca losowany spośród wszystkich respondentów,
++ losowy hot-deck w klasach imputacyjnych -- dawca losowany z tej samej klasy,
++ sekwencyjny hot-deck -- dawcą jest poprzedni respondent po posortowaniu danych.
+
+::: panel-tabset
+## R
+
+```{r}
+przyklad1 <- data.frame(plec = c("K", "K", "K", "K", "M", "M", "M", "M"),
+                        X = c(21, 24, 30, 35, 22, 28, 33, 40),
+                        Y = c(25, NA, 35, NA, 45, NA, 55, 65))
+przyklad1
+```
+
+Losowy hot-deck
+
+```{r}
+set.seed(2025)
+przyklad1 |>
+  impute_rhd(Y ~ 1)
+```
+
+Losowy hot-deck w klasach imputacyjnych (klasy wyznacza `plec`)
+
+```{r}
+set.seed(2025)
+przyklad1 |>
+  impute_rhd(Y ~ plec)
+```
+
+Step-by-step (w klasach)
+
+```{r}
+set.seed(2025)
+przyklad1_wynik <- przyklad1
+for (klasa in unique(przyklad1$plec)) {
+  ## biorcy i dawcy z danej klasy
+  biorcy <- which(przyklad1$plec == klasa & is.na(przyklad1$Y))
+  dawcy <- which(przyklad1$plec == klasa & !is.na(przyklad1$Y))
+  ## losujemy dawców ze zwracaniem i przepisujemy ich wartości
+  wybrani <- dawcy[sample.int(length(dawcy), length(biorcy), replace = TRUE)]
+  przyklad1_wynik$Y[biorcy] <- przyklad1$Y[wybrani]
+}
+przyklad1_wynik
+```
+
+Sekwencyjny hot-deck: sortujemy po `X`, a brak uzupełniamy wartością poprzedniego respondenta.
+
+```{r}
+przyklad1 |>
+  impute_shd(Y ~ X)
+```
+
+To samo osobno w każdej klasie
+
+```{r}
+przyklad1 |>
+  impute_shd(Y ~ X | plec)
+```
+
+To samo z pakietem `VIM`. Funkcja dodaje kolumnę `Y_imp`, która wskazuje wartości zaimputowane.
+
+```{r}
+VIM::hotdeck(przyklad1, variable = "Y", ord_var = "X", domain_var = "plec")
+```
+
+## Python
+
+W popularnych pakietach Pythona nie ma standardowej funkcji do hot-decku, ale łatwo ją napisać samodzielnie.
+
+```{python}
+przyklad1 = pd.DataFrame({
+    'plec': ["K", "K", "K", "K", "M", "M", "M", "M"],
+    'X': [21, 24, 30, 35, 22, 28, 33, 40],
+    'Y': [25, np.nan, 35, np.nan, 45, np.nan, 55, 65]
+})
+przyklad1
+```
+
+```{python}
+def hotdeck_losowy(dane, y, klasy=None):
+    wynik = dane[y].copy()
+    # bez klas wszystkie jednostki tworzą jedną grupę
+    grupy = [dane.index] if klasy is None else dane.groupby(klasy, observed=True).groups.values()
+    for idx in grupy:
+        y_grupa = dane.loc[idx, y]
+        biorcy = y_grupa.index[y_grupa.isna()]
+        dawcy = y_grupa.dropna().to_numpy()
+        # jeżeli w klasie nie ma dawców, braki pozostają
+        if len(biorcy) > 0 and len(dawcy) > 0:
+            wynik.loc[biorcy] = np.random.choice(dawcy, size=len(biorcy), replace=True)
+    return wynik
+
+def hotdeck_sekwencyjny(dane, y, sortowanie, klasy=None):
+    wynik = dane[y].copy()
+    grupy = [dane.index] if klasy is None else dane.groupby(klasy, observed=True).groups.values()
+    for idx in grupy:
+        y_grupa = dane.loc[idx].sort_values(sortowanie)[y]
+        if y_grupa.notna().any():
+            # brak na początku uzupełniamy ostatnim respondentem, tak jak impute_shd w R
+            wynik.loc[y_grupa.index] = y_grupa.ffill().fillna(y_grupa.dropna().iloc[-1])
+    return wynik
+```
+
+Losowy hot-deck
+
+```{python}
+np.random.seed(2025)
+przyklad1.assign(Y=hotdeck_losowy(przyklad1, 'Y'))
+```
+
+Losowy hot-deck w klasach imputacyjnych (klasy wyznacza `plec`)
+
+```{python}
+np.random.seed(2025)
+przyklad1.assign(Y=hotdeck_losowy(przyklad1, 'Y', klasy='plec'))
+```
+
+Sekwencyjny hot-deck: sortujemy po `X`, a brak uzupełniamy wartością poprzedniego respondenta.
+
+```{python}
+przyklad1.assign(Y=hotdeck_sekwencyjny(przyklad1, 'Y', 'X'))
+```
+
+To samo osobno w każdej klasie
+
+```{python}
+przyklad1.assign(Y=hotdeck_sekwencyjny(przyklad1, 'Y', 'X', klasy='plec'))
+```
+
+:::
+
+Sekwencyjny hot-deck działa jak `fill()` / `na.locf()` / `ffill()` z notatnika o imputacji dedukcyjnej na podstawie danych tekstowych, ale różni się uzasadnieniem. W tamtym przykładzie sortowanie po `liczba_pokoi` wyznaczało brakującą wartość, więc była to dedukcja. Tutaj zakładamy jedynie, że sąsiednie jednostki są do siebie podobne, więc wartość zaimputowana może się różnić od prawdziwej.
+
+# Przykład 2 -- czytelnictwo
+
+Porównujemy warianty hot-decku ze znaną prawdziwą wartością.
+
+::: panel-tabset
+## R
+
+```{r}
+## reading
+data <- read.csv(file = "../../data/data4-czytelnictwo.csv",
+                 colClasses = c("factor", "numeric", "factor", "logical", "logical"))
+data$wiek_kat <- cut(data$wiek, breaks = c(17, 29, 39, 49, 59, 80))
+head(data)
+```
+
+Liczba respondentów w klasach `plec` i `wyksztalcenie`
+
+```{r}
+with(data[!is.na(data$czyta_ksiazki_z_brakami), ], table(plec, wyksztalcenie))
+```
+
+Liczba klas, w których nie ma żadnego dawcy, gdy dodamy kategorie wieku. Takie klasy pozostawiają część braków bez imputacji.
+
+```{r}
+dawcy_klasy <- with(data[!is.na(data$czyta_ksiazki_z_brakami), ],
+                    table(plec, wyksztalcenie, wiek_kat))
+sum(dawcy_klasy == 0)
+```
+
+Imputacja (funkcje `impute_rhd` i `impute_shd` zamieniają zmienną logiczną na liczbową, dlatego porównujemy średnie)
+
+```{r}
+set.seed(2025)
+wynik <- data |>
+  impute_rhd(czyta_ksiazki_z_brakami ~ 1)
+
+wynik_klasy <- data |>
+  impute_rhd(czyta_ksiazki_z_brakami ~ plec + wyksztalcenie)
+
+wynik_klasy3 <- data |>
+  impute_rhd(czyta_ksiazki_z_brakami ~ plec + wyksztalcenie + wiek_kat)
+
+wynik_shd <- data |>
+  impute_shd(czyta_ksiazki_z_brakami ~ wiek)
+
+data.frame(
+  metoda = c("prawda", "respondenci", "losowy", "klasy: plec, wyksztalcenie",
+             "klasy: plec, wyksztalcenie, wiek", "sekwencyjny: wiek"),
+  srednia = c(mean(data$czyta_ksiazki),
+              mean(data$czyta_ksiazki_z_brakami, na.rm = TRUE),
+              mean(wynik$czyta_ksiazki_z_brakami),
+              mean(wynik_klasy$czyta_ksiazki_z_brakami),
+              mean(wynik_klasy3$czyta_ksiazki_z_brakami, na.rm = TRUE),
+              mean(wynik_shd$czyta_ksiazki_z_brakami)),
+  braki = c(0,
+            sum(is.na(data$czyta_ksiazki_z_brakami)),
+            sum(is.na(wynik$czyta_ksiazki_z_brakami)),
+            sum(is.na(wynik_klasy$czyta_ksiazki_z_brakami)),
+            sum(is.na(wynik_klasy3$czyta_ksiazki_z_brakami)),
+            sum(is.na(wynik_shd$czyta_ksiazki_z_brakami)))
+)
+```
+
+## Python
+
+```{python}
+data = pd.read_csv("../../data/data4-czytelnictwo.csv",
+                   dtype={'plec': 'category',
+                         'wiek': 'float64',
+                         'wyksztalcenie': 'category',
+                         'czyta_ksiazki': 'float64',
+                         'czyta_ksiazki_z_brakami': 'float64'})
+data['wiek_kat'] = pd.cut(data['wiek'], bins=[17, 29, 39, 49, 59, 80])
+data.head()
+```
+
+Liczba respondentów w klasach `plec` i `wyksztalcenie`
+
+```{python}
+respondenci = data[data['czyta_ksiazki_z_brakami'].notna()]
+pd.crosstab(respondenci['plec'], respondenci['wyksztalcenie'])
+```
+
+Liczba klas, w których nie ma żadnego dawcy, gdy dodamy kategorie wieku. Takie klasy pozostawiają część braków bez imputacji.
+
+```{python}
+dawcy_klasy = respondenci.groupby(['plec', 'wyksztalcenie', 'wiek_kat'], observed=False).size()
+(dawcy_klasy == 0).sum()
+```
+
+Imputacja
+
+```{python}
+np.random.seed(2025)
+y = 'czyta_ksiazki_z_brakami'
+wyniki = {
+    'respondenci': data[y],
+    'losowy': hotdeck_losowy(data, y),
+    'klasy: plec, wyksztalcenie': hotdeck_losowy(data, y, klasy=['plec', 'wyksztalcenie']),
+    'klasy: plec, wyksztalcenie, wiek': hotdeck_losowy(data, y, klasy=['plec', 'wyksztalcenie', 'wiek_kat']),
+    'sekwencyjny: wiek': hotdeck_sekwencyjny(data, y, 'wiek')
+}
+
+pd.DataFrame({
+    'srednia': [data['czyta_ksiazki'].mean()] + [w.mean() for w in wyniki.values()],
+    'braki': [0] + [w.isna().sum() for w in wyniki.values()]
+}, index=['prawda'] + list(wyniki.keys()))
+```
+
+Uwaga: wyniki różnią się od R, ponieważ inny jest generator liczb losowych, a remisy przy sortowaniu po wieku są rozstrzygane inaczej.
+
+:::
+
+# Symulacja
+
+Wykorzystujemy ten sam mechanizm generowania danych co w symulacji w notatniku o imputacji NN. Prawdopodobieństwo odpowiedzi zależy od `x1` i `x2`. Porównujemy pięć estymatorów średniej:
+
++ `naive` -- średnia wyłącznie z respondentów,
++ `hd` -- losowy hot-deck bez klas,
++ `hd_kl` -- losowy hot-deck w klasach (po 4 przedziały `x1` i `x2`, czyli 16 klas),
++ `sr_kl` -- imputacja średnią w tych samych klasach,
++ `shd` -- sekwencyjny hot-deck po posortowaniu względem `x1`.
+
+::: panel-tabset
+
+## R
+
+```{r symulacja}
+# Ustawienie ziarna losowości dla reprodukowalności
+set.seed(123)
+
+# Parametry symulacji
+N <- 50000  # rozmiar populacji
+n <- 1000    # rozmiar próby
+
+# Generowanie zmiennych objaśniających
+x1 <- runif(N, 0, 1)
+x2 <- runif(N, 0, 1)
+e <- rnorm(N, 0, 1)
+
+# Generowanie zmiennej y dla dwóch modeli
+y1 <- -1 + x1 + x2 + e
+y2 <- -1.167 + x1 + x2 + (x1-0.5)^2 + (x2-0.5)^2 + e
+
+# Tworzenie wskaźnika odpowiedzi (mechanizm braków danych)
+logit_p <- 0.2 + x1 + x2
+p <- exp(logit_p)/(1 + exp(logit_p))
+
+# Tworzenie ramki danych
+populacja <- data.frame(
+ id = 1:N,
+ x1 = x1,
+ x2 = x2,
+ y1 = y1,
+ y2 = y2,
+ p = p,
+ ## klasy imputacyjne
+ klasa = interaction(cut(x1, breaks = seq(0, 1, 0.25)), cut(x2, breaks = seq(0, 1, 0.25)))
+)
+y_true <- colMeans(populacja[, c("y1", "y2")])
+
+## imputacja średnią w klasach
+impute_srednia <- function(proba, y) {
+  srednie <- ave(proba[[y]], proba$klasa, FUN = function(v) mean(v, na.rm = TRUE))
+  ifelse(is.na(proba[[y]]), srednie, proba[[y]])
+}
+
+## symulacja (2000 razy)
+R <- 2000
+results <- matrix(0, R, 10)
+colnames(results) <- paste0(rep(c("naive", "hd", "hd_kl", "sr_kl", "shd"), each = 2),
+                            rep(c("_y1", "_y2"), times = 5))
+
+for (r in 1:R) {
+  proba <- populacja[sample(1:N, n), ]
+  proba$delta <- rbinom(nrow(proba), 1, proba$p)
+  proba$y1[proba$delta == 0] <- NA
+  proba$y2[proba$delta == 0] <- NA
+
+  results[r, 1:2] <- colMeans(proba[, c("y1", "y2")], na.rm = TRUE)
+  results[r, 3:4] <- colMeans(impute_rhd(proba, y1 + y2 ~ 1, pool = "univariate")[, c("y1", "y2")])
+  results[r, 5:6] <- colMeans(impute_rhd(proba, y1 + y2 ~ klasa, pool = "univariate")[, c("y1", "y2")])
+  results[r, 7:8] <- c(mean(impute_srednia(proba, "y1")), mean(impute_srednia(proba, "y2")))
+  results[r, 9:10] <- colMeans(impute_shd(proba, y1 + y2 ~ x1, pool = "univariate")[, c("y1", "y2")])
+}
+
+boxplot(results - matrix(rep(y_true, times = 5), byrow = TRUE, ncol = 10, nrow = R),
+        xlab = "", ylab = "Obciążenie",
+        main = "Hot-deck: bez klas, w klasach, sekwencyjny i średnia w klasach",
+        las = 2)
+abline(a = 0, b = 0, col = "red")
+```
+
+Obciążenie estymatora (x100)
+
+```{r}
+bias <- colMeans(results) - rep(y_true, times = 5)
+round(bias*100, 2)
+```
+
+Wariancja (x100)
+
+```{r}
+round(apply(results, 2, var)*100, 4)
+```
+
+RMSE (x100)
+
+```{r}
+round(sqrt(bias^2 + apply(results, 2, var))*100, 2)
+```
+
+Średnia w klasach ma mniejszą wariancję estymatora średniej niż hot-deck, ale zaniża rozproszenie zmiennej. Hot-deck przepisuje wartości obserwowane, więc lepiej zachowuje rozkład, co widać na odchyleniu standardowym w jednej próbie.
+
+```{r}
+set.seed(2025)
+proba <- populacja[sample(1:N, n), ]
+y1_pelne <- proba$y1
+proba$y1[rbinom(n, 1, proba$p) == 0] <- NA
+
+round(c(prawda = sd(y1_pelne),
+        respondenci = sd(proba$y1, na.rm = TRUE),
+        hd_kl = sd(impute_rhd(proba, y1 ~ klasa)$y1),
+        sr_kl = sd(impute_srednia(proba, "y1"))), 3)
+```
+
+## Python
+
+```{python symulacja-py}
+# Ustawienie ziarna losowości
+np.random.seed(123)
+
+# Parametry symulacji
+N = 50000  # rozmiar populacji
+n = 1000    # rozmiar próby
+
+# Generowanie zmiennych objaśniających
+x1 = np.random.uniform(0, 1, N)
+x2 = np.random.uniform(0, 1, N)
+e = np.random.normal(0, 1, N)
+
+# Generowanie zmiennej y dla dwóch modeli
+y1 = -1 + x1 + x2 + e
+y2 = -1.167 + x1 + x2 + (x1-0.5)**2 + (x2-0.5)**2 + e
+
+# Tworzenie wskaźnika odpowiedzi
+logit_p = 0.2 + x1 + x2
+p = np.exp(logit_p)/(1 + np.exp(logit_p))
+
+# Tworzenie ramki danych
+populacja = pd.DataFrame({
+   'id': range(N),
+   'x1': x1,
+   'x2': x2,
+   'y1': y1,
+   'y2': y2,
+   'p': p,
+   # klasy imputacyjne
+   'klasa': np.minimum(x1 // 0.25, 3) * 4 + np.minimum(x2 // 0.25, 3)
+})
+
+y_true = populacja[['y1', 'y2']].mean()
+
+# Imputacja średnią w klasach
+def impute_srednia(proba, y):
+    return proba[y].fillna(proba.groupby('klasa')[y].transform('mean'))
+
+# Symulacja (2000 razy)
+R = 2000
+results = np.zeros((R, 10))
+columns = [f"{t}_{y}" for t in ['naive', 'hd', 'hd_kl', 'sr_kl', 'shd'] for y in ['y1', 'y2']]
+
+for r in range(R):
+    # Losowanie próby
+    proba = populacja.sample(n=n)
+
+    # Generowanie braków danych
+    delta = np.random.binomial(1, proba['p'])
+    proba.loc[delta == 0, ['y1', 'y2']] = np.nan
+
+    results[r, 0:2] = proba[['y1', 'y2']].mean()
+    results[r, 2:4] = [hotdeck_losowy(proba, y).mean() for y in ['y1', 'y2']]
+    results[r, 4:6] = [hotdeck_losowy(proba, y, klasy='klasa').mean() for y in ['y1', 'y2']]
+    results[r, 6:8] = [impute_srednia(proba, y).mean() for y in ['y1', 'y2']]
+    results[r, 8:10] = [hotdeck_sekwencyjny(proba, y, 'x1').mean() for y in ['y1', 'y2']]
+
+plt.figure(figsize=(10, 6))
+plt.boxplot(results - np.tile(y_true, 5))
+plt.axhline(y=0, color='r', linestyle='-')
+plt.xlabel('')
+plt.ylabel('Obciążenie')
+plt.title('Hot-deck: bez klas, w klasach, sekwencyjny i średnia w klasach')
+plt.xticks(range(1, 11), columns, rotation=90)
+plt.tight_layout()
+plt.show()
+```
+
+Obciążenie estymatora (x100), wariancja (x100) i RMSE (x100)
+
+```{python}
+bias = results.mean(axis=0) - np.tile(y_true, 5)
+pd.DataFrame({'bias': np.round(bias*100, 2),
+              'var': np.round(results.var(axis=0, ddof=1)*100, 4),
+              'rmse': np.round(np.sqrt(bias**2 + results.var(axis=0, ddof=1))*100, 2)},
+             index=columns)
+```
+
+Średnia w klasach ma mniejszą wariancję estymatora średniej niż hot-deck, ale zaniża rozproszenie zmiennej. Hot-deck przepisuje wartości obserwowane, więc lepiej zachowuje rozkład, co widać na odchyleniu standardowym w jednej próbie.
+
+```{python}
+np.random.seed(2025)
+proba = populacja.sample(n=n)
+y1_pelne = proba['y1'].copy()
+proba.loc[np.random.binomial(1, proba['p']) == 0, 'y1'] = np.nan
+
+pd.Series({'prawda': y1_pelne.std(),
+           'respondenci': proba['y1'].std(),
+           'hd_kl': hotdeck_losowy(proba, 'y1', klasy='klasa').std(),
+           'sr_kl': impute_srednia(proba, 'y1').std()}).round(3)
+```
+
+:::
+
+# Ćwiczenie na zajęcia
+
+1. Proszę wczytać zbiór `data4-czytelnictwo.csv`.
+2. Proszę zaimputować `czyta_ksiazki_z_brakami` losowym hot-deckiem w klasach wyznaczonych przez inne zmienne niż w przykładzie 2.
+3. Proszę powtórzyć imputację dla 100 różnych ziaren i sprawdzić, jak zmienia się oszacowana średnia. Co to mówi o niepewności pojedynczej imputacji?

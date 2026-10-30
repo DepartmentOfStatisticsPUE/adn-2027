@@ -1,5 +1,5 @@
-# 5. Imputacja wielokrotna
-# Kod wyodrębniony z notatnika codes/qmd/6-imputacja-mi.qmd
+# 6. Imputacja wielokrotna
+# Kod wyodrębniony z notatnika codes/qmd/7-imputacja-mi.qmd
 # Ścieżki do danych są względne względem głównego folderu repozytorium (adn-2027/).
 
 # Wczytanie potrzebych pakietów ----

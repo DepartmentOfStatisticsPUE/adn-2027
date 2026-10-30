@@ -1,111 +1,15 @@
----
-title: "6. Imputacja regresyjna"
-format: 
-  html:
-    self-contained: true
-    number-sections: true
-    toc: true
-    toc-title: "Spis treści"
-editor: source
----
+# 4. Imputacja regresyjna
+# Kod wyodrębniony z notatnika codes/qmd/5-imputacja-reg.qmd
+# Ścieżki do danych są względne względem głównego folderu repozytorium (adn-2027/).
 
-# Wczytanie potrzebych pakietów
-
-::: panel-tabset
-## R
-
-```{r, message = FALSE, warning=FALSE}
-library(simputation)
-library(naniar)
-library(ggplot2)
-library(patchwork)
-library(data.table)
-```
-
-## Python
-
-```{python}
+# %% # Wczytanie potrzebych pakietów
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 from scipy.special import expit 
-```
 
-:::
-
-# Przykład 1 z zajęć -- wizualizacja
-
-::: panel-tabset
-## R
-
-Generujemy dane
-
-```{r}
-set.seed(2025)
-n <- 1000
-x <- rnorm(n)
-y <- 2 + 2*x + rnorm(n)
-pr <- plogis(1-1*x)
-R <- rbinom(n, 1, pr)
-y_miss <- ifelse(R == 1,y,NA)
-sim_data <- data.frame(x,y,R,y1=y_miss,y2=y_miss,y3=y_miss)
-head(sim_data)
-```
-
-Imputujemy na 3 sposoby, funkcje `bind_shadow()` i `add_label_shadow()` pochodzą z pakietu `naniar`.
-
-```{r}
-set.seed(2025)
-sim_data <- sim_data |> 
-  bind_shadow() |>
-  impute_lm(y1 ~ x, add_residual = "none") |>
-  impute_lm(y2 ~ x, add_residual = "observed") |>
-  impute_lm(y3 ~ x, add_residual = "normal") |>
-  add_label_shadow()
-```
-
-Wizualizacja braków danych
-```{r}
-ggplot(sim_data,
-       aes(x = x,
-           y = y1,
-           color = any_missing)) + 
-  geom_point() +
-  scale_color_brewer(palette = "Dark2") +
-  theme(legend.position = "bottom") +
-  labs(y="y", title = "Deterministic") -> p1
-
-ggplot(sim_data,
-       aes(x = x,
-           y = y2,
-           color = any_missing)) + 
-  geom_point() +
-  scale_color_brewer(palette = "Dark2") +
-  theme(legend.position = "bottom")  +
-  labs(y="y", title = "Stochastic (observed)")-> p2
-
-ggplot(sim_data,
-       aes(x = x,
-           y = y3,
-           color = any_missing)) + 
-  geom_point() +
-  scale_color_brewer(palette = "Dark2") +
-  theme(legend.position = "bottom") +
-  labs(y="y", title = "Stochastic (normal)") -> p3
-
-p1 + p2 + p3 +
-  plot_layout(guides = "collect") &
-  theme(legend.position = "bottom") -> plot_slides
-
-ggsave(filename = "fig-regimp.png", width = 10, height = 5, plot= plot_slides)
-plot_slides
-
-```
-
-## Python
-
-```{python}
+# %% # Przykład 1 z zajęć -- wizualizacja
 np.random.seed(2025)
 
 n = 1000
@@ -126,9 +30,7 @@ sim_data = pd.DataFrame({
 
 sim_data['is_missing'] = sim_data['y1'].isna()
 sim_data.head()
-```
 
-```{python}
 mask_complete = ~sim_data['y1'].isna()
 X_complete = sim_data.loc[mask_complete, 'x'].values.reshape(-1, 1)
 y_complete = sim_data.loc[mask_complete, 'y1'].values
@@ -156,9 +58,6 @@ normal_residuals = np.random.normal(0, residual_std, mask_missing.sum())
 sim_data.loc[mask_missing, 'y3'] = y_pred + normal_residuals
 sim_data['any_missing'] = sim_data['is_missing'].map({True: 'Missing', False: 'Not Missing'})
 
-```
-
-```{python}
 # Tworzenie wykresów
 fig, axes = plt.subplots(1, 3, figsize=(12, 5))
 
@@ -184,8 +83,3 @@ plt.subplots_adjust(bottom=0.15)
 # Zapisanie wykresu
 #plt.savefig('/mnt/user-data/outputs/fig-regimp.png', dpi=150, bbox_inches='tight')
 plt.show()
-```
-
-:::
-
-

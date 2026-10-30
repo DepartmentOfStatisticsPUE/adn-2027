@@ -1,5 +1,5 @@
 ---
-title: "3. Imputacja NN"
+title: "3b. Imputacja NN"
 format: 
   html:
     self-contained: true

@@ -1,5 +1,5 @@
-# 4. Imputacja PMM
-# Kod wyodrębniony z notatnika codes/qmd/5-imputacja-pmm.qmd
+# 5. Imputacja PMM
+# Kod wyodrębniony z notatnika codes/qmd/6-imputacja-pmm.qmd
 # Ścieżki do danych są względne względem głównego folderu repozytorium (adn-2027/).
 
 # Wczytanie potrzebych pakietów ----

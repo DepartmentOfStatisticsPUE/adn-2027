@@ -1,5 +1,5 @@
-# 6. Imputacja regresyjna
-# Kod wyodrębniony z notatnika codes/qmd/7-imputacja-reg.qmd
+# 4. Imputacja regresyjna
+# Kod wyodrębniony z notatnika codes/qmd/5-imputacja-reg.qmd
 # Ścieżki do danych są względne względem głównego folderu repozytorium (adn-2027/).
 
 # Wczytanie potrzebych pakietów ----

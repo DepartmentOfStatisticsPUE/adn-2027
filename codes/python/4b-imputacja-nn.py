@@ -1,5 +1,5 @@
-# 3. Imputacja NN
-# Kod wyodrębniony z notatnika codes/qmd/4-imputacja-nn.qmd
+# 3b. Imputacja NN
+# Kod wyodrębniony z notatnika codes/qmd/4b-imputacja-nn.qmd
 # Ścieżki do danych są względne względem głównego folderu repozytorium (adn-2027/).
 
 # %% # Wczytanie potrzebych pakietów

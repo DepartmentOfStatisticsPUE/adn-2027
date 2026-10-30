@@ -56,29 +56,36 @@
     + [Notatnik](https://htmlpreview.github.io/?https://raw.githubusercontent.com/DepartmentOfStatisticsPUE/adn-2027/refs/heads/main/codes/qmd/3b-imputacja-dedukcyjna-tekst.html)
     + Kody: [R](codes/R/3b-imputacja-dedukcyjna-tekst.R), [Python](codes/python/3b-imputacja-dedukcyjna-tekst.py), [Quarto](codes/qmd/3b-imputacja-dedukcyjna-tekst.qmd)
 
++ Imputacja metodą hot-deck:
+    + R: `simputation`, `VIM`
+    + Python: `numpy`, `pandas` (własna implementacja)
+    + Zbiór danych na ćwiczenia [data4-czytelnictwo.csv](data/data4-czytelnictwo.csv)
+    + [Notatnik](https://htmlpreview.github.io/?https://raw.githubusercontent.com/DepartmentOfStatisticsPUE/adn-2027/refs/heads/main/codes/qmd/4a-imputacja-hotdeck.html)
+    + Kody: [R](codes/R/4a-imputacja-hotdeck.R), [Python](codes/python/4a-imputacja-hotdeck.py), [Quarto](codes/qmd/4a-imputacja-hotdeck.qmd)
+
 + Imputacja metodą najbliższego sąsiada:
     + R: `simputation`, `VIM`
     + Python: `KNNImputer` z `sklearn.impute`
     + Zbiór danych na ćwiczenia [data4-czytelnictwo.csv](data/data4-czytelnictwo.csv)
-    + [Notatnik](https://htmlpreview.github.io/?https://raw.githubusercontent.com/DepartmentOfStatisticsPUE/adn-2027/refs/heads/main/codes/qmd/4-imputacja-nn.html)
-    + Kody: [R](codes/R/4-imputacja-nn.R), [Python](codes/python/4-imputacja-nn.py), [Quarto](codes/qmd/4-imputacja-nn.qmd)
-    
+    + [Notatnik](https://htmlpreview.github.io/?https://raw.githubusercontent.com/DepartmentOfStatisticsPUE/adn-2027/refs/heads/main/codes/qmd/4b-imputacja-nn.html)
+    + Kody: [R](codes/R/4b-imputacja-nn.R), [Python](codes/python/4b-imputacja-nn.py), [Quarto](codes/qmd/4b-imputacja-nn.qmd)
+
++ Imputacja regresyjna
+  + [Notatnik](https://htmlpreview.github.io/?https://raw.githubusercontent.com/DepartmentOfStatisticsPUE/adn-2027/refs/heads/main/codes/qmd/5-imputacja-reg.html)
+  + Kody: [R](codes/R/5-imputacja-reg.R), [Python](codes/python/5-imputacja-reg.py), [Quarto](codes/qmd/5-imputacja-reg.qmd)
+
 + Imputacja metodą predykcyjnego dopasowania średnich (ang. *predictive mean matching*)
   + R: `simputation`, `FNN`
   + Python: `sklearn.linear_model`, `sklearn.neighbors`
   + Zbiór danych na ćwiczenia [data4-czytelnictwo.csv](data/data4-czytelnictwo.csv)
-  + [Notatnik](https://htmlpreview.github.io/?https://raw.githubusercontent.com/DepartmentOfStatisticsPUE/adn-2027/refs/heads/main/codes/qmd/5-imputacja-pmm.html)
-  + Kody: [R](codes/R/5-imputacja-pmm.R), [Python](codes/python/5-imputacja-pmm.py), [Quarto](codes/qmd/5-imputacja-pmm.qmd)
+  + [Notatnik](https://htmlpreview.github.io/?https://raw.githubusercontent.com/DepartmentOfStatisticsPUE/adn-2027/refs/heads/main/codes/qmd/6-imputacja-pmm.html)
+  + Kody: [R](codes/R/6-imputacja-pmm.R), [Python](codes/python/6-imputacja-pmm.py), [Quarto](codes/qmd/6-imputacja-pmm.qmd)
 
 + Imputacja wielokrotna
   + R: [`mice`](https://github.com/amices/mice), [`rMIDAS`](https://cran.r-project.org/web/packages/rMIDAS/index.html)
   + Python: `IterativeImputer` (from `sklearn.impute`), [`MIDASpy`](https://github.com/MIDASverse/MIDASpy)
-  + [Notatnik](https://htmlpreview.github.io/?https://raw.githubusercontent.com/DepartmentOfStatisticsPUE/adn-2027/refs/heads/main/codes/qmd/6-imputacja-mi.html)
-  + Kody: [R](codes/R/6-imputacja-mi.R), [Python](codes/python/6-imputacja-mi.py), [Quarto](codes/qmd/6-imputacja-mi.qmd)
-
-+ Imputacja regresyjna
-  + [Notatnik](https://htmlpreview.github.io/?https://raw.githubusercontent.com/DepartmentOfStatisticsPUE/adn-2027/refs/heads/main/codes/qmd/7-imputacja-reg.html)
-  + Kody: [R](codes/R/7-imputacja-reg.R), [Python](codes/python/7-imputacja-reg.py), [Quarto](codes/qmd/7-imputacja-reg.qmd)
+  + [Notatnik](https://htmlpreview.github.io/?https://raw.githubusercontent.com/DepartmentOfStatisticsPUE/adn-2027/refs/heads/main/codes/qmd/7-imputacja-mi.html)
+  + Kody: [R](codes/R/7-imputacja-mi.R), [Python](codes/python/7-imputacja-mi.py), [Quarto](codes/qmd/7-imputacja-mi.qmd)
 
 ### 5. Case study
 

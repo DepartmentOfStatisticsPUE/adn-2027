@@ -1,5 +1,5 @@
 ---
-title: "5. Imputacja wielokrotna"
+title: "6. Imputacja wielokrotna"
 format: 
   html:
     self-contained: true
