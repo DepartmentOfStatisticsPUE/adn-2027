@@ -1,0 +1,1277 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Imputacja dedukcyjna</title>
+<meta name="description" content="Interaktywne podsumowanie imputacji dedukcyjnej z wykorzystaniem ograniczeń liniowych: zapis Ax = b, podział na część obserwowaną i brakującą, pseudoodwrotność Moore'a–Penrose'a i wybór braków wyznaczonych jednoznacznie.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Sans:ital,wght@0,400;0,600;1,400&family=Fira+Sans+Extra+Condensed:wght@500;600&family=Fira+Mono&display=swap">
+<style>
+/* Układ jak w podsumowaniach zeszytów metodologicznych: części na białym tle przeplatane pasmami
+   przewijanymi w zieleni UEP. Kolory: zieleń z logo UEP (#215932) i zieleń motywu slajdów Beamer
+   (beamer@blendedblue = rgb 0.10, 0.60, 0.41 = #1a9969). Braki danych oznaczono bursztynem. */
+:root {
+  --paper: #ffffff;
+  --paper-2: #f3f6f4;
+  --ink: #111111;
+  --ink-70: #4a504c;
+  --tint: #e6ebe8;
+  --rule: #666b68;
+  --grid: #c3cac6;
+  --uep: #215932;
+  --beamer: #1a9969;
+  --acc-text: #137352;
+  --wash: #e2f3eb;
+  --on-acc: #04281b;
+  --miss: #a8650d;
+  --miss-wash: #fbeedb;
+  --miss-line: #d9962f;
+  --band: #215932;
+  --band-ink: #eef6f0;
+  --band-mut: #a9cdb6;
+  --band-line: rgba(238, 246, 240, .26);
+  --band-soft: rgba(238, 246, 240, .07);
+  --band-acc: #7fe0b3;
+  --band-miss: #f4bf62;
+  --card: #ffffff;
+  --shadow: 0 2px 4px rgba(6, 26, 14, .25), 0 12px 32px rgba(6, 26, 14, .32);
+  --f-body: "Fira Sans", "Helvetica Neue", Arial, sans-serif;
+  --f-disp: "Fira Sans Extra Condensed", "Fira Sans", "Arial Narrow", sans-serif;
+  --f-mono: "Fira Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0f1411; --paper-2: #161d18; --ink: #e9ece9; --ink-70: #b1b8b3; --tint: #212a24;
+    --rule: #8d948f; --grid: #39433c; --uep: #2f7a46; --beamer: #3cc08d; --acc-text: #7fe0b3;
+    --wash: #173226; --on-acc: #04281b; --miss: #f4bf62; --miss-wash: #3a2c14; --miss-line: #d9962f;
+    --band: #133520; --band-ink: #eef6f0; --band-mut: #9cc4ab; --band-line: rgba(238,246,240,.2); --band-soft: rgba(238,246,240,.05);
+    --card: #161d18; --shadow: 0 2px 4px rgba(0,0,0,.4), 0 12px 32px rgba(0,0,0,.5);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0f1411; --paper-2: #161d18; --ink: #e9ece9; --ink-70: #b1b8b3; --tint: #212a24;
+  --rule: #8d948f; --grid: #39433c; --uep: #2f7a46; --beamer: #3cc08d; --acc-text: #7fe0b3;
+  --wash: #173226; --on-acc: #04281b; --miss: #f4bf62; --miss-wash: #3a2c14; --miss-line: #d9962f;
+  --band: #133520; --band-ink: #eef6f0; --band-mut: #9cc4ab; --band-line: rgba(238,246,240,.2); --band-soft: rgba(238,246,240,.05);
+  --card: #161d18; --shadow: 0 2px 4px rgba(0,0,0,.4), 0 12px 32px rgba(0,0,0,.5);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 400 16px/1.6 var(--f-body); -webkit-font-smoothing: antialiased; }
+a { color: var(--acc-text); text-underline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--beamer); outline-offset: 2px; }
+b, strong { font-weight: 600; }
+code { font-family: var(--f-mono); font-size: .9em; }
+.m { font-style: italic; white-space: nowrap; }
+.m b { font-style: normal; font-weight: 600; }
+.m sub, .m sup { font-style: normal; font-size: .7em; }
+.m .up { font-style: normal; }
+
+.progress { position: fixed; top: env(safe-area-inset-top, 0px); left: 0; right: 0; height: 3px; z-index: 30; }
+.progress i { display: block; height: 100%; width: 0; background: var(--beamer); }
+
+.wrap { max-width: 1080px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.col { max-width: 700px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.col p { margin: 0 0 1.05em; font-size: 17px; line-height: 1.65; }
+
+/* --- nagłówek --- */
+.hero { padding-block: 28px 40px; }
+.topbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+.pill { display: inline-flex; flex-direction: column; background: var(--uep); color: #fff; padding: 7px 26px 8px 18px; border-radius: 999px; line-height: 1.2; }
+.pill b { font: 600 14px/1.2 var(--f-disp); }
+.pill span { font-size: 12px; opacity: .85; }
+.topr { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; text-align: right; }
+.org { font: 600 16px/1.2 var(--f-disp); color: var(--uep); }
+:root[data-theme="dark"] .org { color: var(--acc-text); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .org { color: var(--acc-text); } }
+.unoff { font-size: 12px; color: var(--ink-70); }
+.hero-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 48px; align-items: center; margin-top: 36px; }
+.hero-grid > * { min-width: 0; }
+.eyebrow { font: 600 13px/1.2 var(--f-disp); letter-spacing: .09em; text-transform: uppercase; color: var(--acc-text); margin: 0; }
+h1 { font: 600 clamp(42px, 6vw, 72px)/.95 var(--f-disp); margin: .14em 0 .2em; letter-spacing: -.012em; }
+h1 span { display: block; color: var(--beamer); }
+.dek { font: 500 clamp(20px, 2.6vw, 27px)/1.22 var(--f-disp); color: var(--ink-70); margin: 0 0 1em; text-wrap: balance; }
+.lede { font-size: 18px; line-height: 1.6; margin: 0; }
+.authors { margin-top: 24px; border-top: 2px solid var(--ink); padding-top: 10px; display: grid; gap: 6px; }
+.authors p { margin: 0; font-size: 15px; line-height: 1.45; display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 10px; }
+.authors .k { font: 600 12px/1.6 var(--f-disp); letter-spacing: .08em; text-transform: uppercase; color: var(--acc-text); }
+.hero-art svg { width: 100%; height: auto; display: block; max-width: 420px; margin-left: auto; }
+.hero-art .q { animation: zgadnij 6s ease-in-out infinite; }
+.hero-art .a { animation: zgadnij 6s ease-in-out infinite reverse; }
+@keyframes zgadnij { 0%, 40% { opacity: 1; } 50%, 90% { opacity: 0; } 100% { opacity: 1; } }
+.scrollhint { display: flex; align-items: center; gap: 10px; margin-top: 34px; font: 500 14px/1.2 var(--f-disp); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-70); }
+.scrollhint i { width: 1px; height: 34px; background: linear-gradient(var(--beamer), transparent); display: block; animation: kapie 1.8s ease-in-out infinite; transform-origin: top; }
+@keyframes kapie { 0% { transform: scaleY(0); } 60% { transform: scaleY(1); } 100% { transform: scaleY(1); opacity: 0; } }
+
+/* --- pojęcia z dymkiem --- */
+.term { font: inherit; color: inherit; background: none; border: 0; padding: 0; margin: 0; cursor: help; text-decoration: underline dotted var(--beamer); text-decoration-thickness: 2px; text-underline-offset: 4px; }
+.term::after { content: "?"; display: inline-grid; place-items: center; width: 1.05em; height: 1.05em; margin-left: .18em; border-radius: 50%; background: var(--beamer); color: var(--on-acc); font: 600 .6em/1 var(--f-body); vertical-align: .45em; }
+#tip { position: fixed; left: 0; top: 0; z-index: 60; width: max-content; max-width: min(380px, calc(100vw - 24px)); background: var(--band); color: var(--band-ink); border: 1px solid var(--beamer); padding: 12px 15px 13px; border-radius: 5px; font: 400 14px/1.5 var(--f-body); box-shadow: var(--shadow); opacity: 0; visibility: hidden; transition: opacity .15s, visibility .15s; pointer-events: none; }
+#tip.show { opacity: 1; visibility: visible; }
+#tip .tt { display: block; font: 600 16px/1.2 var(--f-disp); color: var(--band-acc); margin-bottom: 5px; }
+#tip p { margin: 0 0 .5em; }
+#tip p:last-child { margin-bottom: 0; }
+
+/* --- głowy części --- */
+section.act { padding-block: 72px 36px; }
+.shead { text-align: center; overflow: hidden; margin-bottom: 30px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.echo { font: 600 clamp(34px, 6vw, 60px)/1.02 var(--f-disp); letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; user-select: none; margin-bottom: 18px; }
+.echo span { display: block; color: transparent; -webkit-text-stroke: 1.1px var(--grid); }
+.echo span.fill { color: var(--beamer); -webkit-text-stroke: 0; }
+.tag { display: inline-block; font: 600 12px/1 var(--f-disp); letter-spacing: .1em; text-transform: uppercase; padding: 6px 10px; border-radius: 3px; background: var(--wash); color: var(--acc-text); margin-bottom: 14px; }
+h2 { font: 600 clamp(32px, 4.6vw, 50px)/1.04 var(--f-disp); margin: 0 auto; max-width: 20ch; text-wrap: balance; }
+.sub2 { display: block; font: 500 clamp(17px, 2vw, 21px)/1.25 var(--f-disp); color: var(--ink-70); margin-top: 8px; }
+
+.versus { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 900px; margin: 30px auto 0; border-top: 2px solid var(--ink); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.versus > div { padding: 16px 24px 0 0; min-width: 0; }
+.versus > div + div { padding-left: 24px; border-left: 1px solid var(--grid); }
+.versus h4 { font: 600 20px/1.2 var(--f-disp); margin: 8px 0 6px; }
+.versus p { margin: 0 0 .7em; font-size: 15px; }
+.lbl { display: inline-block; font: 600 12px/1 var(--f-disp); letter-spacing: .07em; text-transform: uppercase; padding: 4px 8px; border-radius: 3px; }
+.lbl.old { background: var(--tint); color: var(--ink); }
+.lbl.new { background: var(--beamer); color: var(--on-acc); }
+
+.notation { max-width: 900px; margin: 40px auto 0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.notation .nh { font: 600 12px/1 var(--f-disp); letter-spacing: .1em; text-transform: uppercase; color: var(--acc-text); margin: 0 0 10px; }
+.notation dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 32px; margin: 0; border-top: 2px solid var(--ink); }
+.notation dl > div { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--grid); min-width: 0; }
+.notation dt { white-space: nowrap; }
+.notation dd { margin: 0; font-size: 15px; color: var(--ink-70); }
+@media (max-width: 760px) { .notation dl { grid-template-columns: 1fr; } }
+.keys { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; max-width: 900px; margin: 40px auto 0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.keys > div { min-width: 0; border-top: 2px solid var(--ink); padding-top: 12px; }
+.keys .big { font: 600 40px/1.1 var(--f-disp); color: var(--acc-text); white-space: nowrap; }
+.keys .big sub, .keys .big sup { font-size: .55em; }
+.keys h4 { font: 600 19px/1.2 var(--f-disp); margin: 8px 0 4px; }
+.keys p { margin: 0; font-size: 15px; color: var(--ink-70); }
+
+.note { display: flex; gap: 12px; align-items: flex-start; background: var(--wash); border-left: 3px solid var(--beamer); padding: 12px 16px; margin: 0 0 1.05em; font-size: 15px; line-height: 1.5; }
+.note > b:first-child { font: 600 12px/1.6 var(--f-disp); letter-spacing: .08em; text-transform: uppercase; color: var(--acc-text); flex: none; }
+.note.warn { background: var(--miss-wash); border-left-color: var(--miss-line); }
+.note.warn > b:first-child { color: var(--miss); }
+
+/* --- trzy przypadki --- */
+.cases { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; max-width: 1000px; margin: 28px auto 0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.case { border: 1px solid var(--grid); border-top: 4px solid var(--rule); border-radius: 4px; padding: 14px 16px 16px; min-width: 0; background: var(--paper); }
+.case.c2 { border-top-color: var(--beamer); }
+.case.c3 { border-top-color: var(--miss-line); }
+.case .no { font: 600 12px/1 var(--f-disp); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-70); }
+.case h4 { font: 600 21px/1.15 var(--f-disp); margin: 6px 0 8px; }
+.case .cond { font-size: 15px; background: var(--paper-2); padding: 6px 9px; border-radius: 3px; margin: 0 0 10px; }
+.case p { margin: 0 0 .5em; font-size: 15px; }
+.formula { max-width: 760px; margin: 36px auto 0; text-align: center; padding: 22px 16px; border-top: 2px solid var(--ink); border-bottom: 1px solid var(--grid); }
+.formula .f { font-size: clamp(20px, 3.2vw, 30px); line-height: 1.5; }
+.formula .f .part { display: inline-block; padding: 0 6px 2px; border-radius: 4px; }
+.formula .f .p1 { background: var(--wash); }
+.formula .f .p2 { background: var(--miss-wash); }
+.formula .leg { display: flex; justify-content: center; gap: 28px; flex-wrap: wrap; margin-top: 12px; font-size: 14px; color: var(--ink-70); text-align: left; }
+.formula .leg > span { display: block; max-width: 330px; }
+.formula .leg > span > i { width: 12px; height: 12px; border-radius: 2px; display: inline-block; margin-right: 8px; transform: translateY(1px); }
+
+/* --- pasma przewijane --- */
+.scrolly { background: var(--band); color: var(--band-ink); margin: 40px 0;
+  --c-miss: var(--band-miss); --c-imp: var(--band-acc); --c-obs: var(--band-mut); --c-line: var(--band-line); --c-soft: var(--band-soft); }
+.sc-in { max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr); }
+.sticky { grid-area: 1 / 1; align-self: start; position: sticky; top: 0; height: 100vh; height: 100svh; z-index: 1; display: flex; flex-direction: column; justify-content: flex-start; padding: calc(env(safe-area-inset-top, 0px) + 24px) max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)); overflow: hidden; }
+.stage { width: 100%; max-width: 760px; margin: 0 auto; }
+.ghead { margin-bottom: 10px; }
+.gtitle { font: 600 22px/1.2 var(--f-disp); color: var(--band-ink); margin: 0; }
+.gsub { font: 500 15px/1.3 var(--f-disp); color: var(--band-mut); margin: 3px 0 0; min-height: 1.3em; }
+.steps { grid-area: 1 / 1; position: relative; z-index: 2; pointer-events: none; }
+.step { min-height: 92vh; min-height: 92svh; display: flex; align-items: flex-end; justify-content: center; padding: 0 max(16px, env(safe-area-inset-right, 0px)) 6vh max(16px, env(safe-area-inset-left, 0px)); }
+.step:first-child { min-height: 110vh; min-height: 110svh; }
+.step:last-child { min-height: 120vh; min-height: 120svh; }
+.steps::after { content: ""; display: block; height: 60vh; height: 60svh; }
+.card { pointer-events: auto; width: min(500px, 100%); background: var(--card); color: var(--ink); box-shadow: var(--shadow); padding: 18px 20px 16px; border-radius: 4px; font-size: 15.5px; line-height: 1.55; opacity: .55; transform: translateY(10px); transition: opacity .45s, transform .45s; }
+.card p { margin: 0 0 .6em; }
+.card p:last-child { margin-bottom: 0; }
+.step.on .card { opacity: 1; transform: none; }
+.stepno { display: inline-block; background: var(--beamer); color: var(--on-acc); font: 600 11px/1 var(--f-disp); letter-spacing: .12em; text-transform: uppercase; padding: 5px 8px; border-radius: 2px; margin-bottom: 10px; }
+.card input[type="range"] { width: 100%; accent-color: var(--beamer); margin: 8px 0 2px; }
+.card .rv { font-variant-numeric: tabular-nums; font-weight: 600; }
+
+@media (max-width: 979px) {
+  .step { padding-bottom: 0; }
+  .card { position: sticky; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); opacity: 0; transform: translateY(14px); }
+  .step:not(.on) .card { pointer-events: none; }
+}
+@media (min-width: 980px) {
+  .sc-in { grid-template-columns: minmax(320px, 400px) minmax(0, 1fr); column-gap: 56px; padding-left: max(32px, env(safe-area-inset-left, 0px)); padding-right: max(32px, env(safe-area-inset-right, 0px)); }
+  .sticky { grid-area: auto; grid-column: 2; grid-row: 1; justify-content: center; padding: 0; }
+  .steps { grid-area: auto; grid-column: 1; grid-row: 1; }
+  .step { align-items: center; justify-content: flex-start; padding: 0; min-height: 100vh; }
+  .step:first-child { min-height: 100vh; }
+  .step:last-child { min-height: 110vh; }
+  .steps::after { height: 0; }
+  .card { opacity: .3; }
+}
+
+/* --- drzewo bilansowe (SVG) --- */
+.tree { width: 100%; height: auto; display: block; overflow: visible; }
+.tree .edge { fill: none; stroke: var(--band-line); stroke-width: 2; transition: stroke .4s, stroke-width .4s; }
+.tree .edge.dash { stroke-dasharray: 5 4; }
+.tree .edge.hl { stroke: var(--band-acc); stroke-width: 2.6; }
+.tree .jn { fill: var(--band); stroke: var(--band-line); stroke-width: 1.5; transition: stroke .4s; }
+.tree .jn.hl { stroke: var(--band-acc); }
+.tree .jt { fill: var(--band-mut); font: 600 13px var(--f-body); text-anchor: middle; dominant-baseline: central; }
+.nd rect { fill: var(--band-soft); stroke: var(--band-line); stroke-width: 1.5; rx: 6; transition: fill .45s, stroke .45s; }
+.nd .lab { fill: var(--band-mut); font: italic 400 14px var(--f-body); }
+.nd .val { fill: var(--band-ink); font: 600 21px var(--f-disp); text-anchor: middle; font-variant-numeric: tabular-nums; transition: fill .45s; }
+.nd.miss rect { stroke: var(--band-miss); stroke-dasharray: 5 4; fill: rgba(244, 191, 98, .08); }
+.nd.miss .val { fill: var(--band-miss); }
+.nd.cand .val { fill: var(--band-miss); font-style: italic; opacity: .85; }
+.nd.imp rect { fill: var(--band-acc); stroke: var(--band-acc); stroke-dasharray: none; }
+.nd.imp .val, .nd.imp .lab { fill: #08301d; }
+.nd.hl rect { stroke: var(--band-acc); stroke-width: 2.6; }
+.nd.und rect { stroke: var(--band-miss); stroke-width: 2.4; stroke-dasharray: 5 4; fill: rgba(244, 191, 98, .16); }
+.tree .rel { fill: var(--band-miss); font: 600 15px var(--f-disp); text-anchor: middle; opacity: 0; transition: opacity .4s; }
+.tree .rel.show { opacity: 1; }
+
+.panel { margin-top: 14px; min-height: 200px; font-size: 15px; overflow-x: auto; overflow-y: hidden; padding-bottom: 4px; }
+.panel.fade { animation: pojaw .45s ease both; }
+@keyframes pojaw { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.panel .cap { font: 500 13px/1.3 var(--f-disp); letter-spacing: .06em; text-transform: uppercase; color: var(--band-mut); margin: 0 0 8px; }
+.panel .row2 { display: flex; flex-wrap: wrap; gap: 6px 22px; align-items: center; }
+.panel .eqs { font-size: 18px; line-height: 1.7; }
+.panel .eqs .ok { color: var(--band-acc); font-weight: 600; }
+.badge { display: inline-block; font: 600 13px/1 var(--f-disp); letter-spacing: .05em; padding: 6px 10px; border-radius: 3px; background: var(--band-acc); color: #08301d; }
+.badge.mi { background: var(--band-miss); color: #3a2506; }
+
+/* --- macierze --- */
+.eq { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; width: max-content; max-width: none; }
+.eq .op { font-size: 20px; padding: 0 2px; }
+.mxw { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; }
+.mxn { font-size: 13px; font-style: italic; color: var(--c-obs, var(--ink-70)); white-space: nowrap; }
+.mxn b { font-style: normal; }
+.mxr { display: inline-flex; align-items: flex-start; }
+.mx { --rh: 1.8em; display: inline-grid; grid-template-columns: repeat(var(--nc), minmax(2.3em, auto)); position: relative; padding: 0 9px; font-variant-numeric: tabular-nums; }
+.mx::before, .mx::after { content: ""; position: absolute; bottom: 0; top: 0; width: 6px; border: 1.6px solid currentColor; }
+.mx.hh::before, .mx.hh::after { top: var(--rh); }
+.mx::before { left: 0; border-right: 0; }
+.mx::after { right: 0; border-left: 0; }
+.mx > span { height: var(--rh); line-height: var(--rh); text-align: center; padding: 0 5px; white-space: nowrap; transition: background .4s, color .4s; }
+.mx .mh { font-style: italic; font-size: .82em; color: var(--c-obs, var(--ink-70)); }
+.mx .cm { color: var(--c-miss, var(--miss)); }
+.mx .mh.cm { color: var(--c-miss, var(--miss)); font-weight: 600; }
+.mx .co { color: var(--c-obs, var(--ink-70)); }
+.mx .rz { opacity: .45; }
+.mx .rn { background: rgba(244, 191, 98, .18); color: var(--c-miss, var(--miss)); font-weight: 600; }
+.mx .ri { color: var(--c-imp, var(--acc-text)); font-weight: 600; }
+.mx .sep { border-left: 1.4px dashed currentColor; }
+.rl { display: inline-grid; padding-left: 4px; }
+.rl > span { height: 1.8em; line-height: 1.8em; font-size: .85em; white-space: nowrap; }
+.rl.hh { padding-top: 1.8em; }
+.rl .ok { color: var(--c-imp, var(--acc-text)); }
+.rl .no { color: var(--c-miss, var(--miss)); }
+
+.recrow { display: flex; flex-wrap: wrap; gap: 6px; }
+.recrow .cell { min-width: 58px; border: 1.5px solid var(--c-line, var(--grid)); border-radius: 4px; padding: 3px 8px 5px; text-align: center; background: var(--c-soft, transparent); }
+.recrow .cell i { display: block; font-size: 12.5px; color: var(--c-obs, var(--ink-70)); }
+.recrow .cell b { font: 600 18px/1.2 var(--f-disp); font-variant-numeric: tabular-nums; }
+.recrow .cell.na { border-style: dashed; border-color: var(--c-miss, var(--miss-line)); }
+.recrow .cell.na b { color: var(--c-miss, var(--miss)); }
+.recrow .cell.im { background: var(--c-imp, var(--beamer)); border-color: var(--c-imp, var(--beamer)); }
+.recrow .cell.im b, .recrow .cell.im i { color: #08301d; }
+.recrow .cell.ud { border-style: dashed; border-color: var(--c-miss, var(--miss-line)); background: rgba(244, 191, 98, .14); }
+.recrow .cell.ud b { color: var(--c-miss, var(--miss)); }
+.recrow .cell small { display: block; font-size: 11px; color: var(--c-obs, var(--ink-70)); line-height: 1.2; }
+
+/* --- narzędzie --- */
+.tool { border: 2px solid var(--ink); border-radius: 6px; padding: 20px 22px 22px; margin: 24px auto 0; max-width: 1040px;
+  --c-miss: var(--miss); --c-imp: var(--beamer); --c-obs: var(--ink-70); --c-line: var(--grid); --c-soft: transparent; }
+.tool .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.tool .k { font: 600 13px/1 var(--f-disp); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-70); margin-right: 4px; }
+.chip { font: 500 15px/1 var(--f-disp); border: 1.5px solid var(--grid); background: var(--paper); color: var(--ink); padding: 8px 12px; border-radius: 999px; cursor: pointer; }
+.chip:hover { border-color: var(--beamer); }
+.chip[aria-pressed="true"] { background: var(--uep); border-color: var(--uep); color: #fff; }
+.chip.ghost { border-style: dashed; }
+.tin { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 24px; margin-top: 18px; }
+.tin > div { min-width: 0; }
+.tool h4 { font: 600 16px/1.2 var(--f-disp); margin: 0 0 8px; }
+.tool h4 small { font: 400 13px var(--f-body); color: var(--ink-70); margin-left: 6px; }
+.tool textarea { width: 100%; min-height: 150px; resize: vertical; font: 14px/1.6 var(--f-mono); color: var(--ink); background: var(--paper-2); border: 1.5px solid var(--grid); border-radius: 4px; padding: 10px 12px; }
+.tool textarea:focus { border-color: var(--beamer); outline: none; }
+.err { color: var(--miss); font-size: 14px; margin: 6px 0 0; min-height: 1.4em; }
+.recin { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 8px; }
+.recin label { display: flex; flex-direction: column; gap: 2px; font-size: 13px; font-style: italic; color: var(--ink-70); }
+.recin input { width: 100%; font: 600 17px/1.2 var(--f-disp); font-variant-numeric: tabular-nums; padding: 7px 8px; border: 1.5px solid var(--grid); border-radius: 4px; background: var(--paper); color: var(--ink); text-align: center; }
+.recin input:placeholder-shown { border-style: dashed; border-color: var(--miss-line); background: var(--miss-wash); }
+.recin input::placeholder { color: var(--miss); font-weight: 600; opacity: 1; }
+.recin input:focus { border-color: var(--beamer); border-style: solid; outline: none; }
+.tout { margin-top: 22px; border-top: 1px solid var(--grid); padding-top: 18px; }
+.diag { display: flex; gap: 14px; align-items: flex-start; padding: 12px 16px; border-radius: 4px; background: var(--paper-2); border-left: 4px solid var(--rule); margin-bottom: 16px; }
+.diag.c2 { border-left-color: var(--beamer); background: var(--wash); }
+.diag.c3 { border-left-color: var(--miss-line); background: var(--miss-wash); }
+.diag.c1 { border-left-color: #c0392b; }
+.diag .cn { font: 600 34px/1 var(--f-disp); color: var(--ink-70); flex: none; min-width: 1.2em; text-align: center; }
+.diag h5 { font: 600 18px/1.2 var(--f-disp); margin: 0 0 4px; }
+.diag p { margin: 0; font-size: 14.5px; }
+.ranks { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 6px; font-size: 14px; color: var(--ink-70); }
+.ranks b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.mats { display: flex; flex-wrap: wrap; gap: 22px 36px; margin-top: 18px; align-items: flex-start; }
+.mats > div { min-width: 0; max-width: 100%; overflow-x: auto; }
+.mats h6 { font: 600 13px/1.2 var(--f-disp); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-70); margin: 0 0 6px; }
+.rels { margin-top: 16px; font-size: 15px; }
+.rels ul { margin: 4px 0 0; padding-left: 20px; }
+.tabs { display: flex; gap: 6px; margin: 20px 0 0; }
+.tabs button { font: 600 14px/1 var(--f-disp); letter-spacing: .04em; padding: 8px 14px; border: 1.5px solid var(--grid); border-bottom: 0; border-radius: 4px 4px 0 0; background: var(--paper-2); color: var(--ink-70); cursor: pointer; }
+.tabs button[aria-selected="true"] { background: var(--band); color: var(--band-ink); border-color: var(--band); }
+pre.code { margin: 0; background: var(--band); color: var(--band-ink); border-radius: 0 4px 4px 4px; padding: 14px 16px; font: 13.5px/1.55 var(--f-mono); overflow-x: auto; position: relative; }
+pre.code .c { color: var(--band-mut); }
+.copy { position: absolute; top: 8px; right: 8px; font: 600 12px/1 var(--f-disp); letter-spacing: .05em; text-transform: uppercase; padding: 6px 9px; border-radius: 3px; border: 1px solid var(--band-line); background: transparent; color: var(--band-ink); cursor: pointer; }
+
+/* --- pamiętaj --- */
+.limits { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 40px; max-width: 1000px; margin: 8px auto 0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.limits > div { border-top: 1px solid var(--rule); padding: 12px 0 14px; min-width: 0; }
+.limits h4 { font: 600 18px/1.2 var(--f-disp); margin: 0 0 4px; }
+.limits p { margin: 0; font-size: 15px; color: var(--ink-70); }
+
+.codes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; max-width: 1040px; margin: 24px auto 0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.codes > div { min-width: 0; }
+.codes h4 { font: 600 18px/1.2 var(--f-disp); margin: 0 0 8px; }
+.codes pre.code { border-radius: 4px; }
+
+footer { border-top: 2px solid var(--ink); margin-top: 64px; padding-block: 28px 56px; font-size: 13px; color: var(--ink-70); }
+footer p { margin: 0 0 .7em; max-width: 90ch; }
+footer b { color: var(--ink); }
+
+@media (max-width: 860px) {
+  .hero-grid { grid-template-columns: 1fr; gap: 24px; }
+  .hero-art svg { margin: 0 auto; max-width: 340px; }
+  .versus, .keys, .cases, .limits, .codes, .tin { grid-template-columns: 1fr; }
+  .versus > div + div { padding-left: 0; border-left: 0; border-top: 1px solid var(--grid); margin-top: 8px; }
+  .topr { align-items: flex-start; text-align: left; }
+}
+@media (max-width: 979px) {
+  .panel { font-size: 13px; min-height: 0; }
+  .panel .eqs { font-size: 15px; }
+  .ghead { margin-bottom: 4px; }
+  .gtitle { font-size: 19px; }
+}
+@media (max-width: 520px) {
+  .tool { padding: 16px 14px; }
+  .authors p { grid-template-columns: 1fr; gap: 0; }
+  .echo { font-size: 30px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* --- nawigacja strzałkami --- */
+.snav { float: right; display: flex; align-items: center; gap: 6px; margin: 0 0 6px 12px; pointer-events: auto; }
+.snav button { width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--band-line); background: var(--band-soft); color: var(--band-ink); font: 600 16px/1 var(--f-body); cursor: pointer; display: grid; place-items: center; padding: 0; }
+.snav button:hover:not(:disabled) { border-color: var(--band-acc); color: var(--band-acc); }
+.snav button:disabled { opacity: .35; cursor: default; }
+.snav span { font: 500 14px/1 var(--f-disp); color: var(--band-mut); font-variant-numeric: tabular-nums; min-width: 3.2em; text-align: center; }
+.kbd { display: inline-block; font: 600 11px/1 var(--f-body); border: 1px solid var(--grid); border-bottom-width: 2px; border-radius: 3px; padding: 3px 5px; margin: 0 2px; color: var(--ink-70); text-transform: none; letter-spacing: 0; }
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<style>
+.katex { font-size: 1.07em; }
+.formula .katex-display { margin: .2em 0; overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+.formula .katex-display > .katex { font-size: clamp(1.05em, 2.4vw, 1.5em); }
+.formula .p1, .formula .p2 { padding: 3px 6px; border-radius: 4px; }
+.formula .p1 { background: var(--wash); }
+.formula .p2 { background: var(--miss-wash); }
+.keys .big .katex { font-size: .8em; }
+.stepno .katex { font-size: 1.15em; letter-spacing: 0; text-transform: none; }
+</style>
+</head>
+<body>
+<div class="progress" aria-hidden="true"><i id="prog"></i></div>
+
+<header class="hero wrap">
+  <div class="topbar">
+    <span class="pill"><b>Analiza danych niekompletnych</b><span>Materiały do zajęć · 2026/27</span></span>
+    <div class="topr"><span class="org">Uniwersytet Ekonomiczny w Poznaniu</span><span class="unoff">Katedra Statystyki</span></div>
+  </div>
+  <div class="hero-grid">
+    <div>
+      <p class="eyebrow">Imputacja danych · część 3a</p>
+      <h1>Imputacja dedukcyjna <span>z ograniczeniami liniowymi</span></h1>
+      <p class="dek">Kiedy brakującej wartości nie trzeba zgadywać, bo wynika z bilansu.</p>
+      <p class="lede">Jeżeli \(x_{1} + x_{2} = x_{3}\) i znamy dwie z tych wartości, trzecia jest przesądzona. Ta strona pokazuje, jak tę obserwację zamienić w procedurę, która działa dla dowolnej liczby zmiennych i ograniczeń, i jak rozpoznać braki, których z ograniczeń wyznaczyć się nie da.</p>
+      <div class="authors">
+        <p><span class="k">Prowadzący</span><span>dr Maciej Beręsewicz, prof. UEP, Katedra Statystyki UEP</span></p>
+        <p><span class="k">Źródło</span><span>van der Loo, de Jonge (2018), <i>Statistical Data Cleaning with Applications in R</i>, rozdz. 9.3.2</span></p>
+      </div>
+      <div class="scrollhint"><i></i>Przewiń albo użyj strzałek <span class="kbd">←</span><span class="kbd">→</span></div>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+      <svg viewBox="0 0 400 300">
+        <path d="M200 86 V122 H110 V160 M200 122 H290 V160" fill="none" stroke="var(--grid)" stroke-width="2.5"/>
+        <circle cx="200" cy="122" r="12" fill="var(--paper)" stroke="var(--grid)" stroke-width="2"/>
+        <text x="200" y="127" text-anchor="middle" style="font:600 15px var(--f-body);fill:var(--ink-70)">+</text>
+        <rect x="140" y="26" width="120" height="60" rx="8" fill="var(--wash)" stroke="var(--beamer)" stroke-width="2"/>
+        <text x="152" y="46" style="font:italic 14px var(--f-body);fill:var(--ink-70)">x₃</text>
+        <text x="200" y="72" text-anchor="middle" style="font:600 28px var(--f-disp);fill:var(--ink)">150</text>
+        <rect x="50" y="160" width="120" height="60" rx="8" fill="var(--wash)" stroke="var(--beamer)" stroke-width="2"/>
+        <text x="62" y="180" style="font:italic 14px var(--f-body);fill:var(--ink-70)">x₁</text>
+        <text x="110" y="206" text-anchor="middle" style="font:600 28px var(--f-disp);fill:var(--ink)">100</text>
+        <g class="q">
+          <rect x="230" y="160" width="120" height="60" rx="8" fill="var(--miss-wash)" stroke="var(--miss-line)" stroke-width="2" stroke-dasharray="6 5"/>
+          <text x="290" y="206" text-anchor="middle" style="font:600 28px var(--f-disp);fill:var(--miss)">?</text>
+        </g>
+        <g class="a">
+          <rect x="230" y="160" width="120" height="60" rx="8" fill="var(--beamer)" stroke="var(--beamer)" stroke-width="2"/>
+          <text x="290" y="206" text-anchor="middle" style="font:600 28px var(--f-disp);fill:#08301d">50</text>
+        </g>
+        <text x="242" y="180" style="font:italic 14px var(--f-body);fill:var(--ink-70)">x₂</text>
+        <text x="200" y="268" text-anchor="middle" style="font:500 17px var(--f-disp);fill:var(--ink-70)">x₂ = x₃ − x₁ = 150 − 100</text>
+      </svg>
+    </div>
+  </div>
+</header>
+
+<main>
+<!-- ===================== CZĘŚĆ 1: idea ===================== -->
+<section class="act" id="cz1">
+  <div class="shead">
+    <span class="tag">Część 1 · Idea</span>
+    <h2>Dedukcja zamiast zgadywania</h2>
+  </div>
+  <div class="col">
+    <p><b>Imputacja dedukcyjna</b> (logiczna) uzupełnia brak na podstawie innych informacji o tej samej jednostce i reguł kontroli poprawności, na przykład tożsamości bilansowych. Warunek jest jeden: z tych informacji musi wynikać <b>dokładnie jedna</b> dopuszczalna wartość (de Waal i in., 2011).</p>
+    <p>W tej części reguły mają postać <button type="button" class="term" data-tip="tip-lin">ograniczeń liniowych</button>: sumy części muszą dawać całość, przychody minus koszty dają wynik, liczba pracujących w podziale na płeć sumuje się do ogółu. Zapisujemy je jako układ równań \(\mathbf{A}\mathbf{x} = \mathbf{b}\).</p>
+  </div>
+  <div class="versus">
+    <div><span class="lbl old">Imputacja oparta na modelu</span><h4>Wartość prawdopodobna</h4><p>Hot-deck, najbliższy sąsiad, regresja, PMM. Brak zastępuje się wartością, która <i>mogłaby</i> wystąpić. Każda taka imputacja wnosi niepewność, którą trzeba uwzględnić w estymacji.</p></div>
+    <div><span class="lbl new">Imputacja dedukcyjna</span><h4>Wartość wynikająca z ograniczeń</h4><p>Brak zastępuje się wartością, która <i>musi</i> wystąpić, żeby rekord spełniał ograniczenia. Jeśli obserwowane dane i reguły są poprawne, imputowana wartość jest prawdziwą wartością.</p></div>
+  </div>
+  <div class="notation">
+    <p class="nh">Oznaczenia</p>
+    <dl>
+      <div><dt>\(\mathbf{x} = (x_{1}, \dots, x_{n})^{\top}\)</dt><dd>wartości \(n\) zmiennych w jednym rekordzie</dd></div>
+      <div><dt>\(\mathbf{A},\ \mathbf{b}\)</dt><dd>współczynniki i stałe ograniczeń; wiersz \(\mathbf{A}\) to jedno ograniczenie, kolumna to jedna zmienna</dd></div>
+      <div><dt>\(\mathbf{x}_{o},\ \mathbf{x}_{m}\)</dt><dd>wartości obserwowane (<i>observed</i>) i brakujące (<i>missing</i>)</dd></div>
+      <div><dt>\(\mathbf{A}_{o},\ \mathbf{A}_{m}\)</dt><dd>kolumny \(\mathbf{A}\) odpowiadające zmiennym obserwowanym i brakującym</dd></div>
+      <div><dt>\(n_{m}\)</dt><dd>liczba braków w rekordzie, czyli długość \(\mathbf{x}_{m}\)</dd></div>
+      <div><dt>\(\mathbf{b}^{*} = \mathbf{b} - \mathbf{A}_{o}\mathbf{x}_{o}\)</dt><dd>prawa strona po podstawieniu wartości obserwowanych</dd></div>
+      <div><dt>\(\operatorname{rz}(\cdot)\)</dt><dd><button type="button" class="term" data-tip="tip-rz">rząd macierzy</button></dd></div>
+      <div><dt>\(\mathbf{I},\ \mathbf{A}^{+}\)</dt><dd>macierz jednostkowa i <button type="button" class="term" data-tip="tip-mp">pseudoodwrotność</button> Moore'a–Penrose'a macierzy \(\mathbf{A}\)</dd></div>
+    </dl>
+  </div>
+  <div class="keys">
+    <div><div class="big">\(\mathbf{A}_m\mathbf{x}_m = \mathbf{b}^{*}\)</div><h4>Układ dla braków</h4><p>Po podstawieniu wartości obserwowanych zostaje układ równań, w którym niewiadomymi są tylko braki.</p></div>
+    <div><div class="big">\(\operatorname{rz}(\mathbf{A}_m)\)</div><h4>Rząd macierzy</h4><p>Porównany z liczbą braków \(n_{m}\) mówi, czy rozwiązanie jest jedno, czy jest ich nieskończenie wiele.</p></div>
+    <div><div class="big">\(\mathbf{I} - \mathbf{A}_m^{+}\mathbf{A}_m\)</div><h4>Test jednoznaczności</h4><p>Zerowy wiersz tej macierzy oznacza, że dany brak jest wyznaczony jednoznacznie i można go imputować.</p></div>
+  </div>
+</section>
+
+<section class="scrolly" id="bandA" aria-label="Przykład 1: imputacja dedukcyjna krok po kroku">
+  <div class="sc-in">
+    <div class="sticky">
+      <div class="stage">
+        <div class="ghead"><p class="gtitle">Przykład 1: dwa ograniczenia, dwa braki</p><p class="gsub" id="a-sub"></p></div>
+        <svg class="tree" id="treeA" viewBox="0 0 560 262" role="img" aria-label="Drzewo bilansowe: x3 jest sumą x1 i x2, x1 jest sumą x4 i x5"></svg>
+        <div class="panel" id="a-panel" aria-live="polite"></div>
+      </div>
+    </div>
+    <div class="steps">
+      <div class="step"><div class="card"><span class="stepno">Rekord z brakami</span><p>Mamy rekord z pięcioma zmiennymi. Znamy \(x_{1} = 100\), \(x_{3} = 150\) i \(x_{4} = 40\). Wartości \(x_{2}\) i \(x_{5}\) są nieznane.</p><p>Drzewo pokazuje strukturę bilansu: każdy węzeł jest sumą swoich dzieci.</p></div></div>
+      <div class="step"><div class="card"><span class="stepno">Ograniczenia</span><p>Rekord musi spełniać dwa równania: \(x_{1} + x_{2} = x_{3}\) oraz \(x_{4} + x_{5} = x_{1}\).</p><p>Tu wynik widać od razu: \(x_{2} = 150 - 100 = 50\), \(x_{5} = 100 - 40 = 60\). Przy kilkudziesięciu zmiennych i ograniczeniach potrzebujemy jednak procedury, która zrobi to sama i powie, kiedy wyniku nie ma.</p></div></div>
+      <div class="step"><div class="card"><span class="stepno">Krok 0 · Zapis \(\mathbf{A}\mathbf{x} = \mathbf{b}\)</span><p>Przenosimy wszystkie zmienne na lewą stronę. Każdy wiersz macierzy \(\mathbf{A}\) to jedno ograniczenie, każda kolumna to jedna zmienna.</p><p>Wektor \(\mathbf{b}\) jest tu zerowy, bo w ograniczeniach nie ma stałych.</p></div></div>
+      <div class="step"><div class="card"><span class="stepno">Krok 1 · Podział kolumn</span><p>Dzielimy wektor na część obserwowaną \(\mathbf{x}_{o}\) i brakującą \(\mathbf{x}_{m}\), a macierz na odpowiadające im kolumny \(\mathbf{A}_{o}\) i \(\mathbf{A}_{m}\).</p><p>Układ przyjmuje postać \(\mathbf{A}_{m}\mathbf{x}_{m} = \mathbf{b} - \mathbf{A}_{o}\mathbf{x}_{o}\).</p></div></div>
+      <div class="step"><div class="card"><span class="stepno">Krok 1 · Prawa strona</span><p>Prawa strona zawiera tylko wartości obserwowane, więc da się ją policzyć. Oznaczamy ją \(\mathbf{b}^{*}\).</p><p>Zostaje zwykły układ równań z niewiadomymi \(x_{2}\) i \(x_{5}\).</p></div></div>
+      <div class="step"><div class="card"><span class="stepno">Krok 2 · Który to przypadek?</span><p>Liczba braków \(n_{m} = 2\). <button type="button" class="term" data-tip="tip-rz">Rząd</button> macierzy \(\mathbf{A}_{m}\) i rząd macierzy rozszerzonej o \(\mathbf{b}^{*}\) wynoszą 2, więc układ jest niesprzeczny.</p><p>Skoro \(\operatorname{rz}(\mathbf{A}_{m}) = n_{m}\), rozwiązanie jest dokładnie jedno.</p></div></div>
+      <div class="step"><div class="card"><span class="stepno">Krok 3 · Które braki imputujemy?</span><p>Liczymy \(\mathbf{I} - \mathbf{A}_{m}^{+}\mathbf{A}_{m}\), gdzie \(\mathbf{A}_{m}^{+}\) to <button type="button" class="term" data-tip="tip-mp">pseudoodwrotność Moore'a–Penrose'a</button>. Oba wiersze są zerowe, więc oba braki są wyznaczone jednoznacznie.</p><p>Imputujemy \(x_{2} = 50\) i \(x_{5} = 60\), tak samo jak przy liczeniu w pamięci.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== CZĘŚĆ 2: trzy przypadki ===================== -->
+<section class="act" id="cz2">
+  <div class="shead">
+    <span class="tag">Część 2 · Rozwiązanie</span>
+    <h2>Zero, jedno albo nieskończenie wiele rozwiązań</h2>
+  </div>
+  <div class="col">
+    <p>O tym, co da się zrobić z układem \(\mathbf{A}_{m}\mathbf{x}_{m} = \mathbf{b}^{*}\), decyduje porównanie trzech liczb: liczby braków \(n_{m}\), rzędu \(\mathbf{A}_{m}\) i rzędu macierzy rozszerzonej \([\mathbf{A}_{m} \mid \mathbf{b}^{*}]\).</p>
+  </div>
+  <div class="cases">
+    <div class="case c1"><span class="no">Przypadek 1</span><h4>Brak rozwiązań</h4><p class="cond">\(\operatorname{rz}[\mathbf{A}_{m} \mid \mathbf{b}^{*}] > \operatorname{rz}(\mathbf{A}_{m})\)</p><p>Układ jest sprzeczny: rekord narusza ograniczenia niezależnie od tego, co wpiszemy w braki. Najpierw trzeba znaleźć i poprawić błędną wartość obserwowaną.</p></div>
+    <div class="case c2"><span class="no">Przypadek 2</span><h4>Dokładnie jedno rozwiązanie</h4><p class="cond">\(\operatorname{rz}(\mathbf{A}_{m}) = n_{m}\), układ niesprzeczny</p><p>Pełny rząd kolumnowy (\(\mathbf{A}_{m}\) nie musi być kwadratowa). Rozwiązanie: \(\mathbf{x}_{m} = \mathbf{A}_{m}^{+}\mathbf{b}^{*}\), a gdy \(\mathbf{A}_{m}\) jest kwadratowa, <span style="white-space:nowrap">\(\mathbf{x}_{m} = \mathbf{A}_{m}^{-1}\mathbf{b}^{*}\).</span> Imputujemy wszystkie braki.</p></div>
+    <div class="case c3"><span class="no">Przypadek 3</span><h4>Nieskończenie wiele rozwiązań</h4><p class="cond">\(\operatorname{rz}(\mathbf{A}_{m}) < n_{m}\), układ niesprzeczny</p><p>Część braków może mimo to być wyznaczona jednoznacznie. Które? To rozstrzyga wzór poniżej. Pozostałe zostawiamy puste i uzupełniamy później inną metodą.</p></div>
+  </div>
+  <div class="formula">
+    <div class="f">\[\hat{\mathbf{x}}_m = \htmlClass{p1}{\mathbf{A}_m^{+}(\mathbf{b} - \mathbf{A}_o\mathbf{x}_o)} + \htmlClass{p2}{(\mathbf{I} - \mathbf{A}_m^{+}\mathbf{A}_m)\,\mathbf{w}}\]</div>
+    <div class="leg">
+      <span><i style="background:var(--wash);border:1px solid var(--beamer)"></i>Jedno konkretne rozwiązanie: to o <button type="button" class="term" data-tip="tip-mn">minimalnej normie</button>.</span>
+      <span><i style="background:var(--miss-wash);border:1px solid var(--miss-line)"></i>Dowolny wektor \(\mathbf{w}\) przesuwa rozwiązanie po zbiorze wszystkich rozwiązań.</span>
+    </div>
+  </div>
+  <div class="col" style="margin-top:28px">
+    <p>\(j\)-ty brak nie zależy od \(\mathbf{w}\) wtedy i tylko wtedy, gdy \(j\)-ty wiersz macierzy \(\mathbf{I} - \mathbf{A}_{m}^{+}\mathbf{A}_{m}\) jest zerowy. Taki brak imputujemy \(j\)-tą współrzędną wektora \(\mathbf{A}_{m}^{+}\mathbf{b}^{*}\).</p>
+    <p class="note warn"><b>Uwaga</b><span>Pozostałych braków nie wypełniamy wartościami z \(\mathbf{A}_{m}^{+}\mathbf{b}^{*}\). To tylko jedno z wielu rozwiązań, wybrane z powodów rachunkowych, a nie wartość wynikająca z danych.</span></p>
+  </div>
+</section>
+
+<!-- ===================== CZĘŚĆ 3: zadanie ===================== -->
+<section class="act" id="cz3">
+  <div class="shead">
+    <span class="tag">Część 3 · Przypadek 3</span>
+    <h2>Dziesięć zmiennych, pięć braków, trzy imputacje</h2>
+  </div>
+  <div class="col">
+    <p>Przykład 9.3.11 z książki van der Loo i de Jonge (2018), który na zajęciach rozwiązujemy jako zadanie dodatkowe. Cztery ograniczenia bilansowe, rekord z pięcioma brakami. Część z nich da się wyznaczyć, część nie.</p>
+  </div>
+</section>
+
+<section class="scrolly" id="bandB" aria-label="Zadanie: dziesięć zmiennych, pięć braków">
+  <div class="sc-in">
+    <div class="sticky">
+      <div class="stage">
+        <div class="ghead"><p class="gtitle">Zadanie: \(\mathbf{x} \in \mathbb{R}^{10}\), cztery ograniczenia</p><p class="gsub" id="b-sub"></p></div>
+        <svg class="tree" id="treeB" viewBox="0 0 600 318" role="img" aria-label="Drzewo bilansowe: x3 = x1 + x2 = x9 + x10, x1 = x4 + x5 + x6, x2 = x7 + x8"></svg>
+        <div class="panel" id="b-panel" aria-live="polite"></div>
+      </div>
+    </div>
+    <div class="steps">
+      <div class="step"><div class="card"><span class="stepno">Układ i rekord</span><p>\(x_{3}\) rozkłada się na dwa sposoby: na \(x_{1} + x_{2}\) (linia ciągła) i na \(x_{9} + x_{10}\) (linia przerywana). Dalej \(x_{1} = x_{4} + x_{5} + x_{6}\) i \(x_{2} = x_{7} + x_{8}\).</p><p>Brakuje \(x_{2}, x_{3}, x_{5}, x_{6}\) i \(x_{9}\).</p></div></div>
+      <div class="step"><div class="card"><span class="stepno">Krok 1 · Podział</span><p>Kolumny braków tworzą macierz \(\mathbf{A}_{m}\) o wymiarach 4 × 5: cztery równania, pięć niewiadomych. Już stąd wiadomo, że \(\operatorname{rz}(\mathbf{A}_{m}) \le  4 < 5 = n_{m}\), więc to przypadek 3.</p><p>Prawa strona \(\mathbf{b}^{*} = -\mathbf{A}_{o}\mathbf{x}_{o}\) zbiera wartości obserwowane.</p></div></div>
+      <div class="step"><div class="card"><span class="stepno">Krok 2 · Druga część wzoru</span><p>Wiersze \(\mathbf{I} - \mathbf{A}_{m}^{+}\mathbf{A}_{m}\) dla \(x_{2}\), \(x_{3}\) i \(x_{9}\) są zerowe: te braki są wyznaczone jednoznacznie.</p><p>Wiersze dla \(x_{5}\) i \(x_{6}\) są niezerowe. Ich wartości zależą od dowolnego wektora \(\mathbf{w}\).</p></div></div>
+      <div class="step"><div class="card"><span class="stepno">Krok 3 · Pierwsza część wzoru</span><p>Liczymy \(\mathbf{A}_{m}^{+}\mathbf{b}^{*}\), czyli rozwiązanie o minimalnej normie. Dla \(x_{5}\) i \(x_{6}\) wychodzi po 42,5: suma 85 dzielona po równo, bo tak wygląda najkrótszy wektor.</p><p>Te dwie liczby nie mają żadnego uzasadnienia w danych.</p></div></div>
+      <div class="step"><div class="card"><span class="stepno">Krok 4 · Imputacja</span><p>Imputujemy tylko braki wyznaczone jednoznacznie: \(x_{2} = 60\), \(x_{3} = 160\), \(x_{9} = 155\).</p><p>\(x_{5}\) i \(x_{6}\) pozostają puste. Wiemy o nich tylko tyle, że \(x_{5} + x_{6} = 85\).</p></div></div>
+      <div class="step"><div class="card"><span class="stepno">Sprawdź: dowolne \(w\)</span><p>Przesuń suwak, żeby przejść po wszystkich rozwiązaniach układu. Zmieniają się tylko \(x_{5}\) i \(x_{6}\).</p>
+        <label for="w-range" style="font-size:14px">Wartość \(x_{5}\): <span class="rv" id="w-val">42,5</span> · \(x_{6}\): <span class="rv" id="w-val6">42,5</span></label>
+        <input type="range" id="w-range" min="0" max="85" step="0.5" value="42.5">
+        <p style="font-size:14px;color:var(--ink-70)">Każde położenie suwaka spełnia wszystkie cztery ograniczenia. Dlatego żadnego z nich nie wybieramy.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== CZĘŚĆ 4: sprawdź sam ===================== -->
+<section class="act" id="cz4">
+  <div class="shead">
+    <span class="tag">Część 4 · Narzędzie</span>
+    <h2>Sprawdź sam</h2>
+    <span class="sub2">Własne ograniczenia, własny rekord</span>
+  </div>
+  <div class="col">
+    <p>Wybierz układ albo wpisz własne ograniczenia w składni pakietu <code>validate</code>, po jednym w wierszu. Puste pole w rekordzie oznacza brak danych. Narzędzie liczy to samo, co <code>deductive::impute_lr()</code> dla ograniczeń w postaci równości, i pokazuje macierze z kolejnych kroków.</p>
+  </div>
+  <div class="wrap">
+    <div class="tool" id="tool">
+      <div class="row" role="group" aria-label="Gotowe układy">
+        <span class="k">Układ</span>
+        <span id="presets" style="display:contents"></span>
+      </div>
+      <div class="tin">
+        <div>
+          <h4>Ograniczenia <small>np. <code>x1 + x2 == x3</code>, <code>2*x1 == x2</code></small></h4>
+          <textarea id="rules" spellcheck="false" aria-label="Ograniczenia liniowe, po jednym w wierszu"></textarea>
+          <p class="err" id="rules-err" role="alert"></p>
+        </div>
+        <div>
+          <h4>Rekord <small>puste pole = NA</small></h4>
+          <div class="recin" id="recin"></div>
+          <div class="row" style="margin-top:12px">
+            <button class="chip ghost" type="button" id="reset">Przywróć rekord</button>
+            <button class="chip ghost" type="button" id="allna">Wszystko NA</button>
+          </div>
+        </div>
+      </div>
+      <div class="tout" id="tout"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== CZĘŚĆ 5: pamiętaj ===================== -->
+<section class="act" id="cz5">
+  <div class="shead">
+    <span class="tag">Część 5 · Pamiętaj</span>
+    <h2>O czym łatwo zapomnieć</h2>
+  </div>
+  <div class="limits">
+    <div><h4>Imputujemy tylko to, co wynika z danych</h4><p>Rozwiązanie o minimalnej normie dla braków niewyznaczonych jednoznacznie to wybór rachunkowy. Wpisanie go do danych byłoby imputacją arbitralną.</p></div>
+    <div><h4>Najpierw błędy, potem braki</h4><p>W przypadku 1 rekord jest sprzeczny z ograniczeniami. Imputacja dedukcyjna nic nie da, dopóki nie zlokalizujemy i nie usuniemy błędnej wartości.</p></div>
+    <div><h4>Dedukcja przed modelem</h4><p>Imputację dedukcyjną wykonuje się na początku. Braki, które zostaną, uzupełnia się metodą opartą na modelu, pilnując, żeby wynik nadal spełniał ograniczenia, np. \(x_{5} + x_{6} = 85\).</p></div>
+    <div><h4>Równania nie pilnują znaku</h4><p>Układ <code>v1</code> z kodu daje \(x_{2} = -50\). Jeśli zmienna nie może być ujemna, trzeba to dopisać jako osobną regułę, a wynik ujemny potraktować jako sygnał błędu w danych.</p></div>
+    <div><h4>Zera liczone numerycznie</h4><p>Wiersze \(\mathbf{I} - \mathbf{A}_{m}^{+}\mathbf{A}_{m}\) rzadko wychodzą idealnie zerowe. W praktyce porównuje się je z małą tolerancją, np. \(10^{-8}\).</p></div>
+    <div><h4>Nie tylko równania</h4><p>Dedukcja działa też na danych tekstowych i uporządkowanych, np. gdy kolejność ofert wyznacza brakującą liczbę pokoi. To temat części 3b.</p></div>
+  </div>
+</section>
+
+<!-- ===================== CZĘŚĆ 6: kod ===================== -->
+<section class="act" id="cz6">
+  <div class="shead">
+    <span class="tag">Część 6 · R i Python</span>
+    <h2>To samo w kodzie</h2>
+  </div>
+  <div class="col">
+    <p>Pełne skrypty są w repozytorium: <code>codes/R/3a-imputacja-dedukcyjna-ograniczenia.R</code> i <code>codes/python/3a-imputacja-dedukcyjna-ograniczenia.py</code>. Poniżej przykład 1.</p>
+  </div>
+  <div class="codes">
+    <div><h4>R: <code>validate</code> + <code>deductive</code></h4>
+<pre class="code"><span class="c"># reguły w składni pakietu validate</span>
+v <- validate::validator(
+  x1 + x2 == x3,
+  x4 + x5 == x1)
+
+dat <- data.frame(x1 = 100, x2 = NA_real_, x3 = 150,
+                  x4 = 40,  x5 = NA_real_)
+
+<span class="c"># imputuje tylko braki wyznaczone jednoznacznie</span>
+deductive::impute_lr(dat, v)
+
+<span class="c"># ręcznie: pseudoodwrotność z pakietu MASS</span>
+Am <- diag(2)                        <span class="c"># kolumny x2, x5</span>
+Ao <- rbind(c( 1, -1, 0),            <span class="c"># kolumny x1, x3, x4</span>
+            c(-1,  0, 1))
+xo <- c(100, 150, 40)
+b_star <- c(0, 0) - Ao %*% xo
+MASS::ginv(Am) %*% b_star</pre></div>
+    <div><h4>Python: <code>numpy</code></h4>
+<pre class="code">import numpy as np
+from numpy.linalg import pinv
+
+Am = np.array([[1, 0],               <span class="c"># kolumny x2, x5</span>
+               [0, 1]])
+Ao = np.array([[ 1, -1, 0],          <span class="c"># kolumny x1, x3, x4</span>
+               [-1,  0, 1]])
+xo = np.array([100, 150, 40])
+b  = np.zeros(2)
+
+b_star = b - Ao @ xo
+Am_pinv = pinv(Am)
+x_mn = Am_pinv @ b_star              <span class="c"># A_m^+ b*</span>
+
+<span class="c"># zerowe wiersze = braki wyznaczone jednoznacznie</span>
+P = np.eye(Am.shape[1]) - Am_pinv @ Am
+pewne = np.all(np.abs(P) < 1e-8, axis=1)
+np.where(pewne, x_mn, np.nan)</pre></div>
+  </div>
+</section>
+</main>
+
+<footer class="wrap">
+  <p><b>Źródło.</b> M. van der Loo, E. de Jonge (2018), <i>Statistical Data Cleaning with Applications in R</i>, Wiley, rozdz. 9.3.2, <a href="https://doi.org/10.1002/9781118897126">doi:10.1002/9781118897126</a>. Macierze \(\mathbf{A}_{m}^{+}\) i \(\mathbf{I} - \mathbf{A}_{m}^{+}\mathbf{A}_{m}\) w zadaniu poprawione względem książki (s. 215); wynik końcowy jest z nią zgodny.</p>
+  <p><b>Definicja.</b> T. de Waal, J. Pannekoek, S. Scholtus (2011), <i>Handbook of Statistical Data Editing and Imputation</i>, Wiley.</p>
+  <p><b>Zajęcia.</b> Analiza danych niekompletnych, Uniwersytet Ekonomiczny w Poznaniu, Katedra Statystyki. Prowadzący: dr Maciej Beręsewicz, prof. UEP.</p>
+  <p><b>O stronie.</b> Opracowanie: Maciej Beręsewicz. Strona przygotowana z pomocą Claude (Anthropic). Forma interaktywnego podsumowania jest wzorowana na stronie <a href="https://migration.guillaumeblanc.com">„Escaping Malthus”</a>, przygotowanej przez Guillaume'a Blanca (Simon Fraser University) i Romaina Wacziarga (UCLA i NBER) jako podsumowanie ich artykułu „Malthusian Migrations”.</p>
+</footer>
+
+<!-- treść dymków -->
+<div hidden>
+  <div id="tip-lin"><span class="tt">Ograniczenie liniowe</span><p>Reguła postaci <i>a</i><sub>1</sub><i>x</i><sub>1</sub> + … + <i>a</i><sub>n</sub><i>x</i><sub>n</sub> = <i>b</i>, którą musi spełniać każdy poprawny rekord. Typowy przykład to tożsamość bilansowa: suma części równa się całości.</p><p>Wszystkie ograniczenia razem tworzą układ <b>Ax</b> = <b>b</b>: wiersz macierzy to jedno ograniczenie, kolumna to jedna zmienna.</p></div>
+  <div id="tip-rz"><span class="tt">Rząd macierzy</span><p>Liczba liniowo niezależnych wierszy (równoważnie: kolumn) macierzy. Mówi, ile naprawdę różnych równań zawiera układ.</p><p>Twierdzenie Kroneckera–Capellego: układ ma rozwiązanie, gdy rz(<b>A</b>) = rz[<b>A</b> | <b>b</b>], a rozwiązanie jest jedno, gdy ten rząd równa się liczbie niewiadomych.</p></div>
+  <div id="tip-mp"><span class="tt">Pseudoodwrotność Moore'a–Penrose'a</span><p>Uogólnienie macierzy odwrotnej na macierze prostokątne i osobliwe, oznaczane <b>A</b><sup>+</sup>. Dla macierzy odwracalnej <b>A</b><sup>+</sup> = <b>A</b><sup>−1</sup>.</p><p>W R: <code>MASS::ginv()</code>, w Pythonie: <code>numpy.linalg.pinv()</code>.</p></div>
+  <div id="tip-mn"><span class="tt">Rozwiązanie o minimalnej normie</span><p>Spośród nieskończenie wielu rozwiązań układu <b>A</b><sub>m</sub><b>x</b><sub>m</sub> = <b>b</b><sup>*</sup> wektor <b>A</b><sub>m</sub><sup>+</sup><b>b</b><sup>*</sup> ma najmniejszą długość euklidesową.</p><p>To kryterium matematyczne, a nie merytoryczne. Dla braków wyznaczonych jednoznacznie nie ma ono znaczenia, bo wszystkie rozwiązania mają tam tę samą wartość.</p></div>
+</div>
+<div id="tip" role="tooltip"></div>
+
+<script>
+/*ENGINE-START*/
+var EPS = 1e-9;
+
+function rref(M) {
+  var A = M.map(function (r) { return r.slice(); }), m = A.length, n = m ? A[0].length : 0, piv = [], r = 0;
+  for (var c = 0; c < n && r < m; c++) {
+    var p = r, best = Math.abs(A[r][c]);
+    for (var i = r + 1; i < m; i++) if (Math.abs(A[i][c]) > best) { best = Math.abs(A[i][c]); p = i; }
+    if (best < EPS) { for (i = r; i < m; i++) A[i][c] = 0; continue; }
+    var t = A[r]; A[r] = A[p]; A[p] = t;
+    var d = A[r][c];
+    for (var j = 0; j < n; j++) A[r][j] /= d;
+    for (i = 0; i < m; i++) if (i !== r && A[i][c] !== 0) {
+      var f = A[i][c];
+      for (j = 0; j < n; j++) A[i][j] -= f * A[r][j];
+      A[i][c] = 0;
+    }
+    piv.push(c); r++;
+  }
+  return { R: A, piv: piv };
+}
+function T(A) { return A.length ? A[0].map(function (_, j) { return A.map(function (r) { return r[j]; }); }) : []; }
+function mul(A, B) {
+  return A.map(function (r) { return B[0].map(function (_, j) { var s = 0; for (var k = 0; k < r.length; k++) s += r[k] * B[k][j]; return s; }); });
+}
+function eye(n) { var I = []; for (var i = 0; i < n; i++) { I.push([]); for (var j = 0; j < n; j++) I[i].push(i === j ? 1 : 0); } return I; }
+function inv(A) {
+  var n = A.length, M = A.map(function (r, i) { return r.concat(eye(n)[i]); });
+  var R = rref(M).R;
+  return R.map(function (r) { return r.slice(n); });
+}
+/* pseudoodwrotność przez rozkład pełnego rzędu A = C F: A+ = F'(FF')^-1 (C'C)^-1 C' */
+function pinv(A, nCols) {
+  var m = A.length, n = m ? A[0].length : nCols;
+  if (!m) return eye(n).map(function (r) { return []; });
+  var rr = rref(A), r = rr.piv.length;
+  if (r === 0) { var Z = []; for (var i = 0; i < n; i++) { Z.push([]); for (var j = 0; j < m; j++) Z[i].push(0); } return Z; }
+  var C = A.map(function (row) { return rr.piv.map(function (c) { return row[c]; }); });
+  var F = rr.R.slice(0, r);
+  var Ft = T(F), Ct = T(C);
+  return mul(mul(mul(Ft, inv(mul(F, Ft))), inv(mul(Ct, C))), Ct);
+}
+function clean(v) { return Math.abs(v) < EPS ? 0 : v; }
+
+/* parser reguł w składni validate: "x1 + x2 == x3", "2*x1 == x2", "x1 - 0.5*x2 + 3 == 0" */
+function parseSide(s, line) {
+  s = s.replace(/\s+/g, "");
+  if (!s) throw "wiersz " + line + ": pusta strona równania";
+  if (!/^[+-]/.test(s)) s = "+" + s;
+  var re = /([+-])(\d+(?:\.\d+)?)?(\*)?([A-Za-z_][A-Za-z0-9_.]*)?/y, terms = {}, c = 0, pos = 0;
+  while (pos < s.length) {
+    re.lastIndex = pos;
+    var m = re.exec(s);
+    if (!m || (!m[2] && !m[4]) || (m[3] && !m[4]) || (m[3] && !m[2])) throw "wiersz " + line + ": nie rozumiem „" + s.slice(pos).replace(/^\+/, "") + "”";
+    var sg = m[1] === "-" ? -1 : 1, num = m[2] !== undefined ? parseFloat(m[2]) : null;
+    if (m[4]) terms[m[4]] = (terms[m[4]] || 0) + sg * (num === null ? 1 : num);
+    else c += sg * num;
+    pos = re.lastIndex;
+  }
+  return { terms: terms, c: c };
+}
+function natcmp(a, b) {
+  var ra = a.match(/^(.*?)(\d*)$/), rb = b.match(/^(.*?)(\d*)$/);
+  if (ra[1] !== rb[1]) return ra[1] < rb[1] ? -1 : 1;
+  return (parseInt(ra[2] || "0", 10)) - (parseInt(rb[2] || "0", 10));
+}
+function parseRules(text) {
+  var rows = [], vars = {}, lines = text.split("\n"), shown = [];
+  lines.forEach(function (raw, k) {
+    var s = raw.replace(/#.*$/, "").trim().replace(/,\s*$/, "").trim();
+    if (!s) return;
+    var parts = s.split("==");
+    if (parts.length === 1) parts = s.split("=");
+    if (parts.length !== 2) throw "wiersz " + (k + 1) + ": potrzebny dokładnie jeden znak ==";
+    var L = parseSide(parts[0], k + 1), R = parseSide(parts[1], k + 1), co = {};
+    Object.keys(L.terms).forEach(function (v) { co[v] = (co[v] || 0) + L.terms[v]; });
+    Object.keys(R.terms).forEach(function (v) { co[v] = (co[v] || 0) - R.terms[v]; });
+    Object.keys(co).forEach(function (v) { vars[v] = 1; });
+    rows.push({ co: co, b: R.c - L.c });
+    shown.push(s);
+  });
+  if (!rows.length) throw "wpisz co najmniej jedno ograniczenie";
+  var vl = Object.keys(vars).sort(natcmp);
+  return {
+    vars: vl,
+    A: rows.map(function (r) { return vl.map(function (v) { return r.co[v] || 0; }); }),
+    b: rows.map(function (r) { return r.b; }),
+    rules: shown
+  };
+}
+
+/* analiza rekordu: podział, rzędy, A+, I - A+A, braki pewne, relacje między pozostałymi */
+function analyze(sys, rec) {
+  var vars = sys.vars, obs = [], miss = [];
+  vars.forEach(function (v, j) { (rec[v] === null || rec[v] === undefined || isNaN(rec[v]) ? miss : obs).push(j); });
+  var nm = miss.length;
+  var Am = sys.A.map(function (r) { return miss.map(function (j) { return r[j]; }); });
+  var Ao = sys.A.map(function (r) { return obs.map(function (j) { return r[j]; }); });
+  var xo = obs.map(function (j) { return rec[vars[j]]; });
+  var bstar = sys.A.map(function (r, i) { var s = sys.b[i]; obs.forEach(function (j, k) { s -= r[j] * xo[k]; }); return clean(s); });
+  var aug = Am.map(function (r, i) { return r.concat([bstar[i]]); });
+  var rr = rref(aug);
+  var rankA = rr.piv.filter(function (c) { return c < nm; }).length, rankAug = rr.piv.length;
+  var consistent = rankA === rankAug;
+  var Ap = pinv(Am, nm);
+  var ApA = nm ? mul(Ap, Am) : [];
+  var P = eye(nm).map(function (r, i) { return r.map(function (v, j) { return clean(v - ApA[i][j]); }); });
+  var xmn = Ap.map(function (r) { var s = 0; r.forEach(function (a, i) { s += a * bstar[i]; }); return clean(s); });
+  var det = P.map(function (r) { return r.every(function (v) { return Math.abs(v) < 1e-8; }); });
+  var rels = [];
+  if (consistent) rr.R.forEach(function (row, i) {
+    var p = rr.piv[i];
+    if (p === undefined || p >= nm) return;
+    var fr = [];
+    for (var j = 0; j < nm; j++) if (j !== p && Math.abs(row[j]) > EPS) fr.push([j, row[j]]);
+    if (fr.length) rels.push({ terms: [[p, 1]].concat(fr), rhs: clean(row[nm]) });
+  });
+  var cas = nm === 0 ? (consistent ? 0 : 1) : !consistent ? 1 : rankA === nm ? 2 : 3;
+  return { obs: obs, miss: miss, nm: nm, Am: Am, Ao: Ao, xo: xo, bstar: bstar, rankA: rankA, rankAug: rankAug,
+           consistent: consistent, Ap: Ap, P: P, xmn: xmn, det: det, rels: rels, cas: cas };
+}
+/*ENGINE-END*/
+
+(function () {
+  "use strict";
+
+  /* skład wzorów: KaTeX (auto-render) dla treści statycznej i dynamicznej */
+  function tex(el) {
+    if (!window.renderMathInElement) return;
+    renderMathInElement(el, {
+      delimiters: [{ left: "\\[", right: "\\]", display: true }, { left: "\\(", right: "\\)", display: false }],
+      throwOnError: false, strict: "ignore",
+      trust: function (c) { return c.command === "\\htmlClass"; }
+    });
+  }
+  var $ = function (id) { return document.getElementById(id); };
+  var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var SUBD = "₀₁₂₃₄₅₆₇₈₉";
+
+  function fmt(v) {
+    if (typeof v !== "number") return v;
+    if (Math.abs(v) < 1e-9) v = 0;
+    var r = Math.round(v * 10000) / 10000;
+    return r.toLocaleString("pl-PL", { maximumFractionDigits: 4, useGrouping: false }).replace("-", "−");
+  }
+  function tname(v) {
+    var m = v.match(/^([A-Za-z]+?)(\d+)$/);
+    if (m) return (m[1].length > 1 ? "\\mathit{" + m[1] + "}" : m[1]) + "_{" + m[2] + "}";
+    return /^[A-Za-z]+$/.test(v) ? (v.length > 1 ? "\\mathit{" + v + "}" : v) : null;
+  }
+  function vname(v) { var t = tname(v); return t ? "\\(" + t + "\\)" : "<i>" + esc(v) + "</i>"; }
+  function tnum(v) { return fmt(v).replace("−", "-").replace(",", "{,}"); }
+  function vsvg(v) {
+    var m = v.match(/^(.*?)(\d+)$/);
+    return m ? m[1] + m[2].split("").map(function (d) { return SUBD[+d]; }).join("") : v;
+  }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+
+  /* ---------- macierze w HTML ---------- */
+  function mx(rows, o) {
+    o = o || {};
+    var nc = rows.length ? rows[0].length : (o.cols ? o.cols.length : 1), hh = !!o.cols;
+    var h = '<span class="mx' + (hh ? " hh" : "") + '" style="--nc:' + nc + '">';
+    if (hh) o.cols.forEach(function (c, j) { h += '<span class="mh ' + ((o.colCls && o.colCls[j]) || "") + '">' + c + "</span>"; });
+    rows.forEach(function (r, i) {
+      r.forEach(function (v, j) {
+        var cls = ((o.colCls && o.colCls[j]) || "") + " " + ((o.rowCls && o.rowCls[i]) || "") + " " + ((o.sepAt === j) ? "sep" : "");
+        if (o.dimZero && typeof v === "number" && Math.abs(v) < 1e-9 && !(o.rowCls && o.rowCls[i])) cls += " rz";
+        h += '<span class="' + cls + '">' + fmt(v) + "</span>";
+      });
+    });
+    h += "</span>";
+    if (o.rl) h = '<span class="mxr">' + h + '<span class="rl' + (hh ? " hh" : "") + '">' + o.rl.join("") + "</span></span>";
+    return '<span class="mxw">' + h + (o.name ? '<span class="mxn">' + o.name + "</span>" : "") + "</span>";
+  }
+  function col(vals, o) { return mx(vals.map(function (v) { return [v]; }), o); }
+  function op(s) { return '<span class="op">' + s + "</span>"; }
+  function eq() { return '<div class="eq">' + Array.prototype.slice.call(arguments).join("") + "</div>"; }
+  function recrow(vars, rec, res) {
+    return '<div class="recrow">' + vars.map(function (v) {
+      var st = res && res[v];
+      if (st && st.t === "im") return '<span class="cell im"><i>' + vname(v) + "</i><b>" + fmt(st.v) + "</b></span>";
+      if (st && st.t === "ud") return '<span class="cell ud"><i>' + vname(v) + "</i><b>?</b>" + (st.mn !== undefined ? "<small>min. norma " + fmt(st.mn) + "</small>" : "") + "</span>";
+      var x = rec[v];
+      return x === null ? '<span class="cell na"><i>' + vname(v) + "</i><b>NA</b></span>"
+                        : '<span class="cell"><i>' + vname(v) + "</i><b>" + fmt(x) + "</b></span>";
+    }).join("") + "</div>";
+  }
+
+  /* ---------- drzewo w SVG ---------- */
+  var NS = "http://www.w3.org/2000/svg";
+  function el(tag, at, parent) { var e = document.createElementNS(NS, tag); for (var k in at) e.setAttribute(k, at[k]); if (parent) parent.appendChild(e); return e; }
+  function buildTree(svg, nodes, groups, W, H) {
+    var g = { nodes: {}, edges: [], jns: [], svg: svg };
+    var w = W || 84, h = H || 52;
+    groups.forEach(function (gr, gi) {
+      var p = nodes[gr.p], xs = gr.k.map(function (k) { return nodes[k].x; });
+      var px = p.x + (gr.dx || 0), yb = p.y + h / 2, ky = nodes[gr.k[0]].y - h / 2, my = gr.my || (yb + ky) / 2;
+      var d = gr.side
+        ? "M" + (p.x + w / 2) + " " + p.y + " H" + gr.jx + " V" + my + " M" + Math.min.apply(null, xs) + " " + my + " H" + Math.max.apply(null, xs)
+        : "M" + px + " " + yb + " V" + my + " M" + Math.min.apply(null, xs.concat(px)) + " " + my + " H" + Math.max.apply(null, xs.concat(px));
+      xs.forEach(function (x) { d += " M" + x + " " + my + " V" + ky; });
+      var e = el("path", { d: d, "class": "edge" + (gr.dash ? " dash" : "") }, svg);
+      e.dataset.r = gr.r; g.edges.push(e);
+      var jx = gr.jx !== undefined ? gr.jx : px;
+      var c = el("circle", { cx: jx, cy: my, r: 10, "class": "jn" }, svg); c.dataset.r = gr.r; g.jns.push(c);
+      var t = el("text", { x: jx, y: my, "class": "jt" }, svg); t.textContent = "+";
+    });
+    Object.keys(nodes).forEach(function (k) {
+      var n = nodes[k], gg = el("g", { "class": "nd", transform: "translate(" + (n.x - w / 2) + "," + (n.y - h / 2) + ")" }, svg);
+      el("rect", { width: w, height: h, rx: 6 }, gg);
+      var lab = el("text", { x: 8, y: 16, "class": "lab" }, gg); lab.textContent = vsvg(k);
+      var val = el("text", { x: w / 2, y: h - 12, "class": "val" }, gg);
+      g.nodes[k] = { g: gg, val: val };
+    });
+    return g;
+  }
+  function setNode(tr, k, cls, txt) {
+    var n = tr.nodes[k];
+    n.g.setAttribute("class", "nd " + (cls || ""));
+    n.val.textContent = txt;
+  }
+  function hlEdges(tr, on) {
+    tr.edges.concat(tr.jns).forEach(function (e) { e.classList.toggle("hl", on === true || (Array.isArray(on) && on.indexOf(+e.dataset.r) >= 0)); });
+  }
+
+  /* ---------- przewijanie ---------- */
+  var desk = window.matchMedia("(min-width: 980px)"), updaters = [];
+  function scroller(id, cb) {
+    var box = $(id), steps = box.querySelectorAll(".step"), cur = -1;
+    function go(i) {
+      if (i === cur) return;
+      var prev = cur; cur = i;
+      steps.forEach(function (s, k) { s.classList.toggle("on", k === i); });
+      cb(i, prev);
+    }
+    go(0);
+    updaters.push(function () {
+      var r = box.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > innerHeight) return;
+      var line = innerHeight * (desk.matches ? .5 : .8), k = 0;
+      steps.forEach(function (s, j) { if (s.getBoundingClientRect().top < line) k = j; });
+      go(k);
+    });
+  }
+  var ticking = false;
+  function runUpdaters() {
+    ticking = false;
+    updaters.forEach(function (f) { f(); });
+    var de = document.documentElement, mx = de.scrollHeight - innerHeight;
+    $("prog").style.width = (mx > 0 ? Math.min(100, scrollY / mx * 100) : 0) + "%";
+  }
+  window.addEventListener("scroll", function () { if (!ticking) { ticking = true; requestAnimationFrame(runUpdaters); } }, { passive: true });
+  window.addEventListener("resize", runUpdaters);
+  function setPanel(p, html) {
+    p.innerHTML = html;
+    tex(p);
+    if (!reduced) { p.classList.remove("fade"); void p.offsetWidth; p.classList.add("fade"); }
+  }
+
+  /* ---------- gotowe układy ---------- */
+  var PRESETS = [
+    { id: "p1", name: "Przykład 1", rules: "x1 + x2 == x3\nx4 + x5 == x1", rec: { x1: 100, x2: null, x3: 150, x4: 40, x5: null } },
+    { id: "p2", name: "Przykład 2", rules: "x1 + x2 == x3\n2*x1 == x2", rec: { x1: 10, x2: null, x3: null } },
+    { id: "zad", name: "Zadanie (10 zmiennych)", rules: "x1 + x2 == x3\nx4 + x5 + x6 == x1\nx7 + x8 == x2\nx9 + x10 == x3",
+      rec: { x1: 100, x2: null, x3: null, x4: 15, x5: null, x6: null, x7: 25, x8: 35, x9: null, x10: 5 } },
+    { id: "v1", name: "Układ v1 z kodu", rules: "x1 + x2 == x3\nx4 + x5 == x1\nx6 + x7 == x2\nx8 + x9 == x3",
+      rec: { x1: 80, x2: null, x3: null, x4: null, x5: 50, x6: null, x7: null, x8: 10, x9: 20 } },
+    { id: "v2", name: "Układ v2 z kodu", rules: "x1 + x2 == x3\nx4 + x5 + x6 == x2\nx7 + x8 == x1\nx9 + x10 == x3\nx4 + x7 == x9",
+      rec: { x1: null, x2: 90, x3: null, x4: 30, x5: 40, x6: null, x7: 45, x8: null, x9: null, x10: 10 } }
+  ];
+
+  /* ---------- pasmo A: przykład 1 ---------- */
+  (function () {
+    var sys = parseRules(PRESETS[0].rules), rec = PRESETS[0].rec, res = analyze(sys, rec);
+    var tr = buildTree($("treeA"), {
+      x3: { x: 280, y: 34 }, x1: { x: 170, y: 132 }, x2: { x: 390, y: 132 }, x4: { x: 100, y: 230 }, x5: { x: 240, y: 230 }
+    }, [{ p: "x3", k: ["x1", "x2"], r: 0 }, { p: "x1", k: ["x4", "x5"], r: 1 }]);
+    var V = sys.vars, P = $("a-panel");
+    var mv = res.miss.map(function (j) { return V[j]; }), ov = res.obs.map(function (j) { return V[j]; });
+    var SUB = ["Rekord i struktura bilansu", "Dwa ograniczenia", "Krok 0: zapis macierzowy", "Krok 1: część obserwowana i brakująca",
+               "Krok 1: prawa strona b*", "Krok 2: rząd i rodzaj rozwiązania", "Krok 3: braki wyznaczone jednoznacznie"];
+    function base(done) {
+      V.forEach(function (v) {
+        if (rec[v] !== null) setNode(tr, v, "", fmt(rec[v]));
+        else if (done) setNode(tr, v, "imp", fmt(res.xmn[mv.indexOf(v)]));
+        else setNode(tr, v, "miss", "?");
+      });
+    }
+    scroller("bandA", function (s) {
+      $("a-sub").textContent = SUB[s];
+      base(s >= 6);
+      hlEdges(tr, s === 1 ? true : false);
+      if (s === 3 || s === 4 || s === 5) mv.forEach(function (v) { setNode(tr, v, "miss hl", "?"); });
+      var h = "";
+      if (s === 0) h = '<p class="cap">Rekord</p>' + recrow(V, rec);
+      if (s === 1) h = '<p class="cap">Ograniczenia</p><div class="eqs"><div>\\(x_{1} + x_{2} = x_{3}\\) &nbsp;→&nbsp; \\(x_{2}\\) = 150 − 100 = <span class="ok">50</span></div><div>\\(x_{4} + x_{5} = x_{1}\\) &nbsp;→&nbsp; \\(x_{5}\\) = 100 − 40 = <span class="ok">60</span></div></div>';
+      if (s === 2) h = '<p class="cap">x<sub>1</sub> + x<sub>2</sub> − x<sub>3</sub> = 0 &nbsp;·&nbsp; −x<sub>1</sub> + x<sub>4</sub> + x<sub>5</sub> = 0</p>' +
+        eq(mx(sys.A, { cols: V.map(vname), name: "\\(\\mathbf{A}\\)" }), col(V.map(vname), { name: "\\(\\mathbf{x}\\)" }), op("="), col(sys.b, { name: "\\(\\mathbf{b}\\)" }));
+      if (s === 3) h = '<p class="cap">Kolumny braków i kolumny obserwowane</p>' +
+        eq(mx(res.Am, { cols: mv.map(vname), colCls: mv.map(function () { return "cm"; }), name: "\\(\\mathbf{A}_{m}\\)" }),
+           col(mv.map(vname), { colCls: ["cm"], name: "\\(\\mathbf{x}_{m}\\)" }), op("="), col(sys.b, { name: "\\(\\mathbf{b}\\)" }), op("−"),
+           mx(res.Ao, { cols: ov.map(vname), colCls: ov.map(function () { return "co"; }), name: "\\(\\mathbf{A}_{o}\\)" }),
+           col(res.xo, { name: "\\(\\mathbf{x}_{o}\\)" }));
+      if (s === 4) h = '<p class="cap">b* = b − A<sub>o</sub>x<sub>o</sub></p>' +
+        eq(col(sys.b, { name: "\\(\\mathbf{b}\\)" }), op("−"), col(["100 − 150", "−100 + 40"], { name: "\\(\\mathbf{A}_{o}\\mathbf{x}_{o}\\)" }), op("="),
+           col(res.bstar, { colCls: ["ri"], name: "\\(\\mathbf{b}^{*}\\)" }));
+      if (s === 5) h = '<p class="cap">Macierz rozszerzona [A<sub>m</sub> | b*]</p><div class="row2">' +
+        mx(res.Am.map(function (r, i) { return r.concat([res.bstar[i]]); }), { cols: mv.map(vname).concat(["b*"]), sepAt: 2 }) +
+        '<div style="line-height:2"><div>\\(n_{m}\\) = ' + res.nm + ' &nbsp; \\(\\operatorname{rz}(\\mathbf{A}_{m})\\) = ' + res.rankA +
+        ' &nbsp; \\(\\operatorname{rz}[\\mathbf{A}_{m} \\mid \\mathbf{b}^{*}]\\) = ' + res.rankAug + '</div><span class="badge">Przypadek 2 · jedno rozwiązanie</span></div></div>';
+      if (s === 6) h = '<div class="row2">' +
+        eq(mx(res.P, { name: "\\(\\mathbf{I} - \\mathbf{A}_{m}^{+}\\mathbf{A}_{m}\\)", rl: mv.map(function (v) { return '<span class="ok">✓ ' + vname(v) + "</span>"; }) }),
+           op("·"), col(res.xmn, { colCls: ["ri"], name: "\\(\\mathbf{A}_{m}^{+}\\mathbf{b}^{*}\\)" })) +
+        "</div>" + '<p class="cap" style="margin-top:12px">Uzupełniony rekord</p>' +
+        recrow(V, rec, mv.reduce(function (o, v, j) { o[v] = { t: "im", v: res.xmn[j] }; return o; }, {}));
+      setPanel(P, h);
+    });
+  })();
+
+  /* ---------- pasmo B: zadanie ---------- */
+  (function () {
+    var pr = PRESETS[2], sys = parseRules(pr.rules), rec = pr.rec, res = analyze(sys, rec);
+    var tr = buildTree($("treeB"), {
+      x3: { x: 300, y: 32 }, x1: { x: 135, y: 142 }, x2: { x: 335, y: 142 }, x9: { x: 452, y: 142 }, x10: { x: 548, y: 142 },
+      x4: { x: 50, y: 262 }, x5: { x: 135, y: 262 }, x6: { x: 220, y: 262 }, x7: { x: 295, y: 262 }, x8: { x: 375, y: 262 }
+    }, [
+      { p: "x3", k: ["x1", "x2"], r: 0, my: 82, jx: 235 },
+      { p: "x3", k: ["x9", "x10"], r: 3, side: true, my: 82, dash: true, jx: 500 },
+      { p: "x1", k: ["x4", "x5", "x6"], r: 1, my: 206 },
+      { p: "x2", k: ["x7", "x8"], r: 2, my: 206 }
+    ], 74, 50);
+    var rel = el("text", { x: 178, y: 310, "class": "rel" }, $("treeB"));
+    rel.textContent = "x₅ + x₆ = 85";
+    var V = sys.vars, P = $("b-panel");
+    var mv = res.miss.map(function (j) { return V[j]; }), ov = res.obs.map(function (j) { return V[j]; });
+    var SUB = ["Cztery ograniczenia, pięć braków", "Krok 1: macierz braków ma 4 wiersze i 5 kolumn", "Krok 2: macierz I − A⁺A",
+               "Krok 3: rozwiązanie o minimalnej normie", "Krok 4: imputacja braków pewnych", "Wszystkie rozwiązania układu"];
+    var slider = $("w-range"), stepNow = 0;
+    function draw(s) {
+      var t = parseFloat(slider.value);
+      V.forEach(function (v) {
+        var j = mv.indexOf(v);
+        if (j < 0) { setNode(tr, v, "", fmt(rec[v])); return; }
+        var d = res.det[j];
+        if (s === 0 || s === 1) setNode(tr, v, "miss" + (s === 1 ? " hl" : ""), "?");
+        else if (s === 2) setNode(tr, v, d ? "miss hl" : "und", "?");
+        else if (s === 3) setNode(tr, v, d ? "miss hl cand" : "und cand", fmt(res.xmn[j]));
+        else if (s === 4) setNode(tr, v, d ? "imp" : "und", d ? fmt(res.xmn[j]) : "?");
+        else setNode(tr, v, d ? "imp" : "und cand", d ? fmt(res.xmn[j]) : fmt(v === "x5" ? t : 85 - t));
+      });
+      hlEdges(tr, s === 0 ? true : s >= 4 ? [1] : false);
+      rel.classList.toggle("show", s >= 4);
+    }
+    slider.addEventListener("input", function () {
+      var t = parseFloat(slider.value);
+      $("w-val").textContent = fmt(t); $("w-val6").textContent = fmt(85 - t);
+      if (stepNow === 5) draw(5);
+    });
+    scroller("bandB", function (s) {
+      stepNow = s;
+      $("b-sub").textContent = SUB[s];
+      draw(s);
+      var h = "";
+      var rowsDet = mv.map(function (v, j) { return res.det[j] ? '<span class="ok">✓ ' + vname(v) + "</span>" : '<span class="no">✗ ' + vname(v) + "</span>"; });
+      if (s === 0) h = '<p class="cap">Rekord</p>' + recrow(V, rec);
+      if (s === 1) h = eq(mx(res.Am, { cols: mv.map(vname), colCls: mv.map(function () { return "cm"; }), name: "\\(\\mathbf{A}_{m}\\)", dimZero: true }),
+           col(mv.map(vname), { colCls: ["cm"], name: "\\(\\mathbf{x}_{m}\\)" }), op("="),
+           col(res.bstar, { name: "\\(\\mathbf{b}^{*} = -\\mathbf{A}_{o}\\mathbf{x}_{o}\\)" })) +
+           '<p class="cap" style="margin-top:10px">\\(x_{o}\\) = (' + ov.map(function (v) { return vname(v) + " = " + fmt(rec[v]); }).join(", ") + ")</p>";
+      if (s === 2) h = eq(mx(res.P, { rowCls: res.det.map(function (d) { return d ? "" : "rn"; }), dimZero: true, cols: mv.map(vname),
+           name: "\\(\\mathbf{I} - \\mathbf{A}_{m}^{+}\\mathbf{A}_{m}\\)", rl: rowsDet }));
+      if (s === 3) h = eq(mx(res.Ap, { name: "\\(\\mathbf{A}_{m}^{+}\\)", dimZero: true }), col(res.bstar, { name: "\\(\\mathbf{b}^{*}\\)" }), op("="),
+           col(res.xmn, { rowCls: res.det.map(function (d) { return d ? "ri" : "rn"; }), name: "\\(\\mathbf{A}_{m}^{+}\\mathbf{b}^{*}\\)", rl: rowsDet }));
+      if (s >= 4) {
+        var rs = {};
+        mv.forEach(function (v, j) { rs[v] = res.det[j] ? { t: "im", v: res.xmn[j] } : { t: "ud" }; });
+        h = '<p class="cap">Wynik imputacji dedukcyjnej</p>' + recrow(V, rec, rs) +
+            '<p class="cap" style="margin-top:12px">Dla \\(x_{5}, x_{6}\\) wiemy tylko: \\(x_{5} + x_{6} = 85\\)</p>';
+      }
+      setPanel(P, h);
+    });
+  })();
+
+  /* ---------- narzędzie ---------- */
+  (function () {
+    var ta = $("rules"), recin = $("recin"), out = $("tout"), err = $("rules-err");
+    var cur = PRESETS[0], vals = {}, sys = null, codeTab = "r", timer = null;
+    var box = $("presets");
+    PRESETS.forEach(function (p) {
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "chip"; b.textContent = p.name; b.dataset.id = p.id;
+      b.addEventListener("click", function () { load(p); });
+      box.appendChild(b);
+    });
+    function mark(id) { box.querySelectorAll(".chip").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.id === id ? "true" : "false"); }); }
+    function load(p) {
+      cur = p; ta.value = p.rules; vals = {};
+      Object.keys(p.rec).forEach(function (k) { vals[k] = p.rec[k]; });
+      mark(p.id); parse(true);
+    }
+    function parse(rebuild) {
+      try { sys = parseRules(ta.value); err.textContent = ""; }
+      catch (e) { err.textContent = typeof e === "string" ? e : "błąd składni"; return; }
+      var have = Array.prototype.map.call(recin.querySelectorAll("input"), function (i) { return i.dataset.v; }).join(",");
+      if (rebuild || have !== sys.vars.join(",")) {
+        recin.innerHTML = sys.vars.map(function (v) {
+          var x = vals[v];
+          return '<label>' + vname(v) + '<input type="text" inputmode="decimal" placeholder="NA" data-v="' + esc(v) + '" value="' + (x === null || x === undefined ? "" : String(x).replace(".", ",")) + '"></label>';
+        }).join("");
+        tex(recin);
+      }
+      run();
+    }
+    function readRec() {
+      var rec = {};
+      recin.querySelectorAll("input").forEach(function (i) {
+        var s = i.value.trim().replace(",", ".").replace("−", "-");
+        var x = s === "" ? null : Number(s);
+        if (s !== "" && isNaN(x)) x = null;
+        rec[i.dataset.v] = x; vals[i.dataset.v] = x;
+      });
+      return rec;
+    }
+    function rcode(rec) {
+      return '<span class="c"># install.packages(c("validate", "deductive"))</span>\nlibrary(validate)\nlibrary(deductive)\n\nv <- validator(\n  ' +
+        esc(sys.rules.join(",\n  ")) + ")\n\ndat <- data.frame(" +
+        sys.vars.map(function (v) { return esc(v) + " = " + (rec[v] === null ? "NA_real_" : rec[v]); }).join(", ") +
+        ")\n\nimpute_lr(dat, v)";
+    }
+    function pycode(rec, r) {
+      var mv = r.miss.map(function (j) { return sys.vars[j]; }), ov = r.obs.map(function (j) { return sys.vars[j]; });
+      var arr = function (M) { return "np.array([" + M.map(function (row) { return "[" + row.join(", ") + "]"; }).join(",\n" + "               ") + "])"; };
+      return "import numpy as np\n\n" +
+        '<span class="c"># kolumny braków: ' + esc(mv.join(", ")) + "</span>\nAm = " + (mv.length ? arr(r.Am) : "np.zeros((" + r.Am.length + ", 0))") + "\n" +
+        '<span class="c"># kolumny obserwowane: ' + esc(ov.join(", ")) + "</span>\nAo = " + (ov.length ? arr(r.Ao) : "np.zeros((" + r.Ao.length + ", 0))") + "\n" +
+        "xo = np.array([" + r.xo.join(", ") + "])\nb  = np.array([" + sys.b.join(", ") + "])\n\n" +
+        "b_star = b - Ao @ xo\nAm_pinv = np.linalg.pinv(Am)\nx_mn = Am_pinv @ b_star\n" +
+        "P = np.eye(Am.shape[1]) - Am_pinv @ Am\npewne = np.all(np.abs(P) < 1e-8, axis=1)\nnp.where(pewne, x_mn, np.nan)";
+    }
+    function run() {
+      if (!sys) return;
+      var rec = readRec(), r = analyze(sys, rec), V = sys.vars;
+      var mv = r.miss.map(function (j) { return V[j]; });
+      var nDet = r.det.filter(Boolean).length;
+      var D = {
+        0: ["c2", "✓", "Brak braków", "Wszystkie wartości są obserwowane i spełniają ograniczenia."],
+        1: ["c1", "1", "Rekord sprzeczny z ograniczeniami", r.nm ? "Układ dla braków nie ma rozwiązania. Żadna wartość wpisana w braki nie sprawi, że rekord będzie poprawny. Najpierw trzeba znaleźć błąd w wartościach obserwowanych."
+                                                                : "Wszystkie wartości są obserwowane, ale co najmniej jedno ograniczenie nie jest spełnione."],
+        2: ["c2", "2", "Dokładnie jedno rozwiązanie", "Wszystkie braki (" + r.nm + ") są wyznaczone jednoznacznie i zostają imputowane."],
+        3: ["c3", "3", "Nieskończenie wiele rozwiązań", nDet ? "Jednoznacznie wyznaczone: " + nDet + " z " + r.nm + " braków. Pozostałe zostają puste." : "Żaden brak nie jest wyznaczony jednoznacznie. Rekord pozostaje bez zmian."]
+      }[r.cas];
+      var ranks = '<div class="ranks"><span>\\(n_{m}\\) = <b>' + r.nm + '</b></span><span>\\(\\operatorname{rz}(\\mathbf{A}_{m})\\) = <b>' + r.rankA +
+        '</b></span><span>\\(\\operatorname{rz}[\\mathbf{A}_{m} \\mid \\mathbf{b}^{*}]\\) = <b>' + r.rankAug + "</b></span></div>";
+      var h = '<div class="diag ' + D[0] + '"><span class="cn">' + D[1] + "</span><div><h5>" + (r.cas >= 1 ? "Przypadek " + r.cas + ": " : "") + D[2] + "</h5><p>" + D[3] + "</p>" + ranks + "</div></div>";
+      var rs = {};
+      if (r.consistent) mv.forEach(function (v, j) { rs[v] = r.det[j] ? { t: "im", v: r.xmn[j] } : { t: "ud", mn: r.xmn[j] }; });
+      h += "<h4>Wynik</h4>" + recrow(V, rec, rs);
+      if (r.rels.length && r.cas === 3) {
+        h += '<div class="rels">Dla braków niewyznaczonych wiemy tylko, że:<ul>' + r.rels.map(function (q) {
+          var s = "";
+          q.terms.forEach(function (t, k) {
+            var c = t[1], a = Math.abs(c), sg = c < 0 ? " - " : (k ? " + " : "");
+            if (k === 0 && c < 0) sg = "-";
+            s += sg + (Math.abs(a - 1) < 1e-9 ? "" : tnum(a) + "\\cdot ") + (tname(mv[t[0]]) || "\\text{" + mv[t[0]].replace(/[_{}\\]/g, "") + "}");
+          });
+          return '<li>\\(' + s + " = " + tnum(q.rhs) + "\\)</li>";
+        }).join("") + "</ul></div>";
+      }
+      if (r.nm) {
+        var rl = mv.map(function (v, j) { return r.det[j] ? '<span class="ok">✓ ' + vname(v) + "</span>" : '<span class="no">✗ ' + vname(v) + "</span>"; });
+        h += '<div class="mats">' +
+          "<div><h6>Krok 1 · Układ dla braków</h6>" + eq(mx(r.Am, { cols: mv.map(vname), colCls: mv.map(function () { return "cm"; }), name: "\\(\\mathbf{A}_{m}\\)", dimZero: true }),
+              op("·"), col(mv.map(vname), { colCls: ["cm"], name: "\\(\\mathbf{x}_{m}\\)" }), op("="), col(r.bstar, { name: "\\(\\mathbf{b}^{*}\\)" })) + "</div>" +
+          "<div><h6>Krok 2 · Test jednoznaczności</h6>" + eq(mx(r.P, { cols: mv.map(vname), dimZero: true, rowCls: r.det.map(function (d) { return d ? "" : "rn"; }),
+              name: "\\(\\mathbf{I} - \\mathbf{A}_{m}^{+}\\mathbf{A}_{m}\\)", rl: rl })) + "</div>" +
+          (r.consistent ? "<div><h6>Krok 3 · Rozwiązanie o min. normie</h6>" + eq(col(r.xmn, { rowCls: r.det.map(function (d) { return d ? "ri" : "rn"; }),
+              name: "\\(\\mathbf{A}_{m}^{+}\\mathbf{b}^{*}\\)", rl: rl })) + "</div>" : "") +
+          "</div>";
+      }
+      h += '<div class="tabs" role="tablist"><button type="button" role="tab" data-t="r" aria-selected="' + (codeTab === "r") + '">R</button>' +
+           '<button type="button" role="tab" data-t="py" aria-selected="' + (codeTab === "py") + '">Python</button></div>' +
+           '<pre class="code" id="code"><button class="copy" type="button" id="copy">Kopiuj</button><span id="code-txt">' + (codeTab === "r" ? rcode(rec) : pycode(rec, r)) + "</span></pre>";
+      out.innerHTML = h;
+      tex(out);
+      out.querySelectorAll(".tabs button").forEach(function (b) { b.addEventListener("click", function () { codeTab = b.dataset.t; run(); }); });
+      $("copy").addEventListener("click", function () {
+        var txt = $("code-txt").textContent, btn = this;
+        var done = function () { btn.textContent = "Skopiowano"; setTimeout(function () { btn.textContent = "Kopiuj"; }, 1400); };
+        if (navigator.clipboard) navigator.clipboard.writeText(txt).then(done, function () {});
+      });
+    }
+    ta.addEventListener("input", function () { mark(""); clearTimeout(timer); timer = setTimeout(function () { parse(false); }, 250); });
+    recin.addEventListener("input", function () { run(); });
+    $("reset").addEventListener("click", function () {
+      Object.keys(cur.rec).forEach(function (k) { vals[k] = cur.rec[k]; });
+      parse(true);
+    });
+    $("allna").addEventListener("click", function () { if (sys) sys.vars.forEach(function (v) { vals[v] = null; }); parse(true); });
+    load(PRESETS[0]);
+  })();
+
+  /* ---------- dymki ---------- */
+  (function () {
+    var tip = $("tip"), open = null;
+    function show(btn) {
+      var src = $(btn.dataset.tip); if (!src) return;
+      tip.innerHTML = src.innerHTML; tip.classList.add("show"); open = btn;
+      btn.setAttribute("aria-expanded", "true");
+      var r = btn.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
+      var x = Math.min(Math.max(12, r.left + r.width / 2 - tw / 2), innerWidth - tw - 12);
+      var y = r.bottom + 10; if (y + th > innerHeight - 12) y = r.top - th - 10;
+      tip.style.transform = "translate(" + x + "px," + Math.max(12, y) + "px)";
+    }
+    function hide() { if (open) open.setAttribute("aria-expanded", "false"); open = null; tip.classList.remove("show"); }
+    document.querySelectorAll(".term").forEach(function (b) {
+      b.setAttribute("aria-expanded", "false");
+      b.addEventListener("mouseenter", function () { show(b); });
+      b.addEventListener("mouseleave", hide);
+      b.addEventListener("focus", function () { show(b); });
+      b.addEventListener("blur", hide);
+      b.addEventListener("click", function (e) { e.stopPropagation(); open === b ? hide() : show(b); });
+    });
+    document.addEventListener("click", hide);
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") hide(); });
+    window.addEventListener("scroll", hide, { passive: true });
+  })();
+
+  tex(document.body);
+  runUpdaters();
+})();
+</script>
+
+<script>
+/* Nawigacja strzałkami: ← → przechodzą między krokami pasm przewijanych, a poza nimi między częściami strony. */
+(function () {
+  "use strict";
+  var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var bands = Array.prototype.slice.call(document.querySelectorAll(".scrolly"));
+  function sections() { return Array.prototype.slice.call(document.querySelectorAll("header.hero, main > section, footer")); }
+  function go(y) { window.scrollTo({ top: Math.max(0, Math.round(y)), behavior: reduced ? "auto" : "smooth" }); }
+  function topOf(el) { return el.getBoundingClientRect().top + window.scrollY; }
+  function steps(b) { return Array.prototype.slice.call(b.querySelectorAll(".step")); }
+  var desk = window.matchMedia("(min-width: 980px)"), pending = null;
+  function curStep(b, noPending) {
+    if (!noPending && pending && pending.b === b && Date.now() < pending.t) return pending.i;
+    var line = innerHeight * (desk.matches ? .5 : .8), k = 0;
+    steps(b).forEach(function (x, j) { if (x.getBoundingClientRect().top < line) k = j; });
+    return k;
+  }
+  function bandInView() {
+    var mid = innerHeight * .5;
+    return bands.find(function (b) { var r = b.getBoundingClientRect(); return r.top <= mid && r.bottom > mid; }) || null;
+  }
+  function stepTo(b, i) {
+    var s = steps(b);
+    if (i < 0) { var p = b.previousElementSibling; go(p ? topOf(p) : 0); return; }
+    if (i >= s.length) { var n = b.nextElementSibling; go(n ? topOf(n) : topOf(b) + b.offsetHeight); return; }
+    pending = { b: b, i: i, t: Date.now() + (reduced ? 0 : 700) };
+    go(topOf(s[i]) + 2);
+  }
+  function move(d) {
+    var b = bandInView();
+    if (b) { stepTo(b, curStep(b) + d); return; }
+    var secs = sections(), y = window.scrollY + 4, k = -1;
+    secs.forEach(function (s, j) { if (topOf(s) <= y) k = j; });
+    var t = secs[Math.min(secs.length - 1, Math.max(0, k + d))];
+    if (d < 0 && k >= 0 && topOf(secs[k]) < y - 40) t = secs[k];
+    if (t) {
+      if (t.classList.contains("scrolly")) stepTo(t, d > 0 ? 0 : steps(t).length - 1);
+      else go(topOf(t));
+    }
+  }
+  document.addEventListener("keydown", function (e) {
+    if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+    var a = document.activeElement, tag = a && a.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (a && a.isContentEditable)) return;
+    e.preventDefault();
+    move(e.key === "ArrowRight" ? 1 : -1);
+  });
+  /* przyciski w paśmie */
+  var navs = bands.map(function (b) {
+    var head = b.querySelector(".ghead"); if (!head) return null;
+    var n = document.createElement("div"); n.className = "snav";
+    n.innerHTML = '<button type="button" aria-label="Poprzedni krok">‹</button><span></span><button type="button" aria-label="Następny krok">›</button>';
+    var bt = n.querySelectorAll("button");
+    bt[0].addEventListener("click", function () { var i = curStep(b); if (i > 0) stepTo(b, i - 1); });
+    bt[1].addEventListener("click", function () { var i = curStep(b); if (i < steps(b).length - 1) stepTo(b, i + 1); });
+    head.insertBefore(n, head.firstChild);
+    return { b: b, prev: bt[0], next: bt[1], lab: n.querySelector("span") };
+  }).filter(Boolean);
+  function upd() {
+    navs.forEach(function (o) {
+      var i = curStep(o.b, true), n = steps(o.b).length;
+      o.lab.textContent = (i + 1) + " / " + n;
+      o.prev.disabled = i === 0; o.next.disabled = i === n - 1;
+    });
+  }
+  var t = false;
+  window.addEventListener("scroll", function () { if (!t) { t = true; requestAnimationFrame(function () { t = false; upd(); }); } }, { passive: true });
+  upd();
+})();
+</script>
+</body>
+</html>

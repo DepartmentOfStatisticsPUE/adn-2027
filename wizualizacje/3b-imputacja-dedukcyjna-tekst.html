@@ -1,0 +1,1208 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dedukcja z tekstu</title>
+<meta name="description" content="Interaktywne podsumowanie imputacji dedukcyjnej na podstawie danych tekstowych i innych zmiennych: wyrażenia regularne, kody TERYT i PESEL, reguły z definicji, porządek pliku i ograniczenia modeli językowych.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Sans:ital,wght@0,400;0,600;1,400&family=Fira+Sans+Extra+Condensed:wght@500;600&family=Fira+Mono&display=swap">
+<style>
+/* Układ jak w podsumowaniach zeszytów metodologicznych: części na białym tle przeplatane pasmami
+   przewijanymi w zieleni UEP. Kolory: zieleń z logo UEP (#215932) i zieleń motywu slajdów Beamer
+   (beamer@blendedblue = rgb 0.10, 0.60, 0.41 = #1a9969). Braki danych oznaczono bursztynem. */
+:root {
+  --paper: #ffffff;
+  --paper-2: #f3f6f4;
+  --ink: #111111;
+  --ink-70: #4a504c;
+  --tint: #e6ebe8;
+  --rule: #666b68;
+  --grid: #c3cac6;
+  --uep: #215932;
+  --beamer: #1a9969;
+  --acc-text: #137352;
+  --wash: #e2f3eb;
+  --on-acc: #04281b;
+  --miss: #a8650d;
+  --miss-wash: #fbeedb;
+  --miss-line: #d9962f;
+  --band: #215932;
+  --band-ink: #eef6f0;
+  --band-mut: #a9cdb6;
+  --band-line: rgba(238, 246, 240, .26);
+  --band-soft: rgba(238, 246, 240, .07);
+  --band-acc: #7fe0b3;
+  --band-miss: #f4bf62;
+  --card: #ffffff;
+  --shadow: 0 2px 4px rgba(6, 26, 14, .25), 0 12px 32px rgba(6, 26, 14, .32);
+  --f-body: "Fira Sans", "Helvetica Neue", Arial, sans-serif;
+  --f-disp: "Fira Sans Extra Condensed", "Fira Sans", "Arial Narrow", sans-serif;
+  --f-mono: "Fira Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0f1411; --paper-2: #161d18; --ink: #e9ece9; --ink-70: #b1b8b3; --tint: #212a24;
+    --rule: #8d948f; --grid: #39433c; --uep: #2f7a46; --beamer: #3cc08d; --acc-text: #7fe0b3;
+    --wash: #173226; --on-acc: #04281b; --miss: #f4bf62; --miss-wash: #3a2c14; --miss-line: #d9962f;
+    --band: #133520; --band-ink: #eef6f0; --band-mut: #9cc4ab; --band-line: rgba(238,246,240,.2); --band-soft: rgba(238,246,240,.05);
+    --card: #161d18; --shadow: 0 2px 4px rgba(0,0,0,.4), 0 12px 32px rgba(0,0,0,.5);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0f1411; --paper-2: #161d18; --ink: #e9ece9; --ink-70: #b1b8b3; --tint: #212a24;
+  --rule: #8d948f; --grid: #39433c; --uep: #2f7a46; --beamer: #3cc08d; --acc-text: #7fe0b3;
+  --wash: #173226; --on-acc: #04281b; --miss: #f4bf62; --miss-wash: #3a2c14; --miss-line: #d9962f;
+  --band: #133520; --band-ink: #eef6f0; --band-mut: #9cc4ab; --band-line: rgba(238,246,240,.2); --band-soft: rgba(238,246,240,.05);
+  --card: #161d18; --shadow: 0 2px 4px rgba(0,0,0,.4), 0 12px 32px rgba(0,0,0,.5);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 400 16px/1.6 var(--f-body); -webkit-font-smoothing: antialiased; }
+a { color: var(--acc-text); text-underline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--beamer); outline-offset: 2px; }
+b, strong { font-weight: 600; }
+code { font-family: var(--f-mono); font-size: .9em; }
+.m { font-style: italic; white-space: nowrap; }
+.m b { font-style: normal; font-weight: 600; }
+.m sub, .m sup { font-style: normal; font-size: .7em; }
+.m .up { font-style: normal; }
+
+.progress { position: fixed; top: env(safe-area-inset-top, 0px); left: 0; right: 0; height: 3px; z-index: 30; }
+.progress i { display: block; height: 100%; width: 0; background: var(--beamer); }
+
+.wrap { max-width: 1080px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.col { max-width: 700px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.col p { margin: 0 0 1.05em; font-size: 17px; line-height: 1.65; }
+
+/* --- nagłówek --- */
+.hero { padding-block: 28px 40px; }
+.topbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+.pill { display: inline-flex; flex-direction: column; background: var(--uep); color: #fff; padding: 7px 26px 8px 18px; border-radius: 999px; line-height: 1.2; }
+.pill b { font: 600 14px/1.2 var(--f-disp); }
+.pill span { font-size: 12px; opacity: .85; }
+.topr { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; text-align: right; }
+.org { font: 600 16px/1.2 var(--f-disp); color: var(--uep); }
+:root[data-theme="dark"] .org { color: var(--acc-text); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .org { color: var(--acc-text); } }
+.unoff { font-size: 12px; color: var(--ink-70); }
+.hero-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 48px; align-items: center; margin-top: 36px; }
+.hero-grid > * { min-width: 0; }
+.eyebrow { font: 600 13px/1.2 var(--f-disp); letter-spacing: .09em; text-transform: uppercase; color: var(--acc-text); margin: 0; }
+h1 { font: 600 clamp(42px, 6vw, 72px)/.95 var(--f-disp); margin: .14em 0 .2em; letter-spacing: -.012em; }
+h1 span { display: block; color: var(--beamer); }
+.dek { font: 500 clamp(20px, 2.6vw, 27px)/1.22 var(--f-disp); color: var(--ink-70); margin: 0 0 1em; text-wrap: balance; }
+.lede { font-size: 18px; line-height: 1.6; margin: 0; }
+.authors { margin-top: 24px; border-top: 2px solid var(--ink); padding-top: 10px; display: grid; gap: 6px; }
+.authors p { margin: 0; font-size: 15px; line-height: 1.45; display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 10px; }
+.authors .k { font: 600 12px/1.6 var(--f-disp); letter-spacing: .08em; text-transform: uppercase; color: var(--acc-text); }
+.hero-art svg { width: 100%; height: auto; display: block; max-width: 420px; margin-left: auto; }
+.hero-art .q { animation: zgadnij 6s ease-in-out infinite; }
+.hero-art .a { animation: zgadnij 6s ease-in-out infinite reverse; }
+@keyframes zgadnij { 0%, 40% { opacity: 1; } 50%, 90% { opacity: 0; } 100% { opacity: 1; } }
+.scrollhint { display: flex; align-items: center; gap: 10px; margin-top: 34px; font: 500 14px/1.2 var(--f-disp); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-70); }
+.scrollhint i { width: 1px; height: 34px; background: linear-gradient(var(--beamer), transparent); display: block; animation: kapie 1.8s ease-in-out infinite; transform-origin: top; }
+@keyframes kapie { 0% { transform: scaleY(0); } 60% { transform: scaleY(1); } 100% { transform: scaleY(1); opacity: 0; } }
+
+/* --- pojęcia z dymkiem --- */
+.term { font: inherit; color: inherit; background: none; border: 0; padding: 0; margin: 0; cursor: help; text-decoration: underline dotted var(--beamer); text-decoration-thickness: 2px; text-underline-offset: 4px; }
+.term::after { content: "?"; display: inline-grid; place-items: center; width: 1.05em; height: 1.05em; margin-left: .18em; border-radius: 50%; background: var(--beamer); color: var(--on-acc); font: 600 .6em/1 var(--f-body); vertical-align: .45em; }
+#tip { position: fixed; left: 0; top: 0; z-index: 60; width: max-content; max-width: min(380px, calc(100vw - 24px)); background: var(--band); color: var(--band-ink); border: 1px solid var(--beamer); padding: 12px 15px 13px; border-radius: 5px; font: 400 14px/1.5 var(--f-body); box-shadow: var(--shadow); opacity: 0; visibility: hidden; transition: opacity .15s, visibility .15s; pointer-events: none; }
+#tip.show { opacity: 1; visibility: visible; }
+#tip .tt { display: block; font: 600 16px/1.2 var(--f-disp); color: var(--band-acc); margin-bottom: 5px; }
+#tip p { margin: 0 0 .5em; }
+#tip p:last-child { margin-bottom: 0; }
+
+/* --- głowy części --- */
+section.act { padding-block: 72px 36px; }
+.shead { text-align: center; overflow: hidden; margin-bottom: 30px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.echo { font: 600 clamp(34px, 6vw, 60px)/1.02 var(--f-disp); letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; user-select: none; margin-bottom: 18px; }
+.echo span { display: block; color: transparent; -webkit-text-stroke: 1.1px var(--grid); }
+.echo span.fill { color: var(--beamer); -webkit-text-stroke: 0; }
+.tag { display: inline-block; font: 600 12px/1 var(--f-disp); letter-spacing: .1em; text-transform: uppercase; padding: 6px 10px; border-radius: 3px; background: var(--wash); color: var(--acc-text); margin-bottom: 14px; }
+h2 { font: 600 clamp(32px, 4.6vw, 50px)/1.04 var(--f-disp); margin: 0 auto; max-width: 20ch; text-wrap: balance; }
+.sub2 { display: block; font: 500 clamp(17px, 2vw, 21px)/1.25 var(--f-disp); color: var(--ink-70); margin-top: 8px; }
+
+.versus { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 900px; margin: 30px auto 0; border-top: 2px solid var(--ink); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.versus > div { padding: 16px 24px 0 0; min-width: 0; }
+.versus > div + div { padding-left: 24px; border-left: 1px solid var(--grid); }
+.versus h4 { font: 600 20px/1.2 var(--f-disp); margin: 8px 0 6px; }
+.versus p { margin: 0 0 .7em; font-size: 15px; }
+.lbl { display: inline-block; font: 600 12px/1 var(--f-disp); letter-spacing: .07em; text-transform: uppercase; padding: 4px 8px; border-radius: 3px; }
+.lbl.old { background: var(--tint); color: var(--ink); }
+.lbl.new { background: var(--beamer); color: var(--on-acc); }
+
+.notation { max-width: 900px; margin: 40px auto 0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.notation .nh { font: 600 12px/1 var(--f-disp); letter-spacing: .1em; text-transform: uppercase; color: var(--acc-text); margin: 0 0 10px; }
+.notation dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 32px; margin: 0; border-top: 2px solid var(--ink); }
+.notation dl > div { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--grid); min-width: 0; }
+.notation dt { white-space: nowrap; }
+.notation dd { margin: 0; font-size: 15px; color: var(--ink-70); }
+@media (max-width: 760px) { .notation dl { grid-template-columns: 1fr; } }
+.keys { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; max-width: 900px; margin: 40px auto 0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.keys > div { min-width: 0; border-top: 2px solid var(--ink); padding-top: 12px; }
+.keys .big { font: 600 40px/1.1 var(--f-disp); color: var(--acc-text); white-space: nowrap; }
+.keys .big sub, .keys .big sup { font-size: .55em; }
+.keys h4 { font: 600 19px/1.2 var(--f-disp); margin: 8px 0 4px; }
+.keys p { margin: 0; font-size: 15px; color: var(--ink-70); }
+
+.note { display: flex; gap: 12px; align-items: flex-start; background: var(--wash); border-left: 3px solid var(--beamer); padding: 12px 16px; margin: 0 0 1.05em; font-size: 15px; line-height: 1.5; }
+.note > b:first-child { font: 600 12px/1.6 var(--f-disp); letter-spacing: .08em; text-transform: uppercase; color: var(--acc-text); flex: none; }
+.note.warn { background: var(--miss-wash); border-left-color: var(--miss-line); }
+.note.warn > b:first-child { color: var(--miss); }
+
+/* --- trzy przypadki --- */
+.cases { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; max-width: 1000px; margin: 28px auto 0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.case { border: 1px solid var(--grid); border-top: 4px solid var(--rule); border-radius: 4px; padding: 14px 16px 16px; min-width: 0; background: var(--paper); }
+.case.c2 { border-top-color: var(--beamer); }
+.case.c3 { border-top-color: var(--miss-line); }
+.case .no { font: 600 12px/1 var(--f-disp); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-70); }
+.case h4 { font: 600 21px/1.15 var(--f-disp); margin: 6px 0 8px; }
+.case .cond { font-size: 15px; background: var(--paper-2); padding: 6px 9px; border-radius: 3px; margin: 0 0 10px; }
+.case p { margin: 0 0 .5em; font-size: 15px; }
+.formula { max-width: 760px; margin: 36px auto 0; text-align: center; padding: 22px 16px; border-top: 2px solid var(--ink); border-bottom: 1px solid var(--grid); }
+.formula .f { font-size: clamp(20px, 3.2vw, 30px); line-height: 1.5; }
+.formula .f .part { display: inline-block; padding: 0 6px 2px; border-radius: 4px; }
+.formula .f .p1 { background: var(--wash); }
+.formula .f .p2 { background: var(--miss-wash); }
+.formula .leg { display: flex; justify-content: center; gap: 28px; flex-wrap: wrap; margin-top: 12px; font-size: 14px; color: var(--ink-70); text-align: left; }
+.formula .leg > span { display: block; max-width: 330px; }
+.formula .leg > span > i { width: 12px; height: 12px; border-radius: 2px; display: inline-block; margin-right: 8px; transform: translateY(1px); }
+
+/* --- pasma przewijane --- */
+.scrolly { background: var(--band); color: var(--band-ink); margin: 40px 0;
+  --c-miss: var(--band-miss); --c-imp: var(--band-acc); --c-obs: var(--band-mut); --c-line: var(--band-line); --c-soft: var(--band-soft); }
+.sc-in { max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr); }
+.sticky { grid-area: 1 / 1; align-self: start; position: sticky; top: 0; height: 100vh; height: 100svh; z-index: 1; display: flex; flex-direction: column; justify-content: flex-start; padding: calc(env(safe-area-inset-top, 0px) + 24px) max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)); overflow: hidden; }
+.stage { width: 100%; max-width: 760px; margin: 0 auto; }
+.ghead { margin-bottom: 10px; }
+.gtitle { font: 600 22px/1.2 var(--f-disp); color: var(--band-ink); margin: 0; }
+.gsub { font: 500 15px/1.3 var(--f-disp); color: var(--band-mut); margin: 3px 0 0; min-height: 1.3em; }
+.steps { grid-area: 1 / 1; position: relative; z-index: 2; pointer-events: none; }
+.step { min-height: 92vh; min-height: 92svh; display: flex; align-items: flex-end; justify-content: center; padding: 0 max(16px, env(safe-area-inset-right, 0px)) 6vh max(16px, env(safe-area-inset-left, 0px)); }
+.step:first-child { min-height: 110vh; min-height: 110svh; }
+.step:last-child { min-height: 120vh; min-height: 120svh; }
+.steps::after { content: ""; display: block; height: 60vh; height: 60svh; }
+.card { pointer-events: auto; width: min(500px, 100%); background: var(--card); color: var(--ink); box-shadow: var(--shadow); padding: 18px 20px 16px; border-radius: 4px; font-size: 15.5px; line-height: 1.55; opacity: .55; transform: translateY(10px); transition: opacity .45s, transform .45s; }
+.card p { margin: 0 0 .6em; }
+.card p:last-child { margin-bottom: 0; }
+.step.on .card { opacity: 1; transform: none; }
+.stepno { display: inline-block; background: var(--beamer); color: var(--on-acc); font: 600 11px/1 var(--f-disp); letter-spacing: .12em; text-transform: uppercase; padding: 5px 8px; border-radius: 2px; margin-bottom: 10px; }
+.card input[type="range"] { width: 100%; accent-color: var(--beamer); margin: 8px 0 2px; }
+.card .rv { font-variant-numeric: tabular-nums; font-weight: 600; }
+
+@media (max-width: 979px) {
+  .step { padding-bottom: 0; }
+  .card { position: sticky; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); opacity: 0; transform: translateY(14px); }
+  .step:not(.on) .card { pointer-events: none; }
+}
+@media (min-width: 980px) {
+  .sc-in { grid-template-columns: minmax(320px, 400px) minmax(0, 1fr); column-gap: 56px; padding-left: max(32px, env(safe-area-inset-left, 0px)); padding-right: max(32px, env(safe-area-inset-right, 0px)); }
+  .sticky { grid-area: auto; grid-column: 2; grid-row: 1; justify-content: center; padding: 0; }
+  .steps { grid-area: auto; grid-column: 1; grid-row: 1; }
+  .step { align-items: center; justify-content: flex-start; padding: 0; min-height: 100vh; }
+  .step:first-child { min-height: 100vh; }
+  .step:last-child { min-height: 110vh; }
+  .steps::after { height: 0; }
+  .card { opacity: .3; }
+}
+
+/* --- drzewo bilansowe (SVG) --- */
+.tree { width: 100%; height: auto; display: block; overflow: visible; }
+.tree .edge { fill: none; stroke: var(--band-line); stroke-width: 2; transition: stroke .4s, stroke-width .4s; }
+.tree .edge.dash { stroke-dasharray: 5 4; }
+.tree .edge.hl { stroke: var(--band-acc); stroke-width: 2.6; }
+.tree .jn { fill: var(--band); stroke: var(--band-line); stroke-width: 1.5; transition: stroke .4s; }
+.tree .jn.hl { stroke: var(--band-acc); }
+.tree .jt { fill: var(--band-mut); font: 600 13px var(--f-body); text-anchor: middle; dominant-baseline: central; }
+.nd rect { fill: var(--band-soft); stroke: var(--band-line); stroke-width: 1.5; rx: 6; transition: fill .45s, stroke .45s; }
+.nd .lab { fill: var(--band-mut); font: italic 400 14px var(--f-body); }
+.nd .val { fill: var(--band-ink); font: 600 21px var(--f-disp); text-anchor: middle; font-variant-numeric: tabular-nums; transition: fill .45s; }
+.nd.miss rect { stroke: var(--band-miss); stroke-dasharray: 5 4; fill: rgba(244, 191, 98, .08); }
+.nd.miss .val { fill: var(--band-miss); }
+.nd.cand .val { fill: var(--band-miss); font-style: italic; opacity: .85; }
+.nd.imp rect { fill: var(--band-acc); stroke: var(--band-acc); stroke-dasharray: none; }
+.nd.imp .val, .nd.imp .lab { fill: #08301d; }
+.nd.hl rect { stroke: var(--band-acc); stroke-width: 2.6; }
+.nd.und rect { stroke: var(--band-miss); stroke-width: 2.4; stroke-dasharray: 5 4; fill: rgba(244, 191, 98, .16); }
+.tree .rel { fill: var(--band-miss); font: 600 15px var(--f-disp); text-anchor: middle; opacity: 0; transition: opacity .4s; }
+.tree .rel.show { opacity: 1; }
+
+.panel { margin-top: 14px; min-height: 200px; font-size: 15px; overflow-x: auto; overflow-y: hidden; padding-bottom: 4px; }
+.panel.fade { animation: pojaw .45s ease both; }
+@keyframes pojaw { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.panel .cap { font: 500 13px/1.3 var(--f-disp); letter-spacing: .06em; text-transform: uppercase; color: var(--band-mut); margin: 0 0 8px; }
+.panel .row2 { display: flex; flex-wrap: wrap; gap: 6px 22px; align-items: center; }
+.panel .eqs { font-size: 18px; line-height: 1.7; }
+.panel .eqs .ok { color: var(--band-acc); font-weight: 600; }
+.badge { display: inline-block; font: 600 13px/1 var(--f-disp); letter-spacing: .05em; padding: 6px 10px; border-radius: 3px; background: var(--band-acc); color: #08301d; }
+.badge.mi { background: var(--band-miss); color: #3a2506; }
+
+/* --- macierze --- */
+.eq { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; width: max-content; max-width: none; }
+.eq .op { font-size: 20px; padding: 0 2px; }
+.mxw { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; }
+.mxn { font-size: 13px; font-style: italic; color: var(--c-obs, var(--ink-70)); white-space: nowrap; }
+.mxn b { font-style: normal; }
+.mxr { display: inline-flex; align-items: flex-start; }
+.mx { --rh: 1.8em; display: inline-grid; grid-template-columns: repeat(var(--nc), minmax(2.3em, auto)); position: relative; padding: 0 9px; font-variant-numeric: tabular-nums; }
+.mx::before, .mx::after { content: ""; position: absolute; bottom: 0; top: 0; width: 6px; border: 1.6px solid currentColor; }
+.mx.hh::before, .mx.hh::after { top: var(--rh); }
+.mx::before { left: 0; border-right: 0; }
+.mx::after { right: 0; border-left: 0; }
+.mx > span { height: var(--rh); line-height: var(--rh); text-align: center; padding: 0 5px; white-space: nowrap; transition: background .4s, color .4s; }
+.mx .mh { font-style: italic; font-size: .82em; color: var(--c-obs, var(--ink-70)); }
+.mx .cm { color: var(--c-miss, var(--miss)); }
+.mx .mh.cm { color: var(--c-miss, var(--miss)); font-weight: 600; }
+.mx .co { color: var(--c-obs, var(--ink-70)); }
+.mx .rz { opacity: .45; }
+.mx .rn { background: rgba(244, 191, 98, .18); color: var(--c-miss, var(--miss)); font-weight: 600; }
+.mx .ri { color: var(--c-imp, var(--acc-text)); font-weight: 600; }
+.mx .sep { border-left: 1.4px dashed currentColor; }
+.rl { display: inline-grid; padding-left: 4px; }
+.rl > span { height: 1.8em; line-height: 1.8em; font-size: .85em; white-space: nowrap; }
+.rl.hh { padding-top: 1.8em; }
+.rl .ok { color: var(--c-imp, var(--acc-text)); }
+.rl .no { color: var(--c-miss, var(--miss)); }
+
+.recrow { display: flex; flex-wrap: wrap; gap: 6px; }
+.recrow .cell { min-width: 58px; border: 1.5px solid var(--c-line, var(--grid)); border-radius: 4px; padding: 3px 8px 5px; text-align: center; background: var(--c-soft, transparent); }
+.recrow .cell i { display: block; font-size: 12.5px; color: var(--c-obs, var(--ink-70)); }
+.recrow .cell b { font: 600 18px/1.2 var(--f-disp); font-variant-numeric: tabular-nums; }
+.recrow .cell.na { border-style: dashed; border-color: var(--c-miss, var(--miss-line)); }
+.recrow .cell.na b { color: var(--c-miss, var(--miss)); }
+.recrow .cell.im { background: var(--c-imp, var(--beamer)); border-color: var(--c-imp, var(--beamer)); }
+.recrow .cell.im b, .recrow .cell.im i { color: #08301d; }
+.recrow .cell.ud { border-style: dashed; border-color: var(--c-miss, var(--miss-line)); background: rgba(244, 191, 98, .14); }
+.recrow .cell.ud b { color: var(--c-miss, var(--miss)); }
+.recrow .cell small { display: block; font-size: 11px; color: var(--c-obs, var(--ink-70)); line-height: 1.2; }
+
+/* --- narzędzie --- */
+.tool { border: 2px solid var(--ink); border-radius: 6px; padding: 20px 22px 22px; margin: 24px auto 0; max-width: 1040px;
+  --c-miss: var(--miss); --c-imp: var(--beamer); --c-obs: var(--ink-70); --c-line: var(--grid); --c-soft: transparent; }
+.tool .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.tool .k { font: 600 13px/1 var(--f-disp); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-70); margin-right: 4px; }
+.chip { font: 500 15px/1 var(--f-disp); border: 1.5px solid var(--grid); background: var(--paper); color: var(--ink); padding: 8px 12px; border-radius: 999px; cursor: pointer; }
+.chip:hover { border-color: var(--beamer); }
+.chip[aria-pressed="true"] { background: var(--uep); border-color: var(--uep); color: #fff; }
+.chip.ghost { border-style: dashed; }
+.tin { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 24px; margin-top: 18px; }
+.tin > div { min-width: 0; }
+.tool h4 { font: 600 16px/1.2 var(--f-disp); margin: 0 0 8px; }
+.tool h4 small { font: 400 13px var(--f-body); color: var(--ink-70); margin-left: 6px; }
+.tool textarea { width: 100%; min-height: 150px; resize: vertical; font: 14px/1.6 var(--f-mono); color: var(--ink); background: var(--paper-2); border: 1.5px solid var(--grid); border-radius: 4px; padding: 10px 12px; }
+.tool textarea:focus { border-color: var(--beamer); outline: none; }
+.err { color: var(--miss); font-size: 14px; margin: 6px 0 0; min-height: 1.4em; }
+.recin { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 8px; }
+.recin label { display: flex; flex-direction: column; gap: 2px; font-size: 13px; font-style: italic; color: var(--ink-70); }
+.recin input { width: 100%; font: 600 17px/1.2 var(--f-disp); font-variant-numeric: tabular-nums; padding: 7px 8px; border: 1.5px solid var(--grid); border-radius: 4px; background: var(--paper); color: var(--ink); text-align: center; }
+.recin input:placeholder-shown { border-style: dashed; border-color: var(--miss-line); background: var(--miss-wash); }
+.recin input::placeholder { color: var(--miss); font-weight: 600; opacity: 1; }
+.recin input:focus { border-color: var(--beamer); border-style: solid; outline: none; }
+.tout { margin-top: 22px; border-top: 1px solid var(--grid); padding-top: 18px; }
+.diag { display: flex; gap: 14px; align-items: flex-start; padding: 12px 16px; border-radius: 4px; background: var(--paper-2); border-left: 4px solid var(--rule); margin-bottom: 16px; }
+.diag.c2 { border-left-color: var(--beamer); background: var(--wash); }
+.diag.c3 { border-left-color: var(--miss-line); background: var(--miss-wash); }
+.diag.c1 { border-left-color: #c0392b; }
+.diag .cn { font: 600 34px/1 var(--f-disp); color: var(--ink-70); flex: none; min-width: 1.2em; text-align: center; }
+.diag h5 { font: 600 18px/1.2 var(--f-disp); margin: 0 0 4px; }
+.diag p { margin: 0; font-size: 14.5px; }
+.ranks { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 6px; font-size: 14px; color: var(--ink-70); }
+.ranks b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.mats { display: flex; flex-wrap: wrap; gap: 22px 36px; margin-top: 18px; align-items: flex-start; }
+.mats > div { min-width: 0; max-width: 100%; overflow-x: auto; }
+.mats h6 { font: 600 13px/1.2 var(--f-disp); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-70); margin: 0 0 6px; }
+.rels { margin-top: 16px; font-size: 15px; }
+.rels ul { margin: 4px 0 0; padding-left: 20px; }
+.tabs { display: flex; gap: 6px; margin: 20px 0 0; }
+.tabs button { font: 600 14px/1 var(--f-disp); letter-spacing: .04em; padding: 8px 14px; border: 1.5px solid var(--grid); border-bottom: 0; border-radius: 4px 4px 0 0; background: var(--paper-2); color: var(--ink-70); cursor: pointer; }
+.tabs button[aria-selected="true"] { background: var(--band); color: var(--band-ink); border-color: var(--band); }
+pre.code { margin: 0; background: var(--band); color: var(--band-ink); border-radius: 0 4px 4px 4px; padding: 14px 16px; font: 13.5px/1.55 var(--f-mono); overflow-x: auto; position: relative; }
+pre.code .c { color: var(--band-mut); }
+.copy { position: absolute; top: 8px; right: 8px; font: 600 12px/1 var(--f-disp); letter-spacing: .05em; text-transform: uppercase; padding: 6px 9px; border-radius: 3px; border: 1px solid var(--band-line); background: transparent; color: var(--band-ink); cursor: pointer; }
+
+/* --- pamiętaj --- */
+.limits { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 40px; max-width: 1000px; margin: 8px auto 0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.limits > div { border-top: 1px solid var(--rule); padding: 12px 0 14px; min-width: 0; }
+.limits h4 { font: 600 18px/1.2 var(--f-disp); margin: 0 0 4px; }
+.limits p { margin: 0; font-size: 15px; color: var(--ink-70); }
+
+.codes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; max-width: 1040px; margin: 24px auto 0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.codes > div { min-width: 0; }
+.codes h4 { font: 600 18px/1.2 var(--f-disp); margin: 0 0 8px; }
+.codes pre.code { border-radius: 4px; }
+
+footer { border-top: 2px solid var(--ink); margin-top: 64px; padding-block: 28px 56px; font-size: 13px; color: var(--ink-70); }
+footer p { margin: 0 0 .7em; max-width: 90ch; }
+footer b { color: var(--ink); }
+
+@media (max-width: 860px) {
+  .hero-grid { grid-template-columns: 1fr; gap: 24px; }
+  .hero-art svg { margin: 0 auto; max-width: 340px; }
+  .versus, .keys, .cases, .limits, .codes, .tin { grid-template-columns: 1fr; }
+  .versus > div + div { padding-left: 0; border-left: 0; border-top: 1px solid var(--grid); margin-top: 8px; }
+  .topr { align-items: flex-start; text-align: left; }
+}
+@media (max-width: 979px) {
+  .panel { font-size: 13px; min-height: 0; }
+  .panel .eqs { font-size: 15px; }
+  .ghead { margin-bottom: 4px; }
+  .gtitle { font-size: 19px; }
+}
+@media (max-width: 520px) {
+  .tool { padding: 16px 14px; }
+  .authors p { grid-template-columns: 1fr; gap: 0; }
+  .echo { font-size: 30px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* ===== 3b ===== */
+.keys.k4 { grid-template-columns: repeat(4, minmax(0, 1fr)); max-width: 1040px; }
+.keys.k4 .big { font-size: 36px; }
+.versus { margin-top: 44px; }
+.kind { display: inline-block; font: 600 11px/1 var(--f-disp); letter-spacing: .08em; text-transform: uppercase; padding: 4px 7px; border-radius: 3px; }
+.kind.st { background: var(--wash); color: var(--acc-text); }
+.kind.wa { background: var(--miss-wash); color: var(--miss); }
+.case.ok { border-top-color: var(--beamer); }
+.case.warn { border-top-color: var(--miss-line); }
+.case h4 { margin-top: 8px; }
+
+/* tabela w paśmie */
+.dwrap { overflow: hidden; }
+.dtab { width: 100%; border-collapse: collapse; font-size: 12.5px; line-height: 1.35; font-variant-numeric: tabular-nums; }
+.dtab th { color: var(--band-mut); font: 600 11px/1.2 var(--f-disp); letter-spacing: .06em; text-transform: uppercase; text-align: left; border-bottom: 1px solid var(--band-line); padding: 4px 6px; white-space: nowrap; }
+.dtab td { padding: 2.5px 6px; border-bottom: 1px solid var(--band-soft); white-space: nowrap; transition: opacity .3s, background .3s; }
+.dtab td.n { text-align: right; }
+.dtab td.na { color: var(--band-miss); font-weight: 600; }
+.dtab td.imp { color: var(--band-ink); font-weight: 600; background: rgba(127, 224, 179, .16); }
+.dtab td.cur { background: rgba(127, 224, 179, .34); }
+.dtab td.bad { color: var(--band-miss); box-shadow: inset 0 0 0 1.5px var(--band-miss); }
+.dtab td.ref { box-shadow: inset 0 0 0 1.5px var(--band-acc); }
+.dtab td.dim { opacity: .32; }
+.dtab .tt { max-width: 340px; overflow: hidden; text-overflow: ellipsis; }
+.dtab mark { background: rgba(127, 224, 179, .3); color: var(--band-ink); border-radius: 2px; padding: 0 1px; box-shadow: inset 0 -2px 0 var(--band-acc); }
+.dtab mark.alt { background: rgba(244, 191, 98, .28); box-shadow: inset 0 -2px 0 var(--band-miss); }
+.dsum { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px 18px; font: 500 14px/1.3 var(--f-disp); color: var(--band-mut); }
+.dsum b { color: var(--band-ink); font-variant-numeric: tabular-nums; }
+.dsum .lg i { display: inline-block; width: 11px; height: 11px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+
+/* ściąga i narzędzie regex */
+.cheat { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); max-width: 1040px; margin: 26px auto 0; border-top: 2px solid var(--ink); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.cheat > div { padding: 10px 10px 10px 0; border-bottom: 1px solid var(--grid); min-width: 0; }
+.cheat code { display: block; font-size: 16px; font-weight: 600; color: var(--acc-text); }
+.cheat span { font-size: 13.5px; color: var(--ink-70); }
+#rx { margin-top: 30px; }
+.rxin { margin-top: 14px; }
+.rxin label { display: block; font: 600 13px/1 var(--f-disp); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-70); margin-bottom: 6px; }
+#rx-p { width: 100%; font: 16px/1.4 var(--f-mono); padding: 10px 12px; border: 1.5px solid var(--grid); border-radius: 4px; background: var(--paper-2); color: var(--ink); }
+#rx-p:focus { border-color: var(--beamer); outline: none; }
+#rx-t { min-height: 380px; font-size: 13px; line-height: 1.75; }
+.rxout { font-size: 13.5px; max-height: 420px; overflow: auto; border: 1px solid var(--grid); border-radius: 4px; }
+.rxout .r { display: grid; grid-template-columns: minmax(0, 1fr) 76px; gap: 10px; padding: 3px 10px; border-bottom: 1px solid var(--grid); line-height: 1.6; }
+.rxout .r:nth-child(odd) { background: var(--paper-2); }
+.rxout mark { background: var(--wash); color: var(--ink); border-radius: 2px; padding: 0 1px; }
+.rxout mark .g { box-shadow: inset 0 -2px 0 var(--beamer); font-weight: 600; }
+.rxout .v { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+.rxout .v.na { color: var(--miss); }
+.tool .row .chip { margin: 2px 0; }
+
+/* PESEL i imię */
+.lab2 { margin-top: 34px; }
+.big-in { width: 100%; font: 600 22px/1.3 var(--f-mono); letter-spacing: .06em; padding: 9px 12px; border: 1.5px solid var(--grid); border-radius: 4px; background: var(--paper); color: var(--ink); margin: 12px 0; }
+.big-in:focus { border-color: var(--beamer); outline: none; }
+.pdig { display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); gap: 4px; margin-bottom: 12px; }
+.pdig div { text-align: center; border-radius: 3px; padding: 4px 0 3px; font: 600 18px/1.2 var(--f-mono); min-width: 0; }
+.pdig small { display: block; font: 400 10.5px/1.2 var(--f-body); color: var(--ink-70); }
+.pd-d { background: var(--wash); }
+.pd-s { background: var(--tint); }
+.pd-p { background: var(--miss-wash); }
+.pd-k { box-shadow: inset 0 0 0 1.5px var(--rule); }
+.res-l { list-style: none; padding: 0; margin: 0; font-size: 15px; }
+.res-l li { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; border-bottom: 1px solid var(--grid); }
+.res-l li span { color: var(--ink-70); }
+.res-l li b { text-align: right; }
+.verdict { margin-top: 12px; padding: 10px 12px; border-radius: 4px; font-size: 14.5px; line-height: 1.5; background: var(--wash); border-left: 3px solid var(--beamer); }
+.verdict.bad { background: var(--miss-wash); border-left-color: var(--miss-line); }
+
+/* model językowy */
+.llm { overflow-x: auto; margin-top: 24px; }
+table.g { border-collapse: collapse; width: 100%; max-width: 1040px; margin: 0 auto; font-size: 14px; }
+table.g th { background: var(--tint); font-weight: 600; text-align: left; border: 1px solid var(--grid); padding: 7px 9px; }
+table.g td { border: 1px solid var(--grid); padding: 7px 9px; vertical-align: top; }
+.okc { color: var(--acc-text); font-weight: 600; }
+.badc { color: var(--miss); font-weight: 600; }
+.nac { color: var(--miss); }
+
+@media (max-width: 860px) {
+  .keys.k4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cheat { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .dtab { font-size: 10.5px; }
+  .dtab td, .dtab th { padding: 2px 3px; }
+  .dtab .tt { max-width: 118px; }
+  .pdig div { font-size: 15px; }
+}
+@media (max-width: 520px) {
+  .keys.k4 { grid-template-columns: 1fr; }
+}
+
+/* --- nawigacja strzałkami --- */
+.snav { float: right; display: flex; align-items: center; gap: 6px; margin: 0 0 6px 12px; pointer-events: auto; }
+.snav button { width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--band-line); background: var(--band-soft); color: var(--band-ink); font: 600 16px/1 var(--f-body); cursor: pointer; display: grid; place-items: center; padding: 0; }
+.snav button:hover:not(:disabled) { border-color: var(--band-acc); color: var(--band-acc); }
+.snav button:disabled { opacity: .35; cursor: default; }
+.snav span { font: 500 14px/1 var(--f-disp); color: var(--band-mut); font-variant-numeric: tabular-nums; min-width: 3.2em; text-align: center; }
+.kbd { display: inline-block; font: 600 11px/1 var(--f-body); border: 1px solid var(--grid); border-bottom-width: 2px; border-radius: 3px; padding: 3px 5px; margin: 0 2px; color: var(--ink-70); text-transform: none; letter-spacing: 0; }
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<style>
+.katex { font-size: 1.07em; }
+.formula .katex-display { margin: .2em 0; overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+.formula .katex-display > .katex { font-size: clamp(1.05em, 2.4vw, 1.5em); }
+.formula .p1, .formula .p2 { padding: 3px 6px; border-radius: 4px; }
+.formula .p1 { background: var(--wash); }
+.formula .p2 { background: var(--miss-wash); }
+.keys .big .katex { font-size: .8em; }
+.stepno .katex { font-size: 1.15em; letter-spacing: 0; text-transform: none; }
+</style>
+</head>
+<body>
+<div class="progress" aria-hidden="true"><i id="prog"></i></div>
+
+<header class="hero wrap">
+  <div class="topbar">
+    <span class="pill"><b>Analiza danych niekompletnych</b><span>Materiały do zajęć · 2026/27</span></span>
+    <div class="topr"><span class="org">Uniwersytet Ekonomiczny w Poznaniu</span><span class="unoff">Katedra Statystyki</span></div>
+  </div>
+  <div class="hero-grid">
+    <div>
+      <p class="eyebrow">Imputacja danych · część 3b</p>
+      <h1>Imputacja dedukcyjna <span>z tekstu i innych zmiennych</span></h1>
+      <p class="dek">Brakująca wartość często jest zapisana gdzie indziej w tym samym rekordzie.</p>
+      <p class="lede">Powierzchnia mieszkania stoi w tytule ogłoszenia, województwo w kodzie TERYT, data urodzenia i płeć w numerze PESEL. Ta strona pokazuje, jak takie informacje wydobyć wyrażeniami regularnymi i prostymi regułami, kiedy wynik jest pewny, a kiedy reguła ma wyjątki i przestaje być dedukcją.</p>
+      <div class="authors">
+        <p><span class="k">Prowadzący</span><span>dr Maciej Beręsewicz, prof. UEP, Katedra Statystyki UEP</span></p>
+        <p><span class="k">Źródło</span><span>van der Loo, de Jonge (2018), <i>Statistical Data Cleaning with Applications in R</i>, rozdz. 5 i 9; de Waal, Pannekoek, Scholtus (2011)</span></p>
+      </div>
+      <div class="scrollhint"><i></i>Przewiń albo użyj strzałek <span class="kbd">←</span><span class="kbd">→</span></div>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+      <svg viewBox="0 0 400 300">
+        <rect x="14" y="40" width="372" height="54" rx="8" fill="var(--paper-2)" stroke="var(--grid)" stroke-width="1.5"/>
+        <text x="30" y="73" style="font:500 18px var(--f-body);fill:var(--ink)"><tspan fill="var(--acc-text)" font-weight="600">Kawalerka</tspan> <tspan fill="var(--acc-text)" font-weight="600">29 mkw</tspan>, idealna na start</text>
+        <text x="30" y="30" style="font:600 12px var(--f-disp);letter-spacing:.08em;fill:var(--ink-70)">TYTUŁ OGŁOSZENIA</text>
+        <path d="M72 100 L80 156 M150 100 L220 156" stroke="var(--beamer)" stroke-width="2" stroke-dasharray="5 4" fill="none"/>
+        <g transform="translate(20,160)">
+          <rect width="120" height="70" rx="8" fill="var(--wash)" stroke="var(--beamer)" stroke-width="2"/>
+          <text x="12" y="22" style="font:italic 14px var(--f-body);fill:var(--ink-70)">liczba pokoi</text>
+          <g class="q"><text x="60" y="56" text-anchor="middle" style="font:600 28px var(--f-disp);fill:var(--miss)">?</text></g>
+          <g class="a"><text x="60" y="56" text-anchor="middle" style="font:600 28px var(--f-disp);fill:var(--ink)">1</text></g>
+        </g>
+        <g transform="translate(160,160)">
+          <rect width="120" height="70" rx="8" fill="var(--wash)" stroke="var(--beamer)" stroke-width="2"/>
+          <text x="12" y="22" style="font:italic 14px var(--f-body);fill:var(--ink-70)">powierzchnia</text>
+          <g class="q"><text x="60" y="56" text-anchor="middle" style="font:600 28px var(--f-disp);fill:var(--miss)">?</text></g>
+          <g class="a"><text x="60" y="56" text-anchor="middle" style="font:600 28px var(--f-disp);fill:var(--ink)">29</text></g>
+        </g>
+        <text x="200" y="272" text-anchor="middle" style="font:500 16px var(--f-mono);fill:var(--ink-70)">\b(\d+)\s*(mkw|m2)</text>
+      </svg>
+    </div>
+  </div>
+</header>
+
+<main>
+<!-- ===================== CZĘŚĆ 1: idea ===================== -->
+<section class="act" id="cz1">
+  <div class="shead">
+    <span class="tag">Część 1 · Idea</span>
+    <h2>Wartość, która już jest w rekordzie</h2>
+  </div>
+  <div class="col">
+    <p>Imputacja dedukcyjna uzupełnia brak wartością, która <b>wynika jednoznacznie</b> z innych informacji o tej samej jednostce (de Waal i in., 2011). W części 3a tymi informacjami były ograniczenia liniowe. Tu są to:</p>
+  </div>
+  <div class="keys k4">
+    <div><div class="big">tekst</div><h4>Opisy i tytuły</h4><p>Tytuł ogłoszenia „2 pokoje, 45m2” zawiera dwie zmienne. Wydobywa się je <button type="button" class="term" data-tip="tip-regex">wyrażeniami regularnymi</button>.</p></div>
+    <div><div class="big">kody</div><h4>Identyfikatory</h4><p>Pierwsze dwie cyfry <button type="button" class="term" data-tip="tip-teryt">kodu TERYT</button> to województwo. <button type="button" class="term" data-tip="tip-pesel">PESEL</button> zawiera datę urodzenia i płeć.</p></div>
+    <div><div class="big">reguły</div><h4>Definicje i ścieżki</h4><p>Kawalerka ma jeden pokój. Kto nie pracował, ma zero godzin pracy. Wiek wynika z daty urodzenia.</p></div>
+    <div><div class="big">porządek</div><h4>Sortowanie pliku</h4><p>W pliku posortowanym według zmiennej brak leżący między dwiema równymi wartościami musi mieć tę samą wartość.</p></div>
+  </div>
+  <div class="versus">
+    <div><span class="lbl new">Dedukcja</span><h4>Reguła bez wyjątków</h4><p>Pierwsze dwie cyfry poprawnego kodu TERYT zawsze wskazują województwo. Dziesiąta cyfra poprawnego numeru PESEL zawsze wskazuje płeć. Jeśli dane wejściowe są poprawne, wynik jest prawdziwą wartością.</p></div>
+    <div><span class="lbl old">Reguła z wyjątkami</span><h4>To już model</h4><p>„Imię na -a oznacza kobietę” zwykle działa, ale nie dla Barnaby ani Kosmy, a Noemi i Nel nie kończą się na -a. Taka reguła przypisuje wartość <i>najbardziej prawdopodobną</i>, więc jest bliżej imputacji opartej na modelu niż dedukcji.</p></div>
+  </div>
+</section>
+
+<section class="scrolly" id="bandA" aria-label="Przykład: 20 ogłoszeń mieszkań, imputacja krok po kroku">
+  <div class="sc-in">
+    <div class="sticky">
+      <div class="stage">
+        <div class="ghead"><p class="gtitle">20 ogłoszeń, posortowanych według liczby pokoi</p><p class="gsub" id="a-sub"></p></div>
+        <div class="dwrap"><table class="dtab" id="dtab"></table></div>
+        <div class="dsum" id="dsum"></div>
+      </div>
+    </div>
+    <div class="steps">
+      <div class="step"><div class="card"><span class="stepno">Dane</span><p>Plik <code>data3-przyklad-imputacji.csv</code>: identyfikator, liczba pokoi, województwo, siedmiocyfrowy kod TERYT gminy (kolumna <code>powiat</code>), powierzchnia i tytuł ogłoszenia. Cena pominięta w tabeli.</p><p>Braki: 15 w liczbie pokoi, po 8 w województwie i powierzchni. Plik jest posortowany według liczby pokoi.</p></div></div>
+      <div class="step"><div class="card"><span class="stepno">Krok 1 · Kod TERYT</span><p>Pierwsze dwie cyfry kodu TERYT to województwo: 02 dolnośląskie, 04 kujawsko-pomorskie, 06 lubelskie, 14 mazowieckie, 30 wielkopolskie.</p><p>Wypełniamy 8 braków. Uwaga przy wczytywaniu: kod trzeba czytać jako tekst, bo <code>read.csv()</code> zamieni <code>0213011</code> na liczbę 213011 i zgubi zero.</p></div></div>
+      <div class="step"><div class="card"><span class="stepno">Krok 2 · Sprzeczności</span><p>Ta sama reguła sprawdza rekordy z województwem. W czterech rekordach (3, 5, 10, 11) województwo nie zgadza się z kodem, a rekord 15 ma kod sześciocyfrowy, więc nie da się go odczytać.</p><p>Imputacja dedukcyjna działa więc też jako kontrola. Sprzeczności nie poprawiamy automatycznie: nie wiemy, czy błąd jest w kodzie, czy w nazwie.</p></div></div>
+      <div class="step"><div class="card"><span class="stepno">Krok 3 · Powierzchnia z tytułu</span><p>Wzorzec <code>(\d+(?:[.,]\d+)?)\s*(?:m2|m²|mkw|metr)</code> szuka liczby, opcjonalnie z częścią dziesiętną po przecinku lub kropce, a za nią jednostki zapisanej na jeden z czterech sposobów.</p><p>Dopasowanie jest w każdym tytule. Wypełniamy 8 braków, zamieniając przecinek na kropkę.</p></div></div>
+      <div class="step"><div class="card"><span class="stepno">Krok 4 · Ta sama definicja</span><p>Rekordy 1 i 13 mają obie wartości: w kolumnie 32 i 64, w tytule 32,1 i 64,5. Zmienna jest więc zaokrąglana do pełnych metrów.</p><p>Wartości imputowane 47,95, 66,4 i 88,5 trzeba zaokrąglić tak samo, inaczej w jednej kolumnie znajdą się liczby o różnej dokładności. Którą regułę zaokrąglania przyjęto, trzeba ustalić u źródła danych.</p></div></div>
+      <div class="step"><div class="card"><span class="stepno">Krok 5 · Liczba pokoi z tytułu</span><p>Wzorzec <code>\b(\d+)\s*-?\s*pok</code> łapie „1 pokój”, „2-pok.”, „3-pokojowe” i „4 pok”. Słownik dodaje regułę z definicji: kawalerka, studio i garsoniera mają jeden pokój.</p><p>Wypełniamy 14 z 15 braków. Rekord 2 („Kompaktowe mieszkanie 30m2”) nie mówi nic o liczbie pokoi.</p></div></div>
+      <div class="step"><div class="card"><span class="stepno">Krok 6 · Porządek pliku</span><p>Plik jest posortowany według liczby pokoi. Rekord 2 leży między rekordem 1 i rekordem 3, które mają po jednym pokoju. Musi więc mieć jeden pokój.</p><p>Bez tytułów wiedzielibyśmy tylko, że rekordy 2–5 leżą między 1 a 2, czyli mają 1 albo 2 pokoje. Wtedy <code>fill()</code> czy <code>na.locf()</code> wpisałyby 1, ale to byłby sekwencyjny hot-deck, a nie dedukcja.</p></div></div>
+      <div class="step"><div class="card"><span class="stepno">Wynik</span><p>Wszystkie 31 braków są wypełnione regułami, które dla poprawnych danych nie mają wyjątków. Pięć rekordów trafia do wyjaśnienia.</p><p>Model językowy zapytany o rekord 2 też odpowiedział „1 pokój, kawalerka”, ale z samego tytułu tego nie wiedział. Zgodność z naszą dedukcją jest tu przypadkowa (część 4).</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== CZĘŚĆ 2: regex ===================== -->
+<section class="act" id="cz2">
+  <div class="shead">
+    <span class="tag">Część 2 · Wyrażenia regularne</span>
+    <h2>Wzorzec trzeba sprawdzić na wszystkich zapisach</h2>
+  </div>
+  <div class="col">
+    <p>Wyrażenie regularne opisuje kształt tekstu, a nie jego treść. Te same 30 metrów kwadratowych można zapisać jako <code>30m2</code>, <code>30 mkw</code>, <code>30 metrów</code> czy <code>30 m²</code>, a część dziesiętną po przecinku albo po kropce. Wzorzec napisany pod jeden przykład zawodzi na pozostałych.</p>
+  </div>
+  <div class="cheat">
+    <div><code>\d</code><span>cyfra</span></div>
+    <div><code>\d+</code><span>jedna lub więcej cyfr</span></div>
+    <div><code>\d{2}</code><span>dokładnie dwie cyfry</span></div>
+    <div><code>\s*</code><span>dowolnie wiele spacji, także zero</span></div>
+    <div><code>[.,]</code><span>kropka albo przecinek</span></div>
+    <div><code>-?</code><span>myślnik albo nic</span></div>
+    <div><code>a|b</code><span>a albo b</span></div>
+    <div><code>(…)</code><span>grupa: tę część zwracamy</span></div>
+    <div><code>(?:…)</code><span>grupa bez zwracania</span></div>
+    <div><code>\b</code><span>granica słowa</span></div>
+  </div>
+  <div class="tool wrap" id="rx">
+    <div class="row"><span class="k">Gotowe wzorce</span><span id="rx-pre"></span></div>
+    <div class="rxin">
+      <label for="rx-p">Wzorzec</label>
+      <input id="rx-p" type="text" spellcheck="false" autocomplete="off">
+      <p class="err" id="rx-err"></p>
+    </div>
+    <div class="tin">
+      <div>
+        <h4>Tytuły <small>jeden w wierszu, można dopisać własne</small></h4>
+        <textarea id="rx-t" spellcheck="false"></textarea>
+      </div>
+      <div>
+        <h4>Dopasowania <small id="rx-n"></small></h4>
+        <div class="rxout" id="rx-out"></div>
+      </div>
+    </div>
+    <div class="tabs" role="tablist"><button type="button" role="tab" aria-selected="true" data-t="r">R</button><button type="button" role="tab" aria-selected="false" data-t="py">Python</button></div>
+    <pre class="code" id="rx-code"></pre>
+  </div>
+  <div class="col" style="margin-top:28px">
+    <p class="note warn"><b>Uwaga</b><span>Wzorzec <code>\d{2},\d{1}</code> z notatnika działa dla „32,1m2”, ale dla „47,95 metrów” zwraca <code>47,9</code>: wartość wygląda wiarygodnie, a jest błędna. Gorsze od braku dopasowania jest dopasowanie złe. Zawsze sprawdzaj, ile rekordów dopasowano i co dokładnie zwrócono.</span></p>
+    <p>W R wzorzec jest zwykłym napisem, więc odwrotny ukośnik trzeba podwoić (<code>"\\d+"</code>) albo użyć napisu surowego <code>r"(\d+)"</code>. W Pythonie piszemy <code>r"\d+"</code>. Składnia użyta na tej stronie działa tak samo w JavaScripcie, w <code>stringr</code> i w module <code>re</code>.</p>
+  </div>
+</section>
+
+<!-- ===================== CZĘŚĆ 3: inne zmienne ===================== -->
+<section class="act" id="cz3">
+  <div class="shead">
+    <span class="tag">Część 3 · Inne zmienne</span>
+    <h2>Pewne i prawie pewne</h2>
+  </div>
+  <div class="col">
+    <p>Poza tekstem źródłem dedukcji są inne zmienne tego samego rekordu. O tym, czy reguła daje dedukcję, decyduje jedno pytanie: <b>czy ma wyjątki?</b></p>
+  </div>
+  <div class="cases c6">
+    <div class="case ok"><span class="kind st">pewne</span><h4>Kody i identyfikatory</h4><p>TERYT wyznacza województwo, powiat i gminę. PESEL wyznacza datę urodzenia i płeć. Warunek: kod jest poprawny, np. ma właściwą długość i sumę kontrolną.</p></div>
+    <div class="case ok"><span class="kind st">pewne</span><h4>Daty</h4><p>Wiek w dniu badania wynika z daty urodzenia. Staż pracy z dat rozpoczęcia i zakończenia. Trzeba tylko ustalić definicję, np. wiek w ukończonych latach.</p></div>
+    <div class="case ok"><span class="kind st">pewne</span><h4>Ścieżki kwestionariusza</h4><p>Jeśli na pytanie „Czy w ubiegłym tygodniu pracował(a) Pan(i)?” odpowiedź brzmi „nie”, pytanie o liczbę godzin pracy nie było zadane. Brak zastępujemy zerem albo kodem „nie dotyczy”.</p></div>
+    <div class="case ok"><span class="kind st">pewne</span><h4>Definicje</h4><p>Kawalerka ma jeden pokój. Gospodarstwo jednoosobowe nie ma dzieci w gospodarstwie. Sumy części dają całość (część 3a).</p></div>
+    <div class="case warn"><span class="kind wa">prawie pewne</span><h4>Imię a płeć</h4><p>Reguła „-a oznacza kobietę” myli się dla Barnaby, Kosmy, Bonawentury czy Kuby, a Noemi, Nel i Miriam nie kończą się na -a. Mężczyźni noszą drugie imię Maria. Lepszy jest słownik imion z rejestru PESEL z podziałem na płeć, a imiona niejednoznaczne zostawiamy jako braki.</p></div>
+    <div class="case warn"><span class="kind wa">prawie pewne</span><h4>Formy gramatyczne</h4><p>W odpowiedziach otwartych „byłam”, „zadowolona” wskazują kobietę, „byłem”, „zadowolony” mężczyznę. Ale cytaty, literówki i odpowiedzi w imieniu innej osoby się zdarzają. To wskazówka, nie dowód.</p></div>
+  </div>
+
+  <div class="tool wrap lab2" id="lab2">
+    <div class="tin">
+      <div>
+        <h4>PESEL <small>przykłady fikcyjne</small></h4>
+        <div class="row" id="ps-pre"></div>
+        <input id="ps-in" class="big-in" type="text" inputmode="numeric" maxlength="11" spellcheck="false" autocomplete="off" aria-label="Numer PESEL">
+        <div id="ps-out"></div>
+      </div>
+      <div>
+        <h4>Imię <small>reguła „-a” i lista wyjątków</small></h4>
+        <div class="row" id="im-pre"></div>
+        <input id="im-in" class="big-in" type="text" spellcheck="false" autocomplete="off" aria-label="Imię lub imiona">
+        <div id="im-out"></div>
+      </div>
+    </div>
+  </div>
+  <div class="col" style="margin-top:24px">
+    <p>Numer PESEL ma postać <code>RRMMDDPPPPK</code>: data urodzenia, cztery cyfry numeru porządkowego, z których ostatnia oznacza płeć (parzysta kobietę, nieparzysta mężczyznę), i cyfra kontrolna <code>K</code>. Stulecie jest zakodowane w miesiącu: dla urodzonych w latach 2000–2099 do miesiąca dodaje się 20, w latach 1800–1899 dodaje się 80. Cyfra kontrolna wykrywa każdą pomyłkę w jednej cyfrze, więc numer z błędną sumą kontrolną odrzucamy, zamiast z niego wnioskować.</p>
+  </div>
+</section>
+
+<!-- ===================== CZĘŚĆ 4: modele językowe ===================== -->
+<section class="act" id="cz4">
+  <div class="shead">
+    <span class="tag">Część 4 · Modele językowe</span>
+    <h2>Model językowy wyciąga dane, ale też je dopowiada</h2>
+  </div>
+  <div class="col">
+    <p>Zamiast pisać wzorce, można poprosić model językowy o zwrócenie powierzchni, informacji, czy to kawalerka, i liczby pokoi w ustalonym formacie. W notatniku robimy to lokalnie: mały model <code>qwen3:4b</code> uruchomiony w <code>ollama</code>, wywołany z R przez pakiet <code>ellmer</code> ze strukturyzowaną odpowiedzią.</p>
+  </div>
+  <div class="wrap llm">
+    <table class="g">
+      <thead><tr><th>Tytuł</th><th>Wzorce z części 2</th><th>Model <code>qwen3:4b</code></th><th>Ocena</th></tr></thead>
+      <tbody>
+        <tr><td>Przytulna kawalerka 32,1m2, 1 pokój w centrum!</td><td>32,1 m² · kawalerka · 1 pokój</td><td>32,1 · <code>is_studio = TRUE</code> · 1</td><td class="okc">zgodne</td></tr>
+        <tr><td>Luksusowy apartament 85m2, 4 pokoje</td><td>85 m² · 4 pokoje</td><td>85 · <code>FALSE</code> · 4</td><td class="okc">zgodne</td></tr>
+        <tr><td>Kompaktowe mieszkanie 30m2 w świetnej lokalizacji</td><td>30 m² · <span class="nac">brak informacji o pokojach</span></td><td>30 · <code>TRUE</code> · 1</td><td class="badc">dopowiedziane: w tekście nie ma ani kawalerki, ani liczby pokoi</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="limits" style="margin-top:24px">
+    <div><h4>Brak informacji to też odpowiedź</h4><p>Schemat odpowiedzi musi dopuszczać brak (<code>NULL</code>, <code>None</code>), a polecenie mówić wprost, żeby nie zgadywać. Inaczej model wypełni każde pole.</p></div>
+    <div><h4>Sprawdzaj wynik regułami</h4><p>Wartości z modelu przepuszczamy przez te same reguły co dane: czy powierzchnia jest w tytule, czy liczba pokoi zgadza się z porządkiem pliku, czy kod województwa pasuje.</p></div>
+    <div><h4>Powtarzalność</h4><p>Temperatura 0 i ustalone ziarno pomagają, ale wynik zależy od wersji modelu. Wzorzec daje ten sam wynik zawsze i można go przeczytać.</p></div>
+    <div><h4>Armata na wróbla</h4><p>Dla tytułów z tego przykładu dwa wzorce i słownik wystarczą. Model przydaje się, gdy tekst jest swobodny i form zapisu jest za dużo, żeby je wypisać.</p></div>
+  </div>
+</section>
+
+<!-- ===================== CZĘŚĆ 5: pamiętaj ===================== -->
+<section class="act" id="cz5">
+  <div class="shead">
+    <span class="tag">Część 5 · Pamiętaj</span>
+    <h2>O czym łatwo zapomnieć</h2>
+  </div>
+  <div class="limits">
+    <div><h4>Dedukcja to brak wyjątków</h4><p>Jeżeli reguła czasem się myli, przypisuje wartość prawdopodobną, a nie konieczną. Wtedy trzeba to nazwać i ocenić jak każdą imputację opartą na modelu.</p></div>
+    <div><h4>Licz dopasowania</h4><p>Po każdym wzorcu sprawdź, ile rekordów dopasowano i co zwrócono. Przejrzyj rekordy bez dopasowania: zwykle ujawniają nowy sposób zapisu.</p></div>
+    <div><h4>Sprzeczne źródła</h4><p>Gdy wartość obserwowana nie zgadza się z wydedukowaną, nie nadpisuj jej automatycznie. Oznacz rekord i wyjaśnij, który zapis jest błędny.</p></div>
+    <div><h4>Ta sama definicja i format</h4><p>Jednostki, zaokrąglenia, kodowanie kategorii (<code>dolnoslaskie</code> czy <code>dolnośląskie</code>) muszą być takie same jak w wartościach obserwowanych.</p></div>
+    <div><h4>Porządek to nie zawsze dedukcja</h4><p><code>fill()</code> daje dedukcję tylko wtedy, gdy brak leży między dwiema równymi wartościami w pliku posortowanym według tej zmiennej. W pozostałych przypadkach to sekwencyjny hot-deck (część 4a).</p></div>
+    <div><h4>Zapisuj, skąd jest wartość</h4><p>Dodaj kolumnę z informacją, która reguła wypełniła brak. Ułatwia to kontrolę i pozwala później odróżnić wartości obserwowane od imputowanych.</p></div>
+  </div>
+</section>
+
+<!-- ===================== CZĘŚĆ 6: kod ===================== -->
+<section class="act" id="cz6">
+  <div class="shead">
+    <span class="tag">Część 6 · R i Python</span>
+    <h2>Cały przykład w kodzie</h2>
+  </div>
+  <div class="col">
+    <p>Notatnik z zajęć: <code>codes/qmd/3b-imputacja-dedukcyjna-tekst.qmd</code>. Poniżej kroki 1–6 z przykładu, uruchamiane z głównego folderu repozytorium.</p>
+  </div>
+  <div class="codes">
+    <div><h4>R: <code>stringr</code> i <code>zoo</code></h4>
+<pre class="code">library(stringr)
+dane <- read.csv("data/data3-przyklad-imputacji.csv",
+                 colClasses = c(powiat = "character"))
+
+<span class="c"># 1–2. województwo z kodu TERYT (pełna lista: 16 kodów)</span>
+woj <- c("02" = "dolnoslaskie", "04" = "kujawsko-pomorskie",
+         "06" = "lubelskie", "14" = "mazowieckie",
+         "30" = "wielkopolskie")
+kod <- ifelse(nchar(dane$powiat) == 7,
+              substr(dane$powiat, 1, 2), NA)
+dane$woj_z_kodu <- unname(woj[kod])
+dane$wojewodztwo <- ifelse(is.na(dane$wojewodztwo),
+                           dane$woj_z_kodu, dane$wojewodztwo)
+subset(dane, is.na(woj_z_kodu) | wojewodztwo != woj_z_kodu)
+
+<span class="c"># 3. powierzchnia z tytułu</span>
+pow <- str_match(dane$tytul,
+  "(\\d+(?:[.,]\\d+)?)\\s*(?:m2|m²|mkw|metr)")[, 2]
+pow <- as.numeric(str_replace(pow, ",", "."))
+dane$powierzchnia <- ifelse(is.na(dane$powierzchnia),
+                            pow, dane$powierzchnia)
+
+<span class="c"># 5. liczba pokoi z tytułu i słownika</span>
+pok <- as.numeric(str_match(dane$tytul,
+                            "\\b(\\d+)\\s*-?\\s*pok")[, 2])
+pok[str_detect(str_to_lower(dane$tytul),
+               "kawalerk|studio|garsonier")] <- 1
+dane$liczba_pokoi <- ifelse(is.na(dane$liczba_pokoi),
+                            pok, dane$liczba_pokoi)
+
+<span class="c"># 6. porządek: brak między dwiema równymi wartościami</span>
+przod <- zoo::na.locf(dane$liczba_pokoi, na.rm = FALSE)
+tyl <- zoo::na.locf(dane$liczba_pokoi, fromLast = TRUE,
+                    na.rm = FALSE)
+dane$liczba_pokoi <- ifelse(
+  is.na(dane$liczba_pokoi) & przod == tyl,
+  przod, dane$liczba_pokoi)</pre></div>
+    <div><h4>Python: <code>pandas</code></h4>
+<pre class="code">import pandas as pd
+
+dane = pd.read_csv("data/data3-przyklad-imputacji.csv",
+                   dtype={"powiat": str})
+
+<span class="c"># 1–2. województwo z kodu TERYT (pełna lista: 16 kodów)</span>
+WOJ = {"02": "dolnoslaskie", "04": "kujawsko-pomorskie",
+       "06": "lubelskie", "14": "mazowieckie",
+       "30": "wielkopolskie"}
+kod = dane["powiat"].where(dane["powiat"].str.len() == 7)
+dane["woj_z_kodu"] = kod.str[:2].map(WOJ)
+dane["wojewodztwo"] = dane["wojewodztwo"].fillna(
+    dane["woj_z_kodu"])
+dane[dane["wojewodztwo"] != dane["woj_z_kodu"]]
+
+<span class="c"># 3. powierzchnia z tytułu</span>
+pow = dane["tytul"].str.extract(
+    r"(\d+(?:[.,]\d+)?)\s*(?:m2|m²|mkw|metr)")[0]
+dane["powierzchnia"] = dane["powierzchnia"].fillna(
+    pow.str.replace(",", ".").astype(float))
+
+<span class="c"># 5. liczba pokoi z tytułu i słownika</span>
+pok = dane["tytul"].str.extract(
+    r"\b(\d+)\s*-?\s*pok")[0].astype(float)
+kaw = dane["tytul"].str.contains(
+    "kawalerk|studio|garsonier", case=False)
+pok[kaw] = 1
+dane["liczba_pokoi"] = dane["liczba_pokoi"].fillna(pok)
+
+<span class="c"># 6. porządek: brak między dwiema równymi wartościami</span>
+przod = dane["liczba_pokoi"].ffill()
+tyl = dane["liczba_pokoi"].bfill()
+brak = dane["liczba_pokoi"].isna() & (przod == tyl)
+dane.loc[brak, "liczba_pokoi"] = przod[brak]</pre></div>
+  </div>
+</section>
+</main>
+
+<footer class="wrap">
+  <p><b>Źródła.</b> T. de Waal, J. Pannekoek, S. Scholtus (2011), <i>Handbook of Statistical Data Editing and Imputation</i>, Wiley, <a href="https://doi.org/10.1002/9780470904848">doi:10.1002/9780470904848</a>. M. van der Loo, E. de Jonge (2018), <i>Statistical Data Cleaning with Applications in R</i>, Wiley, <a href="https://doi.org/10.1002/9781118897126">doi:10.1002/9781118897126</a>, rozdz. 5 (dane tekstowe) i 9 (imputacja). Budowa numeru PESEL: ustawa z 24 września 2010 r. o ewidencji ludności. Kody województw: rejestr TERYT prowadzony przez GUS (<a href="https://eteryt.stat.gov.pl">eteryt.stat.gov.pl</a>). Przykład z modelem językowym: notatnik z zajęć, <a href="https://ellmer.tidyverse.org">ellmer</a> i <a href="https://ollama.com">ollama</a>.</p>
+  <p><b>Zajęcia.</b> Analiza danych niekompletnych, Uniwersytet Ekonomiczny w Poznaniu, Katedra Statystyki. Prowadzący: dr Maciej Beręsewicz, prof. UEP.</p>
+  <p><b>O stronie.</b> Opracowanie: Maciej Beręsewicz. Strona przygotowana z pomocą Claude (Anthropic). Forma interaktywnego podsumowania jest wzorowana na stronie <a href="https://migration.guillaumeblanc.com">„Escaping Malthus”</a>, przygotowanej przez Guillaume'a Blanca (Simon Fraser University) i Romaina Wacziarga (UCLA i NBER) jako podsumowanie ich artykułu „Malthusian Migrations”. Numery PESEL na tej stronie są fikcyjne.</p>
+</footer>
+
+<div hidden>
+  <div id="tip-regex"><span class="tt">Wyrażenie regularne</span><p>Wzorzec opisujący kształt tekstu, np. <code>\d+</code> to „jedna lub więcej cyfr”. W R: pakiet <code>stringr</code> (<code>str_extract</code>, <code>str_match</code>), w Pythonie moduł <code>re</code> i <code>pandas.Series.str.extract</code>.</p></div>
+  <div id="tip-teryt"><span class="tt">Kod TERYT</span><p>Identyfikator jednostki podziału terytorialnego z rejestru GUS. Siedmiocyfrowy kod gminy ma postać WWPPGGR: województwo, powiat, gmina i rodzaj gminy.</p><p>Kody województw są parzyste: od 02 (dolnośląskie) do 32 (zachodniopomorskie).</p></div>
+  <div id="tip-pesel"><span class="tt">Numer PESEL</span><p>Jedenaście cyfr: data urodzenia (RRMMDD, stulecie zakodowane w miesiącu), cztery cyfry serii, z których ostatnia oznacza płeć, i cyfra kontrolna.</p></div>
+</div>
+<div id="tip" role="tooltip"></div>
+
+<script>
+/*ENGINE-START*/
+var DATA = [
+  [1, 1, "dolnoslaskie", "0213011", 32, "Przytulna kawalerka 32,1m2, 1 pokój w centrum!"],
+  [2, null, null, "0406011", null, "Kompaktowe mieszkanie 30m2 w świetnej lokalizacji"],
+  [3, null, "mazowieckie", "0208011", 29, "Kawalerka 29 mkw, idealna na start"],
+  [4, null, null, "0208021", null, "Nowoczesne studio 31 metrów w centrum"],
+  [5, null, "wielkopolskie", "0208011", 30, "1-pok. mieszkanie 30m2 z balkonem"],
+  [6, 2, "mazowieckie", "1465011", 45, "2 pokoje, 45m2, słoneczne mieszkanie"],
+  [7, null, null, "1465011", null, "Przestronne 2-pok., 48 mkw z garażem"],
+  [8, null, "mazowieckie", "1465011", 46, "2 pokoje 46m2 z ogródkiem"],
+  [9, null, null, "1465012", null, "Nowoczesne 2-pokojowe mieszkanie 47,95 metrów"],
+  [10, null, "wielkopolskie", "1465011", 45, "Komfortowe 45mkw, 2-pok. z balkonem"],
+  [11, 3, "lubelskie", "3064011", 65, "3 pokoje, 65m2, przestronne mieszkanie"],
+  [12, null, null, "3064011", null, "Rodzinne 68mkw, 3-pokojowe z tarasem"],
+  [13, null, "wielkopolskie", "3064011", 64, "3-pok. apartament 64.5m2 z widokiem"],
+  [14, null, null, "3064011", null, "Słoneczne 3 pokoje 66.40 metrów z garażem"],
+  [15, null, "dolnoslaskie", "022101", 67, "3-pokojowe 67mkw z ogrodem"],
+  [16, 4, "wielkopolskie", "3061011", 85, "Luksusowy apartament 85m2, 4 pokoje"],
+  [17, null, null, "0661011", null, "4-pokojowe mieszkanie 88.50 metrów z tarasem"],
+  [18, null, "lubelskie", "0661011", 82, "Przestronne 4 pok, 82mkw z garażem"],
+  [19, null, null, "0661031", null, "Komfortowe 4-pok. mieszkanie 86m2"],
+  [20, null, "lubelskie", "0661011", 84, "4 pokoje, 84 metrów, centrum miasta"]
+];
+var WOJ = { "02": "dolnoslaskie", "04": "kujawsko-pomorskie", "06": "lubelskie", "08": "lubuskie", "10": "lodzkie", "12": "malopolskie",
+  "14": "mazowieckie", "16": "opolskie", "18": "podkarpackie", "20": "podlaskie", "22": "pomorskie", "24": "slaskie",
+  "26": "swietokrzyskie", "28": "warminsko-mazurskie", "30": "wielkopolskie", "32": "zachodniopomorskie" };
+var RX_AREA = /(\d+(?:[.,]\d+)?)\s*(?:m2|m²|mkw|metr)/i, RX_ROOMS = /\b(\d+)\s*-?\s*pok/i, RX_STUDIO = /kawalerk|studio|garsonier/i;
+
+function wojZKodu(k) { return (typeof k === "string" && /^\d{7}$/.test(k)) ? (WOJ[k.slice(0, 2)] || null) : null; }
+function analyzeRows(data) {
+  var rows = data.map(function (d) {
+    var r = { id: d[0], pok: d[1], woj: d[2], kod: d[3], pow: d[4], t: d[5] };
+    r.wojK = wojZKodu(r.kod);
+    r.kodBad = r.wojK === null;
+    r.wojConf = r.woj !== null && r.wojK !== null && r.woj !== r.wojK;
+    var a = RX_AREA.exec(r.t);
+    r.area = a ? { i: a.index, len: a[0].length, s: a[1], v: parseFloat(a[1].replace(",", ".")) } : null;
+    var m = RX_ROOMS.exec(r.t), s = RX_STUDIO.exec(r.t);
+    r.room = m ? { i: m.index, len: m[0].length, v: +m[1], src: "regex" } : (s ? { i: s.index, len: s[0].length, v: 1, src: "dict" } : null);
+    return r;
+  });
+  // liczba pokoi po regule z tytułu
+  var afterTitle = rows.map(function (r) { return r.pok !== null ? r.pok : (r.room ? r.room.v : null); });
+  rows.forEach(function (r, i) {
+    r.pokT = r.pok === null && r.room ? r.room.v : null;
+    r.pokO = null;
+    if (afterTitle[i] === null) {
+      var p = null, n = null, pi = -1, ni = -1;
+      for (var j = i - 1; j >= 0; j--) if (afterTitle[j] !== null) { p = afterTitle[j]; pi = j; break; }
+      for (j = i + 1; j < rows.length; j++) if (afterTitle[j] !== null) { n = afterTitle[j]; ni = j; break; }
+      if (p !== null && p === n) { r.pokO = p; r.orderRef = [pi, ni]; }
+    }
+  });
+  return rows;
+}
+
+function rxRun(pattern, lines) {
+  var re, hasD = true;
+  try { re = new RegExp(pattern, "id"); } catch (e) { hasD = false; re = new RegExp(pattern, "i"); }
+  var hasGroup = new RegExp("(?:" + pattern + ")|").exec("").length > 1;
+  return { hasGroup: hasGroup, rows: lines.map(function (t) {
+    var m = re.exec(t);
+    if (!m || m[0] === "") return { t: t, m: null };
+    var g = hasGroup ? m[1] : m[0], gi = null;
+    if (hasGroup && hasD && m.indices && m.indices[1]) gi = m.indices[1];
+    return { t: t, m: { i: m.index, len: m[0].length, g: g === undefined ? null : g, gi: gi } };
+  }) };
+}
+
+var PW = [1, 3, 7, 9, 1, 3, 7, 9, 1, 3];
+function peselCheck(p) {
+  if (!/^\d{11}$/.test(p)) return { ok: false, why: "len" };
+  var d = p.split("").map(Number), s = 0;
+  for (var i = 0; i < 10; i++) s += PW[i] * d[i];
+  var c = (10 - s % 10) % 10, res = { d: d, sum: s, c: c, ok: c === d[10] };
+  if (!res.ok) { res.why = "sum"; return res; }
+  var yy = d[0] * 10 + d[1], mm = d[2] * 10 + d[3], dd = d[4] * 10 + d[5], base, off;
+  var tab = [[80, 1800], [0, 1900], [20, 2000], [40, 2100], [60, 2200]];
+  for (i = 0; i < tab.length; i++) if (mm > tab[i][0] && mm <= tab[i][0] + 12) { off = tab[i][0]; base = tab[i][1]; }
+  if (base === undefined) { res.ok = false; res.why = "month"; return res; }
+  var y = base + yy, m = mm - off, dt = new Date(Date.UTC(y, m - 1, dd));
+  if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== dd) { res.ok = false; res.why = "date"; return res; }
+  res.y = y; res.m = m; res.day = dd; res.off = off; res.sex = d[9] % 2 === 0 ? "K" : "M";
+  return res;
+}
+
+var EXC_M = ["barnaba", "kosma", "bonawentura", "jarema", "dyzma", "kuba", "zawisza"],
+    EXC_K = ["noemi", "nel", "miriam", "beatrycze", "ruth", "rut", "karmen", "abigail", "inez"];
+function nameRule(n) {
+  var low = n.toLowerCase();
+  var rule = /a$/.test(low) ? "K" : "M";
+  var known = EXC_M.indexOf(low) >= 0 ? "M" : EXC_K.indexOf(low) >= 0 ? "K" : null;
+  return { name: n, rule: rule, known: known, wrong: known !== null && known !== rule };
+}
+/*ENGINE-END*/
+
+(function () {
+  "use strict";
+  function tex(el) {
+    if (!window.renderMathInElement) return;
+    renderMathInElement(el, {
+      delimiters: [{ left: "\\[", right: "\\]", display: true }, { left: "\\(", right: "\\)", display: false }],
+      throwOnError: false, strict: "ignore"
+    });
+  }
+  var $ = function (id) { return document.getElementById(id); };
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function num(v) { return String(v).replace(".", ","); }
+
+  /* ---------- przewijanie ---------- */
+  var desk = window.matchMedia("(min-width: 980px)"), updaters = [];
+  function scroller(id, cb) {
+    var box = $(id), steps = box.querySelectorAll(".step"), cur = -1;
+    function go(i) {
+      if (i === cur) return;
+      var prev = cur; cur = i;
+      steps.forEach(function (s, k) { s.classList.toggle("on", k === i); });
+      cb(i, prev);
+    }
+    go(0);
+    updaters.push(function () {
+      var r = box.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > innerHeight) return;
+      var line = innerHeight * (desk.matches ? .5 : .8), k = 0;
+      steps.forEach(function (s, j) { if (s.getBoundingClientRect().top < line) k = j; });
+      go(k);
+    });
+  }
+  var ticking = false;
+  function runUpdaters() {
+    ticking = false;
+    updaters.forEach(function (f) { f(); });
+    var de = document.documentElement, mx = de.scrollHeight - innerHeight;
+    $("prog").style.width = (mx > 0 ? Math.min(100, scrollY / mx * 100) : 0) + "%";
+  }
+  window.addEventListener("scroll", function () { if (!ticking) { ticking = true; requestAnimationFrame(runUpdaters); } }, { passive: true });
+  window.addEventListener("resize", runUpdaters);
+
+  /* ---------- pasmo A: 20 ogłoszeń ---------- */
+  (function () {
+    var rows = analyzeRows(DATA), tab = $("dtab");
+    var SUB = ["31 braków w trzech kolumnach", "Krok 1: województwo z dwóch pierwszych cyfr kodu",
+      "Krok 2: kod nie zgadza się z nazwą w 5 rekordach", "Krok 3: powierzchnia z tytułu",
+      "Krok 4: obserwowane 32 i 64, w tytule 32,1 i 64,5", "Krok 5: liczba pokoi z tytułu i słownika",
+      "Krok 6: rekord 2 między dwiema jedynkami", "Wszystkie braki wypełnione, 5 rekordów do wyjaśnienia"];
+    var FOCUS = [null, ["woj", "kod"], ["woj", "kod"], ["pow", "t"], ["pow", "t"], ["pok", "t"], ["pok"], null];
+    function mark(t, m, cls) {
+      if (!m) return esc(t);
+      return esc(t.slice(0, m.i)) + "<mark" + (cls ? ' class="' + cls + '"' : "") + ">" + esc(t.slice(m.i, m.i + m.len)) + "</mark>" + esc(t.slice(m.i + m.len));
+    }
+    function draw(s) {
+      var f = FOCUS[s], left = { pok: 0, woj: 0, pow: 0 }, flags = 0;
+      var h = "<thead><tr><th>id</th><th>pokoje</th><th>województwo</th><th>TERYT</th><th>pow.</th><th>tytuł</th></tr></thead><tbody>";
+      rows.forEach(function (r, i) {
+        var c = {};
+        function cell(k, html, cls) { c[k] = { h: html, c: cls || [] }; }
+        // pokoje
+        if (r.pok !== null) cell("pok", r.pok, (s === 6 && rows[1].orderRef && rows[1].orderRef.indexOf(i) >= 0) ? ["ref"] : []);
+        else if (s >= 5 && r.pokT !== null) cell("pok", r.pokT, ["imp"].concat(s === 5 ? ["cur"] : []).concat(s === 6 && rows[1].orderRef.indexOf(i) >= 0 ? ["ref"] : []));
+        else if (s >= 6 && r.pokO !== null) cell("pok", r.pokO, ["imp"].concat(s === 6 ? ["cur"] : []));
+        else { cell("pok", "NA", ["na"]); left.pok++; }
+        // województwo
+        if (r.woj !== null) cell("woj", esc(r.woj), s >= 2 && r.wojConf ? ["bad"] : []);
+        else if (s >= 1 && r.wojK) cell("woj", esc(r.wojK), ["imp"].concat(s === 1 ? ["cur"] : []));
+        else { cell("woj", "NA", ["na"]); left.woj++; }
+        cell("kod", esc(r.kod), s >= 2 && r.kodBad ? ["bad"] : []);
+        // powierzchnia
+        if (r.pow !== null) cell("pow", r.pow, s === 4 && r.area && r.area.v !== r.pow ? ["bad"] : []);
+        else if (s >= 3 && r.area) cell("pow", num(r.area.v), ["imp"].concat(s === 3 ? ["cur"] : []).concat(s === 4 && r.area.v % 1 ? ["bad"] : []));
+        else { cell("pow", "NA", ["na"]); left.pow++; }
+        // tytuł
+        var t = esc(r.t);
+        if (s === 3 || s === 4) t = mark(r.t, r.area, s === 4 && (r.pow === null ? r.area.v % 1 : r.area.v !== r.pow) ? "alt" : "");
+        if (s === 5) t = mark(r.t, r.room, r.room && r.room.src === "dict" ? "alt" : "");
+        cell("t", t, ["tt"]);
+        if ((s >= 2) && (r.wojConf || r.kodBad)) flags++;
+        h += "<tr>";
+        h += "<td" + (f ? ' class="dim"' : "") + ">" + r.id + "</td>";
+        ["pok", "woj", "kod", "pow", "t"].forEach(function (k) {
+          var cl = c[k].c.slice();
+          if (f && f.indexOf(k) < 0) cl.push("dim");
+          if (k === "pok" || k === "pow") cl.push("n");
+          h += "<td" + (cl.length ? ' class="' + cl.join(" ") + '"' : "") + (k === "t" ? ' title="' + esc(r.t) + '"' : "") + ">" + c[k].h + "</td>";
+        });
+        h += "</tr>";
+      });
+      tab.innerHTML = h + "</tbody>";
+      $("a-sub").textContent = SUB[s];
+      $("dsum").innerHTML = '<span>Braki: pokoje <b>' + left.pok + '</b> · województwo <b>' + left.woj + '</b> · powierzchnia <b>' + left.pow + '</b></span>' +
+        (s >= 2 ? '<span>Do wyjaśnienia: <b>' + flags + '</b></span>' : "") +
+        '<span class="lg"><i style="background:rgba(127,224,179,.4)"></i>imputowane</span>' +
+        '<span class="lg"><i style="box-shadow:inset 0 0 0 1.5px var(--band-miss)"></i>sprzeczne lub do sprawdzenia</span>';
+    }
+    scroller("bandA", draw);
+  })();
+
+  /* ---------- część 2: regex ---------- */
+  (function () {
+    var PRE = [
+      { n: "Powierzchnia", p: "(\\d+(?:[.,]\\d+)?)\\s*(?:m2|m²|mkw|metr)" },
+      { n: "Wzorzec z notatnika", p: "\\d{2},\\d{1}" },
+      { n: "Liczba pokoi", p: "\\b(\\d+)\\s*-?\\s*pok" },
+      { n: "Kawalerka / studio", p: "kawalerk|studio|garsonier" },
+      { n: "Naiwnie: pierwsza liczba", p: "\\d+" }
+    ];
+    var inp = $("rx-p"), ta = $("rx-t"), out = $("rx-out"), err = $("rx-err"), lang = "r", chips = [];
+    ta.value = DATA.map(function (d) { return d[5]; }).join("\n");
+    PRE.forEach(function (o, k) {
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "chip"; b.textContent = o.n; b.setAttribute("aria-pressed", "false");
+      b.addEventListener("click", function () { inp.value = o.p; run(); });
+      $("rx-pre").appendChild(b); chips.push(b);
+    });
+    function hl(t, m) {
+      if (!m) return esc(t);
+      var a = m.i, b = m.i + m.len, inner;
+      if (m.gi) inner = esc(t.slice(a, m.gi[0])) + '<span class="g">' + esc(t.slice(m.gi[0], m.gi[1])) + "</span>" + esc(t.slice(m.gi[1], b));
+      else inner = '<span class="g">' + esc(t.slice(a, b)) + "</span>";
+      return esc(t.slice(0, a)) + "<mark>" + inner + "</mark>" + esc(t.slice(b));
+    }
+    function val(g) {
+      if (g === null || g === undefined) return '<span class="v na">NA</span>';
+      return '<span class="v">' + esc(g) + "</span>";
+    }
+    function code(p, hasGroup) {
+      if (lang === "r") {
+        var rp = p.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+        return 'library(stringr)\n' + (hasGroup
+          ? 'str_match(dane$tytul, regex("' + rp + '", ignore_case = TRUE))[, 2]'
+          : 'str_extract(dane$tytul, regex("' + rp + '", ignore_case = TRUE))');
+      }
+      var pp = hasGroup ? p : "(" + p + ")";
+      return 'import re\ndane["tytul"].str.extract(r"' + pp.replace(/"/g, '\\"') + '", flags=re.IGNORECASE)[0]';
+    }
+    function run() {
+      var p = inp.value, lines = ta.value.split("\n").filter(function (l) { return l.trim() !== ""; });
+      chips.forEach(function (c, k) { c.setAttribute("aria-pressed", PRE[k].p === p ? "true" : "false"); });
+      var res;
+      try { if (p === "") throw new Error("pusty wzorzec"); res = rxRun(p, lines); err.textContent = ""; }
+      catch (e) { err.textContent = "Błąd we wzorcu: " + e.message; return; }
+      var k = 0;
+      out.innerHTML = res.rows.map(function (r) {
+        if (r.m) k++;
+        return '<div class="r"><span>' + hl(r.t, r.m) + "</span>" + val(r.m ? r.m.g : null) + "</div>";
+      }).join("");
+      $("rx-n").textContent = "dopasowano " + k + " z " + lines.length;
+      $("rx-code").textContent = code(p, res.hasGroup);
+    }
+    document.querySelectorAll("#rx .tabs button").forEach(function (b) {
+      b.addEventListener("click", function () {
+        lang = b.dataset.t;
+        document.querySelectorAll("#rx .tabs button").forEach(function (x) { x.setAttribute("aria-selected", x === b ? "true" : "false"); });
+        run();
+      });
+    });
+    inp.addEventListener("input", run); ta.addEventListener("input", run);
+    inp.value = PRE[0].p; run();
+  })();
+
+  /* ---------- część 3: PESEL i imię ---------- */
+  (function () {
+    var PS = [["90051502347", "kobieta, 1990"], ["03310204672", "mężczyzna, 2003"], ["90051502348", "zła cyfra kontrolna"], ["90023012340", "30 lutego"]];
+    var IM = ["Anna", "Barnaba", "Kuba", "Noemi", "Nel", "Jan Maria"];
+    var MIES = ["stycznia", "lutego", "marca", "kwietnia", "maja", "czerwca", "lipca", "sierpnia", "września", "października", "listopada", "grudnia"];
+    function chipRow(box, items, input, fn) {
+      items.forEach(function (it) {
+        var b = document.createElement("button"); b.type = "button"; b.className = "chip";
+        b.textContent = Array.isArray(it) ? it[1] : it;
+        b.addEventListener("click", function () { input.value = Array.isArray(it) ? it[0] : it; fn(); });
+        box.appendChild(b);
+      });
+    }
+    var pin = $("ps-in"), pout = $("ps-out");
+    function pesel() {
+      var p = pin.value.replace(/\s/g, ""), r = peselCheck(p), h = "";
+      if (r.why === "len") { pout.innerHTML = '<p class="verdict bad">Numer PESEL ma 11 cyfr. Wpisano ' + p.replace(/\D/g, "").length + ". Z niepełnego numeru nie wnioskujemy.</p>"; return; }
+      var lab = ["R", "R", "M", "M", "D", "D", "P", "P", "P", "Pł", "K"], cls = ["pd-d", "pd-d", "pd-d", "pd-d", "pd-d", "pd-d", "pd-s", "pd-s", "pd-s", "pd-p", "pd-k"];
+      h += '<div class="pdig">' + r.d.map(function (x, i) { return '<div class="' + cls[i] + '">' + x + "<small>" + lab[i] + (i < 10 ? " ×" + PW[i] : "") + "</small></div>"; }).join("") + "</div>";
+      h += '<ul class="res-l"><li><span>Suma ważona pierwszych 10 cyfr</span><b>' + r.sum + "</b></li>";
+      h += "<li><span>Cyfra kontrolna (10 − " + (r.sum % 10) + ") mod 10</span><b>" + r.c + (r.c === r.d[10] ? " ✓" : " ≠ " + r.d[10]) + "</b></li>";
+      if (r.why === "sum") { pout.innerHTML = h + '</ul><p class="verdict bad">Cyfra kontrolna się nie zgadza: w numerze jest błąd. Nie odczytujemy z niego daty ani płci.</p>'; return; }
+      if (r.why === "month" || r.why === "date") { pout.innerHTML = h + '</ul><p class="verdict bad">Suma kontrolna się zgadza, ale ' + (r.why === "month" ? "miesiąc nie odpowiada żadnemu stuleciu" : "taka data nie istnieje") + ". Numer jest błędny.</p>"; return; }
+      h += "<li><span>Miesiąc " + (r.m + r.off) + (r.off ? " − " + r.off : "") + "</span><b>" + r.y + " r.</b></li>";
+      h += "<li><span>Data urodzenia</span><b>" + r.day + " " + MIES[r.m - 1] + " " + r.y + "</b></li>";
+      h += "<li><span>Cyfra płci " + r.d[9] + (r.d[9] % 2 ? " (nieparzysta)" : " (parzysta)") + "</span><b>" + (r.sex === "K" ? "kobieta" : "mężczyzna") + "</b></li></ul>";
+      pout.innerHTML = h + '<p class="verdict">Numer jest poprawny, więc datę urodzenia i płeć można imputować dedukcyjnie.</p>';
+    }
+    chipRow($("ps-pre"), PS, pin, pesel); pin.addEventListener("input", pesel); pin.value = PS[0][0]; pesel();
+
+    var iin = $("im-in"), iout = $("im-out");
+    function imie() {
+      var parts = iin.value.trim().split(/\s+/).filter(Boolean);
+      if (!parts.length) { iout.innerHTML = '<p class="verdict bad">Wpisz imię.</p>'; return; }
+      var rs = parts.map(nameRule), h = '<ul class="res-l">';
+      rs.forEach(function (r, i) {
+        h += "<li><span>" + (rs.length > 1 ? (i === 0 ? "pierwsze imię " : "kolejne imię ") : "") + "<b>" + esc(r.name) + "</b>: reguła „-a”</span><b>" + (r.rule === "K" ? "kobieta" : "mężczyzna") +
+          (r.known ? (r.wrong ? " ✗" : " ✓") : "") + "</b></li>";
+      });
+      h += "</ul>";
+      var wrong = rs.filter(function (r) { return r.wrong; }), mixed = rs.some(function (r) { return r.rule !== rs[0].rule; });
+      if (wrong.length) h += '<p class="verdict bad">Reguła się myli: ' + wrong.map(function (r) { return esc(r.name) + " to imię " + (r.known === "K" ? "żeńskie" : "męskie"); }).join(", ") + ". Reguła z wyjątkami nie daje dedukcji.</p>";
+      else if (mixed) h += '<p class="verdict bad">Kolejne imiona dają sprzeczne wyniki. Maria bywa drugim imieniem mężczyzn, więc decyduje pierwsze imię, a i to trzeba sprawdzić w słowniku.</p>';
+      else h += '<p class="verdict">Reguła daje wynik zgodny z listą wyjątków. Lista jest przykładowa, więc pewność daje dopiero słownik imion z rejestru PESEL.</p>';
+      iout.innerHTML = h;
+    }
+    chipRow($("im-pre"), IM, iin, imie); iin.addEventListener("input", imie); iin.value = IM[0]; imie();
+  })();
+
+  /* ---------- dymki ---------- */
+  (function () {
+    var tip = $("tip"), open = null;
+    function show(btn) {
+      var src = $(btn.dataset.tip); if (!src) return;
+      tip.innerHTML = src.innerHTML; tip.classList.add("show"); open = btn;
+      btn.setAttribute("aria-expanded", "true");
+      var r = btn.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
+      var x = Math.min(Math.max(12, r.left + r.width / 2 - tw / 2), innerWidth - tw - 12);
+      var y = r.bottom + 10; if (y + th > innerHeight - 12) y = r.top - th - 10;
+      tip.style.transform = "translate(" + x + "px," + Math.max(12, y) + "px)";
+    }
+    function hide() { if (open) open.setAttribute("aria-expanded", "false"); open = null; tip.classList.remove("show"); }
+    document.querySelectorAll(".term").forEach(function (b) {
+      b.setAttribute("aria-expanded", "false");
+      b.addEventListener("mouseenter", function () { show(b); });
+      b.addEventListener("mouseleave", hide);
+      b.addEventListener("focus", function () { show(b); });
+      b.addEventListener("blur", hide);
+      b.addEventListener("click", function (e) { e.stopPropagation(); open === b ? hide() : show(b); });
+    });
+    document.addEventListener("click", hide);
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") hide(); });
+    window.addEventListener("scroll", hide, { passive: true });
+  })();
+
+  tex(document.body);
+  runUpdaters();
+})();
+</script>
+
+<script>
+/* Nawigacja strzałkami: ← → przechodzą między krokami pasm przewijanych, a poza nimi między częściami strony. */
+(function () {
+  "use strict";
+  var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var bands = Array.prototype.slice.call(document.querySelectorAll(".scrolly"));
+  function sections() { return Array.prototype.slice.call(document.querySelectorAll("header.hero, main > section, footer")); }
+  function go(y) { window.scrollTo({ top: Math.max(0, Math.round(y)), behavior: reduced ? "auto" : "smooth" }); }
+  function topOf(el) { return el.getBoundingClientRect().top + window.scrollY; }
+  function steps(b) { return Array.prototype.slice.call(b.querySelectorAll(".step")); }
+  var desk = window.matchMedia("(min-width: 980px)"), pending = null;
+  function curStep(b, noPending) {
+    if (!noPending && pending && pending.b === b && Date.now() < pending.t) return pending.i;
+    var line = innerHeight * (desk.matches ? .5 : .8), k = 0;
+    steps(b).forEach(function (x, j) { if (x.getBoundingClientRect().top < line) k = j; });
+    return k;
+  }
+  function bandInView() {
+    var mid = innerHeight * .5;
+    return bands.find(function (b) { var r = b.getBoundingClientRect(); return r.top <= mid && r.bottom > mid; }) || null;
+  }
+  function stepTo(b, i) {
+    var s = steps(b);
+    if (i < 0) { var p = b.previousElementSibling; go(p ? topOf(p) : 0); return; }
+    if (i >= s.length) { var n = b.nextElementSibling; go(n ? topOf(n) : topOf(b) + b.offsetHeight); return; }
+    pending = { b: b, i: i, t: Date.now() + (reduced ? 0 : 700) };
+    go(topOf(s[i]) + 2);
+  }
+  function move(d) {
+    var b = bandInView();
+    if (b) { stepTo(b, curStep(b) + d); return; }
+    var secs = sections(), y = window.scrollY + 4, k = -1;
+    secs.forEach(function (s, j) { if (topOf(s) <= y) k = j; });
+    var t = secs[Math.min(secs.length - 1, Math.max(0, k + d))];
+    if (d < 0 && k >= 0 && topOf(secs[k]) < y - 40) t = secs[k];
+    if (t) {
+      if (t.classList.contains("scrolly")) stepTo(t, d > 0 ? 0 : steps(t).length - 1);
+      else go(topOf(t));
+    }
+  }
+  document.addEventListener("keydown", function (e) {
+    if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+    var a = document.activeElement, tag = a && a.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (a && a.isContentEditable)) return;
+    e.preventDefault();
+    move(e.key === "ArrowRight" ? 1 : -1);
+  });
+  /* przyciski w paśmie */
+  var navs = bands.map(function (b) {
+    var head = b.querySelector(".ghead"); if (!head) return null;
+    var n = document.createElement("div"); n.className = "snav";
+    n.innerHTML = '<button type="button" aria-label="Poprzedni krok">‹</button><span></span><button type="button" aria-label="Następny krok">›</button>';
+    var bt = n.querySelectorAll("button");
+    bt[0].addEventListener("click", function () { var i = curStep(b); if (i > 0) stepTo(b, i - 1); });
+    bt[1].addEventListener("click", function () { var i = curStep(b); if (i < steps(b).length - 1) stepTo(b, i + 1); });
+    head.insertBefore(n, head.firstChild);
+    return { b: b, prev: bt[0], next: bt[1], lab: n.querySelector("span") };
+  }).filter(Boolean);
+  function upd() {
+    navs.forEach(function (o) {
+      var i = curStep(o.b, true), n = steps(o.b).length;
+      o.lab.textContent = (i + 1) + " / " + n;
+      o.prev.disabled = i === 0; o.next.disabled = i === n - 1;
+    });
+  }
+  var t = false;
+  window.addEventListener("scroll", function () { if (!t) { t = true; requestAnimationFrame(function () { t = false; upd(); }); } }, { passive: true });
+  upd();
+})();
+</script>
+</body>
+</html>

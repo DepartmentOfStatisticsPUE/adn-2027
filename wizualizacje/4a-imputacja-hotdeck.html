@@ -1,0 +1,1504 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Imputacja hot-deck</title>
+<meta name="description" content="Interaktywne podsumowanie imputacji hot-deck: dawcy i biorcy, losowy hot-deck bez klas i w klasach imputacyjnych, sekwencyjny hot-deck, wartość oczekiwana i wariancja estymatora średniej, wyniki przykładu i symulacji.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Sans:ital,wght@0,400;0,600;1,400&family=Fira+Sans+Extra+Condensed:wght@500;600&family=Fira+Mono&display=swap">
+<style>
+/* Układ jak w podsumowaniach zeszytów metodologicznych: części na białym tle przeplatane pasmami
+   przewijanymi w zieleni UEP. Kolory: zieleń z logo UEP (#215932) i zieleń motywu slajdów Beamer
+   (beamer@blendedblue = rgb 0.10, 0.60, 0.41 = #1a9969). Braki danych oznaczono bursztynem.
+   Para serii na wykresach (w klasach / bez klas) sprawdzona walidatorem palety w obu motywach. */
+:root {
+  --paper: #ffffff;
+  --paper-2: #f3f6f4;
+  --ink: #111111;
+  --ink-70: #4a504c;
+  --tint: #e6ebe8;
+  --rule: #666b68;
+  --grid: #c3cac6;
+  --uep: #215932;
+  --beamer: #1a9969;
+  --acc-text: #137352;
+  --wash: #e2f3eb;
+  --on-acc: #04281b;
+  --miss: #a8650d;
+  --miss-wash: #fbeedb;
+  --miss-line: #d9962f;
+  --s-kl: #1a9969;
+  --s-bez: #c77f1a;
+  --band: #215932;
+  --band-ink: #eef6f0;
+  --band-mut: #a9cdb6;
+  --band-line: rgba(238, 246, 240, .26);
+  --band-soft: rgba(238, 246, 240, .07);
+  --band-acc: #7fe0b3;
+  --band-miss: #f4bf62;
+  --card: #ffffff;
+  --shadow: 0 2px 4px rgba(6, 26, 14, .25), 0 12px 32px rgba(6, 26, 14, .32);
+  --f-body: "Fira Sans", "Helvetica Neue", Arial, sans-serif;
+  --f-disp: "Fira Sans Extra Condensed", "Fira Sans", "Arial Narrow", sans-serif;
+  --f-mono: "Fira Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0f1411; --paper-2: #161d18; --ink: #e9ece9; --ink-70: #b1b8b3; --tint: #212a24;
+    --rule: #8d948f; --grid: #39433c; --uep: #2f7a46; --beamer: #3cc08d; --acc-text: #7fe0b3;
+    --wash: #173226; --on-acc: #04281b; --miss: #f4bf62; --miss-wash: #3a2c14; --miss-line: #d9962f;
+    --s-kl: #25a072; --s-bez: #c0841f;
+    --band: #133520; --band-ink: #eef6f0; --band-mut: #9cc4ab; --band-line: rgba(238,246,240,.2); --band-soft: rgba(238,246,240,.05);
+    --card: #161d18; --shadow: 0 2px 4px rgba(0,0,0,.4), 0 12px 32px rgba(0,0,0,.5);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0f1411; --paper-2: #161d18; --ink: #e9ece9; --ink-70: #b1b8b3; --tint: #212a24;
+  --rule: #8d948f; --grid: #39433c; --uep: #2f7a46; --beamer: #3cc08d; --acc-text: #7fe0b3;
+  --wash: #173226; --on-acc: #04281b; --miss: #f4bf62; --miss-wash: #3a2c14; --miss-line: #d9962f;
+  --s-kl: #25a072; --s-bez: #c0841f;
+  --band: #133520; --band-ink: #eef6f0; --band-mut: #9cc4ab; --band-line: rgba(238,246,240,.2); --band-soft: rgba(238,246,240,.05);
+  --card: #161d18; --shadow: 0 2px 4px rgba(0,0,0,.4), 0 12px 32px rgba(0,0,0,.5);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 400 16px/1.6 var(--f-body); -webkit-font-smoothing: antialiased; }
+a { color: var(--acc-text); text-underline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--beamer); outline-offset: 2px; }
+b, strong { font-weight: 600; }
+code { font-family: var(--f-mono); font-size: .9em; }
+.m { font-style: italic; white-space: nowrap; }
+.m b { font-style: normal; font-weight: 600; }
+.m sub, .m sup { font-style: normal; font-size: .7em; }
+
+.progress { position: fixed; top: env(safe-area-inset-top, 0px); left: 0; right: 0; height: 3px; z-index: 30; }
+.progress i { display: block; height: 100%; width: 0; background: var(--beamer); }
+
+.wrap { max-width: 1080px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.col { max-width: 700px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.col p { margin: 0 0 1.05em; font-size: 17px; line-height: 1.65; }
+
+/* --- nagłówek --- */
+.hero { padding-block: 28px 40px; }
+.topbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+.pill { display: inline-flex; flex-direction: column; background: var(--uep); color: #fff; padding: 7px 26px 8px 18px; border-radius: 999px; line-height: 1.2; }
+.pill b { font: 600 14px/1.2 var(--f-disp); }
+.pill span { font-size: 12px; opacity: .85; }
+.topr { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; text-align: right; }
+.org { font: 600 16px/1.2 var(--f-disp); color: var(--uep); }
+:root[data-theme="dark"] .org { color: var(--acc-text); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .org { color: var(--acc-text); } }
+.unoff { font-size: 12px; color: var(--ink-70); }
+.hero-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 48px; align-items: center; margin-top: 36px; }
+.hero-grid > * { min-width: 0; }
+.eyebrow { font: 600 13px/1.2 var(--f-disp); letter-spacing: .09em; text-transform: uppercase; color: var(--acc-text); margin: 0; }
+h1 { font: 600 clamp(42px, 6vw, 72px)/.95 var(--f-disp); margin: .14em 0 .2em; letter-spacing: -.012em; }
+h1 span { color: var(--beamer); }
+.dek { font: 500 clamp(20px, 2.6vw, 27px)/1.22 var(--f-disp); color: var(--ink-70); margin: 0 0 1em; text-wrap: balance; }
+.lede { font-size: 18px; line-height: 1.6; margin: 0; }
+.authors { margin-top: 24px; border-top: 2px solid var(--ink); padding-top: 10px; display: grid; gap: 6px; }
+.authors p { margin: 0; font-size: 15px; line-height: 1.45; display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 10px; }
+.authors .k { font: 600 12px/1.6 var(--f-disp); letter-spacing: .08em; text-transform: uppercase; color: var(--acc-text); }
+.hero-art svg { width: 100%; height: auto; display: block; max-width: 420px; margin-left: auto; }
+.hero-art .fly { stroke-dasharray: 260; stroke-dashoffset: 260; animation: lec 5s ease-in-out infinite; }
+.hero-art .q { animation: znik 5s ease-in-out infinite; }
+.hero-art .a { animation: znik 5s ease-in-out infinite reverse; }
+@keyframes lec { 0%, 15% { stroke-dashoffset: 260; } 45%, 85% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes znik { 0%, 42% { opacity: 1; } 50%, 92% { opacity: 0; } 100% { opacity: 1; } }
+.scrollhint { display: flex; align-items: center; gap: 10px; margin-top: 34px; font: 500 14px/1.2 var(--f-disp); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-70); }
+.scrollhint i { width: 1px; height: 34px; background: linear-gradient(var(--beamer), transparent); display: block; animation: kapie 1.8s ease-in-out infinite; transform-origin: top; }
+@keyframes kapie { 0% { transform: scaleY(0); } 60% { transform: scaleY(1); } 100% { transform: scaleY(1); opacity: 0; } }
+
+/* --- pojęcia z dymkiem --- */
+.term { font: inherit; color: inherit; background: none; border: 0; padding: 0; margin: 0; cursor: help; text-decoration: underline dotted var(--beamer); text-decoration-thickness: 2px; text-underline-offset: 4px; }
+.term::after { content: "?"; display: inline-grid; place-items: center; width: 1.05em; height: 1.05em; margin-left: .18em; border-radius: 50%; background: var(--beamer); color: var(--on-acc); font: 600 .6em/1 var(--f-body); vertical-align: .45em; }
+#tip { position: fixed; left: 0; top: 0; z-index: 60; width: max-content; max-width: min(380px, calc(100vw - 24px)); background: var(--band); color: var(--band-ink); border: 1px solid var(--beamer); padding: 12px 15px 13px; border-radius: 5px; font: 400 14px/1.5 var(--f-body); box-shadow: var(--shadow); opacity: 0; visibility: hidden; transition: opacity .15s, visibility .15s; pointer-events: none; }
+#tip.show { opacity: 1; visibility: visible; }
+#tip .tt { display: block; font: 600 16px/1.2 var(--f-disp); color: var(--band-acc); margin-bottom: 5px; }
+#tip p { margin: 0 0 .5em; }
+#tip p:last-child { margin-bottom: 0; }
+
+/* --- głowy części --- */
+section.act { padding-block: 72px 36px; }
+.shead { text-align: center; overflow: hidden; margin-bottom: 30px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.echo { font: 600 clamp(34px, 6vw, 60px)/1.02 var(--f-disp); letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; user-select: none; margin-bottom: 18px; }
+.echo span { display: block; color: transparent; -webkit-text-stroke: 1.1px var(--grid); }
+.echo span.fill { color: var(--beamer); -webkit-text-stroke: 0; }
+.tag { display: inline-block; font: 600 12px/1 var(--f-disp); letter-spacing: .1em; text-transform: uppercase; padding: 6px 10px; border-radius: 3px; background: var(--wash); color: var(--acc-text); margin-bottom: 14px; }
+h2 { font: 600 clamp(32px, 4.6vw, 50px)/1.04 var(--f-disp); margin: 0 auto; max-width: 20ch; text-wrap: balance; }
+.sub2 { display: block; font: 500 clamp(17px, 2vw, 21px)/1.25 var(--f-disp); color: var(--ink-70); margin-top: 8px; }
+
+.keys { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; max-width: 900px; margin: 36px auto 0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.keys > div { min-width: 0; border-top: 2px solid var(--ink); padding-top: 12px; }
+.keys .big { font: 600 40px/1.1 var(--f-disp); color: var(--acc-text); white-space: nowrap; }
+.keys h4 { font: 600 19px/1.2 var(--f-disp); margin: 8px 0 4px; }
+.keys p { margin: 0; font-size: 15px; color: var(--ink-70); }
+.roles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 900px; margin: 30px auto 0; border-top: 2px solid var(--ink); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.roles > div { padding: 16px 20px 0 0; min-width: 0; }
+.roles > div + div { padding-left: 20px; border-left: 1px solid var(--grid); }
+.roles h4 { font: 600 20px/1.2 var(--f-disp); margin: 8px 0 6px; }
+.roles p { margin: 0; font-size: 15px; }
+.lbl { display: inline-block; font: 600 12px/1 var(--f-disp); letter-spacing: .07em; text-transform: uppercase; padding: 4px 8px; border-radius: 3px; }
+.lbl.na { background: var(--miss-wash); color: var(--miss); border: 1px dashed var(--miss-line); }
+.lbl.ok { background: var(--tint); color: var(--ink); }
+.lbl.new { background: var(--beamer); color: var(--on-acc); }
+
+.note { display: flex; gap: 12px; align-items: flex-start; background: var(--wash); border-left: 3px solid var(--beamer); padding: 12px 16px; margin: 0 0 1.05em; font-size: 15px; line-height: 1.5; }
+.note > b:first-child { font: 600 12px/1.6 var(--f-disp); letter-spacing: .08em; text-transform: uppercase; color: var(--acc-text); flex: none; }
+.note.warn { background: var(--miss-wash); border-left-color: var(--miss-line); }
+.note.warn > b:first-child { color: var(--miss); }
+
+/* --- warianty --- */
+.cases { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; max-width: 1080px; margin: 28px auto 0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.case { border: 1px solid var(--grid); border-top: 4px solid var(--beamer); border-radius: 4px; padding: 14px 16px 16px; min-width: 0; background: var(--paper); }
+.case.det { border-top-color: var(--rule); }
+.case .no { font: 600 12px/1 var(--f-disp); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-70); }
+.case h4 { font: 600 20px/1.15 var(--f-disp); margin: 6px 0 8px; }
+.case p { margin: 0 0 .5em; font-size: 14.5px; }
+.case .fn { font: 13px/1.4 var(--f-mono); color: var(--ink-70); margin-top: 8px; }
+.kind { display: inline-block; font: 600 11px/1 var(--f-disp); letter-spacing: .08em; text-transform: uppercase; padding: 4px 7px; border-radius: 3px; margin-bottom: 8px; }
+.kind.st { background: var(--wash); color: var(--acc-text); }
+.kind.de { background: var(--tint); color: var(--ink-70); }
+
+.formula { max-width: 760px; margin: 30px auto 0; text-align: center; padding: 22px 16px; border-top: 2px solid var(--ink); border-bottom: 1px solid var(--grid); }
+.formula .f { font-size: clamp(18px, 2.7vw, 26px); line-height: 1.9; }
+.formula .f .frac { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; font-size: .85em; line-height: 1.15; margin: 0 2px; }
+.formula .f .frac > span:first-child { border-bottom: 1.4px solid currentColor; padding: 0 3px; }
+.deriv { margin-top: 26px; }
+.deriv .dh { font: 600 12px/1 var(--f-disp); letter-spacing: .1em; text-transform: uppercase; color: var(--acc-text); margin: 0 0 10px; }
+.deriv p:not(.dh) { font-size: 15.5px; }
+.deriv .katex-display { margin: .4em 0 1em; overflow-x: auto; overflow-y: hidden; padding: 2px 0; }
+.formula .leg { font-size: 14px; color: var(--ink-70); margin-top: 10px; }
+
+/* --- pasma przewijane --- */
+.scrolly { background: var(--band); color: var(--band-ink); margin: 40px 0;
+  --u-line: var(--band-line); --u-soft: var(--band-soft); --u-ink: var(--band-ink); --u-mut: var(--band-mut);
+  --u-miss: var(--band-miss); --u-imp: var(--band-acc); --u-imp-ink: #08301d; --u-zone: rgba(238, 246, 240, .06); }
+.sc-in { max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr); }
+.sticky { grid-area: 1 / 1; align-self: start; position: sticky; top: 0; height: 100vh; height: 100svh; z-index: 1; display: flex; flex-direction: column; justify-content: flex-start; padding: calc(env(safe-area-inset-top, 0px) + 24px) max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)); overflow: hidden; }
+.stage { width: 100%; max-width: 760px; margin: 0 auto; }
+.ghead { margin-bottom: 8px; }
+.gtitle { font: 600 22px/1.2 var(--f-disp); color: var(--band-ink); margin: 0; }
+.gsub { font: 500 15px/1.3 var(--f-disp); color: var(--band-mut); margin: 3px 0 0; min-height: 1.3em; }
+.steps { grid-area: 1 / 1; position: relative; z-index: 2; pointer-events: none; }
+.step { min-height: 92vh; min-height: 92svh; display: flex; align-items: flex-end; justify-content: center; padding: 0 max(16px, env(safe-area-inset-right, 0px)) 6vh max(16px, env(safe-area-inset-left, 0px)); }
+.step:first-child { min-height: 110vh; min-height: 110svh; }
+.step:last-child { min-height: 120vh; min-height: 120svh; }
+.steps::after { content: ""; display: block; height: 60vh; height: 60svh; }
+.card { pointer-events: auto; width: min(500px, 100%); background: var(--card); color: var(--ink); box-shadow: var(--shadow); padding: 18px 20px 16px; border-radius: 4px; font-size: 15.5px; line-height: 1.55; opacity: .55; transform: translateY(10px); transition: opacity .45s, transform .45s; }
+.card p { margin: 0 0 .6em; }
+.card p:last-child { margin-bottom: 0; }
+.step.on .card { opacity: 1; transform: none; }
+.stepno { display: inline-block; background: var(--beamer); color: var(--on-acc); font: 600 11px/1 var(--f-disp); letter-spacing: .12em; text-transform: uppercase; padding: 5px 8px; border-radius: 2px; margin-bottom: 10px; }
+@media (max-width: 979px) {
+  .step { padding-bottom: 0; }
+  .card { position: sticky; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); opacity: 0; transform: translateY(14px); }
+  .step:not(.on) .card { pointer-events: none; }
+}
+@media (min-width: 980px) {
+  .sc-in { grid-template-columns: minmax(320px, 400px) minmax(0, 1fr); column-gap: 56px; padding-left: max(32px, env(safe-area-inset-left, 0px)); padding-right: max(32px, env(safe-area-inset-right, 0px)); }
+  .sticky { grid-area: auto; grid-column: 2; grid-row: 1; justify-content: center; padding: 0; }
+  .steps { grid-area: auto; grid-column: 1; grid-row: 1; }
+  .step { align-items: center; justify-content: flex-start; padding: 0; min-height: 100vh; }
+  .step:first-child { min-height: 100vh; }
+  .step:last-child { min-height: 110vh; }
+  .steps::after { height: 0; }
+  .card { opacity: .3; }
+}
+
+/* --- wykres jednostek (dawcy i biorcy) --- */
+.uplot { width: 100%; height: auto; display: block; overflow: visible; }
+.uplot .ax line, .uplot .ax path { stroke: var(--u-line); stroke-width: 1.2; fill: none; }
+.uplot .ax text { fill: var(--u-mut); font: 400 13px var(--f-body); }
+.uplot .rowlab { fill: var(--u-mut); font: 600 15px var(--f-disp); letter-spacing: .04em; }
+.uplot .zone { fill: var(--u-zone); stroke: var(--u-line); stroke-width: 1; }
+.uplot .zone.pool { stroke: var(--u-imp); stroke-dasharray: 4 4; }
+.uplot .zlab { fill: var(--u-mut); font: 500 13px var(--f-disp); letter-spacing: .03em; }
+.uplot .zlab.pool { fill: var(--u-imp); }
+.uplot .ord { fill: none; stroke: var(--u-mut); stroke-width: 1.4; stroke-dasharray: 2 5; stroke-linecap: round; }
+.u circle { fill: var(--u-soft); stroke: var(--u-line); stroke-width: 1.6; transition: fill .4s, stroke .4s, opacity .4s; }
+.u .v { fill: var(--u-ink); font: 600 17px var(--f-disp); text-anchor: middle; dominant-baseline: central; font-variant-numeric: tabular-nums; }
+.u .id { fill: var(--u-mut); font: 400 11.5px var(--f-body); text-anchor: middle; }
+.u.na circle { stroke: var(--u-miss); stroke-dasharray: 4 3; fill: rgba(244, 191, 98, .08); }
+.u.na .v { fill: var(--u-miss); font-size: 14px; }
+.u.imp circle { fill: var(--u-imp); stroke: var(--u-imp); stroke-dasharray: none; }
+.u.imp .v { fill: var(--u-imp-ink); }
+.u.pool circle { stroke: var(--u-imp); stroke-width: 2.6; }
+.u.don circle { stroke: var(--u-imp); stroke-width: 3; }
+.u.dim { opacity: .4; }
+.u.left circle { stroke: var(--u-miss); stroke-width: 2.6; }
+.arr { fill: none; stroke: var(--u-imp); stroke-width: 2; }
+.arr.anim { stroke-dasharray: 400; stroke-dashoffset: 400; animation: rysuj .9s ease forwards; }
+@keyframes rysuj { to { stroke-dashoffset: 0; } }
+.ahead { fill: var(--u-imp); }
+
+.panel { margin-top: 10px; min-height: 120px; font-size: 15px; overflow-x: auto; }
+.panel.fade { animation: pojaw .45s ease both; }
+@keyframes pojaw { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.panel .cap { font: 500 13px/1.3 var(--f-disp); letter-spacing: .06em; text-transform: uppercase; color: var(--band-mut); margin: 0 0 6px; }
+table.mini { border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 14.5px; }
+table.mini th, table.mini td { padding: 4px 10px; text-align: center; border-bottom: 1px solid var(--band-line); white-space: nowrap; }
+table.mini th { font: 600 13px var(--f-disp); letter-spacing: .03em; color: var(--band-mut); }
+table.mini td.im { color: var(--band-acc); font-weight: 600; }
+table.mini tr.sum td { border-top: 1.5px solid var(--band-mut); border-bottom: 0; font-weight: 600; }
+table.mini td.l, table.mini th.l { text-align: left; }
+.chipnote { display: inline-block; font: 600 13px/1 var(--f-disp); padding: 6px 10px; border-radius: 3px; background: var(--band-miss); color: #3a2506; margin-left: 8px; }
+
+/* --- losowania: rozkład średniej --- */
+.lab { border: 2px solid var(--ink); border-radius: 6px; padding: 20px 22px 22px; margin: 24px auto 0; max-width: 1040px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.k { font: 600 13px/1 var(--f-disp); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-70); margin-right: 4px; }
+.chip { font: 500 15px/1 var(--f-disp); border: 1.5px solid var(--grid); background: var(--paper); color: var(--ink); padding: 8px 12px; border-radius: 999px; cursor: pointer; }
+.chip:hover { border-color: var(--beamer); }
+.chip[aria-pressed="true"] { background: var(--uep); border-color: var(--uep); color: #fff; }
+.chip.ghost { border-style: dashed; }
+.chip.go { background: var(--uep); border-color: var(--uep); color: #fff; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 14px; color: var(--ink-70); margin: 14px 0 4px; }
+.legend span { display: inline-flex; align-items: center; gap: 7px; }
+.legend i { display: inline-block; width: 14px; height: 10px; border-radius: 2px; }
+.legend i.tick { width: 16px; height: 0; border-top: 2px solid var(--ink); border-radius: 0; }
+.hist { width: 100%; height: auto; display: block; }
+.hist .gl { stroke: var(--grid); stroke-width: 1; opacity: .6; }
+.hist .bl { stroke: var(--rule); stroke-width: 1.2; }
+.hist text { fill: var(--ink-70); font: 400 12.5px var(--f-body); }
+.hist .ttl { fill: var(--ink); font: 600 15px var(--f-disp); }
+.hist .bar { transition: height .25s, y .25s; }
+.hist .ex { stroke: var(--ink); stroke-width: 2; }
+.hist .ev { stroke: var(--ink); stroke-width: 1.2; stroke-dasharray: 3 3; }
+.hist .hit { fill: transparent; cursor: default; }
+.hist .hit:hover + .bar, .hist .bar.hov { filter: brightness(1.12); }
+.stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 12px; }
+.stats > div { border-top: 3px solid var(--s-bez); padding-top: 8px; font-size: 14.5px; min-width: 0; }
+.stats > div.kl { border-top-color: var(--s-kl); }
+.stats h5 { font: 600 16px/1.2 var(--f-disp); margin: 0 0 4px; }
+.stats table { border-collapse: collapse; font-variant-numeric: tabular-nums; width: 100%; }
+.stats td, .stats th { padding: 3px 6px; text-align: right; border-bottom: 1px solid var(--grid); }
+.stats th { font: 600 12.5px var(--f-disp); color: var(--ink-70); }
+.stats td:first-child, .stats th:first-child { text-align: left; }
+.last { font-size: 14px; color: var(--ink-70); margin-top: 10px; min-height: 1.5em; }
+#vtip { position: fixed; left: 0; top: 0; z-index: 61; background: var(--paper); color: var(--ink); border: 1px solid var(--grid); box-shadow: var(--shadow); border-radius: 4px; padding: 8px 11px; font: 13.5px/1.45 var(--f-body); pointer-events: none; opacity: 0; transition: opacity .1s; font-variant-numeric: tabular-nums; }
+#vtip.show { opacity: 1; }
+#vtip b { font-weight: 600; }
+
+/* --- narzędzie --- */
+.tool { border: 2px solid var(--ink); border-radius: 6px; padding: 20px 22px 22px; margin: 24px auto 0; max-width: 1040px;
+  --u-line: var(--grid); --u-soft: var(--paper-2); --u-ink: var(--ink); --u-mut: var(--ink-70);
+  --u-miss: var(--miss-line); --u-imp: var(--beamer); --u-imp-ink: #04281b; --u-zone: var(--paper-2); }
+.tin { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.3fr); gap: 24px; margin-top: 18px; }
+.tin > div { min-width: 0; }
+.tool h4 { font: 600 16px/1.2 var(--f-disp); margin: 0 0 8px; }
+.tool h4 small { font: 400 13px var(--f-body); color: var(--ink-70); margin-left: 6px; }
+table.ed { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+table.ed th { font: 600 12.5px var(--f-disp); letter-spacing: .05em; text-transform: uppercase; color: var(--ink-70); text-align: left; padding: 0 4px 4px; }
+table.ed td { padding: 2px 3px; }
+table.ed td.n { color: var(--ink-70); font-size: 13px; width: 2.2em; text-align: right; padding-right: 8px; }
+table.ed input { width: 100%; min-width: 0; font: 600 15px/1.2 var(--f-disp); padding: 5px 7px; border: 1.5px solid var(--grid); border-radius: 4px; background: var(--paper); color: var(--ink); text-align: center; }
+table.ed input:focus { border-color: var(--beamer); outline: none; }
+table.ed input.y:placeholder-shown { border-style: dashed; border-color: var(--miss-line); background: var(--miss-wash); }
+table.ed input.y::placeholder { color: var(--miss); font-weight: 600; opacity: 1; }
+table.ed button.del { border: 0; background: none; color: var(--ink-70); cursor: pointer; font-size: 16px; padding: 2px 6px; }
+table.ed button.del:hover { color: var(--miss); }
+.tres { margin-top: 10px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin: 14px 0 6px; }
+.kpis > div { border-top: 2px solid var(--ink); padding-top: 8px; min-width: 0; }
+.kpis .kv { font: 600 28px/1.1 var(--f-disp); font-variant-numeric: tabular-nums; }
+.kpis .kk { font-size: 13px; color: var(--ink-70); }
+.warnl { color: var(--miss); font-size: 14.5px; margin: 6px 0 0; }
+.tabs { display: flex; gap: 6px; margin: 20px 0 0; }
+.tabs button { font: 600 14px/1 var(--f-disp); letter-spacing: .04em; padding: 8px 14px; border: 1.5px solid var(--grid); border-bottom: 0; border-radius: 4px 4px 0 0; background: var(--paper-2); color: var(--ink-70); cursor: pointer; }
+.tabs button[aria-selected="true"] { background: var(--band); color: var(--band-ink); border-color: var(--band); }
+pre.code { margin: 0; background: var(--band); color: var(--band-ink); border-radius: 0 4px 4px 4px; padding: 14px 16px; font: 13.5px/1.55 var(--f-mono); overflow-x: auto; position: relative; }
+pre.code .c { color: var(--band-mut); }
+.copy { position: absolute; top: 8px; right: 8px; font: 600 12px/1 var(--f-disp); letter-spacing: .05em; text-transform: uppercase; padding: 6px 9px; border-radius: 3px; border: 1px solid var(--band-line); background: transparent; color: var(--band-ink); cursor: pointer; }
+
+/* --- wyniki: przykład 2 i symulacja --- */
+.res { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 36px; max-width: 1040px; margin: 24px auto 0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.res > div { min-width: 0; }
+.res h4 { font: 600 20px/1.2 var(--f-disp); margin: 0 0 4px; }
+.res .hs { font-size: 14px; color: var(--ink-70); margin: 0 0 10px; }
+.dots { width: 100%; height: auto; display: block; }
+.dots text { fill: var(--ink-70); font: 400 13px var(--f-body); }
+.dots .nm { fill: var(--ink); font: 400 14px var(--f-body); }
+.dots .val { fill: var(--ink); font: 600 13px var(--f-body); font-variant-numeric: tabular-nums; }
+.dots .gl { stroke: var(--grid); stroke-width: 1; opacity: .7; }
+.dots .ref { stroke: var(--ink); stroke-width: 1.4; stroke-dasharray: 4 3; }
+.dots .dot { fill: var(--beamer); stroke: var(--paper); stroke-width: 2; }
+.dots .dot.base { fill: var(--rule); }
+table.g { border-collapse: collapse; width: 100%; font-size: 14px; font-variant-numeric: tabular-nums; }
+table.g th { background: var(--tint); font-weight: 600; text-align: left; border: 1px solid var(--rule); padding: 6px 9px; font-size: 13px; line-height: 1.25; vertical-align: bottom; }
+table.g td { border: 1px solid var(--grid); padding: 6px 9px; vertical-align: middle; }
+table.g td.r, table.g th.r { text-align: right; }
+table.g tr.grp td { background: var(--wash); }
+.ib { display: flex; align-items: center; gap: 8px; }
+.ib i { display: block; height: 10px; border-radius: 0 3px 3px 0; background: var(--beamer); }
+.ib i.w { background: var(--rule); }
+.ib span { min-width: 3.2em; text-align: right; }
+.notka { font-size: 13px; color: var(--ink-70); margin: 8px 0 0; }
+
+/* --- pamiętaj, kod --- */
+.limits { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 40px; max-width: 1000px; margin: 8px auto 0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.limits > div { border-top: 1px solid var(--rule); padding: 12px 0 14px; min-width: 0; }
+.limits h4 { font: 600 18px/1.2 var(--f-disp); margin: 0 0 4px; }
+.limits p { margin: 0; font-size: 15px; color: var(--ink-70); }
+.codes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; max-width: 1040px; margin: 24px auto 0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.codes > div { min-width: 0; }
+.codes h4 { font: 600 18px/1.2 var(--f-disp); margin: 0 0 8px; }
+.codes pre.code { border-radius: 4px; }
+
+footer { border-top: 2px solid var(--ink); margin-top: 64px; padding-block: 28px 56px; font-size: 13px; color: var(--ink-70); }
+footer p { margin: 0 0 .7em; max-width: 90ch; }
+footer b { color: var(--ink); }
+
+@media (max-width: 960px) { .cases { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 860px) {
+  .hero-grid { grid-template-columns: 1fr; gap: 24px; }
+  .hero-art svg { margin: 0 auto; max-width: 340px; }
+  .keys, .roles, .limits, .codes, .tin, .res, .stats { grid-template-columns: 1fr; }
+  .roles > div + div { padding-left: 0; border-left: 0; border-top: 1px solid var(--grid); margin-top: 8px; }
+  .topr { align-items: flex-start; text-align: left; }
+}
+@media (max-width: 979px) {
+  .panel { font-size: 13px; min-height: 0; }
+  table.mini { font-size: 13px; }
+  table.mini th, table.mini td { padding: 3px 7px; }
+  .gtitle { font-size: 19px; }
+}
+@media (max-width: 560px) {
+  .cases { grid-template-columns: 1fr; }
+  .tool, .lab { padding: 16px 14px; }
+  .authors p { grid-template-columns: 1fr; gap: 0; }
+  .echo { font-size: 30px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .arr.anim { stroke-dashoffset: 0; }
+}
+
+/* --- model niejawny --- */
+.implicit { max-width: 1000px; margin: 52px auto 0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.ih { font: 600 12px/1 var(--f-disp); letter-spacing: .1em; text-transform: uppercase; color: var(--acc-text); margin: 0 0 12px; }
+.imp2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 36px; }
+.imp2 > div { border-top: 2px solid var(--ink); padding-top: 12px; min-width: 0; }
+.imp2 h4 { font: 600 20px/1.2 var(--f-disp); margin: 0 0 8px; }
+.imp2 p { font-size: 15px; margin: 0 0 .7em; }
+.imp2 svg { width: 100%; height: auto; display: block; margin: 6px 0; }
+.imp2 svg text { fill: var(--ink-70); font: 400 12.5px var(--f-body); }
+.imp2 svg .rn { fill: var(--ink); font-size: 13px; }
+.imp2 svg .gl { stroke: var(--grid); stroke-width: 1; }
+.imp2 svg .rd { fill: var(--beamer); stroke: var(--paper); stroke-width: 2; }
+.imp2 svg .im { fill: var(--paper); stroke: var(--beamer); stroke-width: 2; }
+.imp2 svg .tr { fill: var(--miss-line); stroke: var(--paper); stroke-width: 2; }
+.imp2 svg .trh { fill: var(--paper); stroke: var(--miss-line); stroke-width: 2.5; }
+.imp2 svg .ml { stroke: var(--beamer); stroke-width: 2; stroke-dasharray: 5 4; }
+.imp2 svg .mt { stroke: var(--miss-line); stroke-width: 2; stroke-dasharray: 5 4; }
+.imp2 svg .bias { stroke: var(--ink); stroke-width: 1.5; }
+.imp2 svg .trend { stroke: var(--rule); stroke-width: 1.6; stroke-dasharray: 6 4; fill: none; }
+.imp2 svg .arr { stroke: var(--miss-line); stroke-width: 1.8; stroke-dasharray: 4 3; fill: none; }
+.imp2 svg .em { fill: var(--ink); font-weight: 600; }
+.imp2 label { font-size: 14px; display: block; margin-top: 4px; }
+.imp2 input[type="range"] { width: 100%; accent-color: var(--beamer); margin: 6px 0 10px; }
+.imp-out { font-size: 14.5px !important; background: var(--tint); padding: 10px 12px; border-radius: 4px; }
+@media (max-width: 860px) { .imp2 { grid-template-columns: 1fr; } }
+/* --- tworzenie klas --- */
+.cases.cls .case { border-top-color: var(--uep); }
+.sim2 { max-width: 1000px; margin: 36px auto 0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.sim2 h4 { font: 600 20px/1.2 var(--f-disp); margin: 0 0 4px; }
+.sim2 .hs { font-size: 14px; color: var(--ink-70); margin: 0 0 10px; max-width: 760px; }
+.sim2 .codes { margin-top: 26px; padding: 0; }
+
+/* --- nawigacja strzałkami --- */
+.snav { float: right; display: flex; align-items: center; gap: 6px; margin: 0 0 6px 12px; pointer-events: auto; }
+.snav button { width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--band-line); background: var(--band-soft); color: var(--band-ink); font: 600 16px/1 var(--f-body); cursor: pointer; display: grid; place-items: center; padding: 0; }
+.snav button:hover:not(:disabled) { border-color: var(--band-acc); color: var(--band-acc); }
+.snav button:disabled { opacity: .35; cursor: default; }
+.snav span { font: 500 14px/1 var(--f-disp); color: var(--band-mut); font-variant-numeric: tabular-nums; min-width: 3.2em; text-align: center; }
+.kbd { display: inline-block; font: 600 11px/1 var(--f-body); border: 1px solid var(--grid); border-bottom-width: 2px; border-radius: 3px; padding: 3px 5px; margin: 0 2px; color: var(--ink-70); text-transform: none; letter-spacing: 0; }
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<style>
+.katex { font-size: 1.07em; }
+.formula .katex-display { margin: .2em 0; overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+.formula .katex-display > .katex { font-size: clamp(1em, 2.2vw, 1.35em); }
+.formula .p1, .formula .p2 { padding: 3px 6px; border-radius: 4px; }
+.formula .p1 { background: var(--wash); }
+.formula .p2 { background: var(--miss-wash); }
+.keys .big .katex { font-size: .8em; }
+.stepno .katex { font-size: 1.15em; letter-spacing: 0; text-transform: none; }
+</style>
+</head>
+<body>
+<div class="progress" aria-hidden="true"><i id="prog"></i></div>
+
+<header class="hero wrap">
+  <div class="topbar">
+    <span class="pill"><b>Analiza danych niekompletnych</b><span>Materiały do zajęć · 2026/27</span></span>
+    <div class="topr"><span class="org">Uniwersytet Ekonomiczny w Poznaniu</span><span class="unoff">Katedra Statystyki</span></div>
+  </div>
+  <div class="hero-grid">
+    <div>
+      <p class="eyebrow">Imputacja danych · część 4a</p>
+      <h1>Imputacja <span>hot-deck</span></h1>
+      <p class="dek">Brak zastępujemy wartością, która naprawdę wystąpiła u kogoś podobnego.</p>
+      <p class="lede">Hot-deck nie dopasowuje jawnego modelu dla zmiennej z brakami \(Y\). Dla każdej jednostki z brakiem wybiera dawcę z tego samego zbioru danych i przepisuje jego wartość. Cała sztuka polega na tym, jak wybrać dawcę: losowo, w klasach imputacyjnych czy według kolejności w posortowanym pliku. Ten wybór zmienia wynik, nawet gdy dane są te same.</p>
+      <div class="authors">
+        <p><span class="k">Prowadzący</span><span>dr Maciej Beręsewicz, prof. UEP, Katedra Statystyki UEP</span></p>
+        <p><span class="k">Źródło</span><span>Andridge, Little (2010), <i>A review of hot deck imputation for survey non-response</i>, International Statistical Review</span></p>
+      </div>
+      <div class="scrollhint"><i></i>Przewiń albo użyj strzałek <span class="kbd">←</span><span class="kbd">→</span></div>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+      <svg viewBox="0 0 400 260">
+        <defs><marker id="hh" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--beamer)"/></marker></defs>
+        <text x="95" y="40" text-anchor="middle" style="font:600 13px var(--f-disp);letter-spacing:.08em;fill:var(--ink-70)">DAWCA</text>
+        <text x="305" y="40" text-anchor="middle" style="font:600 13px var(--f-disp);letter-spacing:.08em;fill:var(--ink-70)">BIORCA</text>
+        <circle cx="95" cy="130" r="48" fill="var(--wash)" stroke="var(--beamer)" stroke-width="2.5"/>
+        <text x="95" y="142" text-anchor="middle" style="font:600 34px var(--f-disp);fill:var(--ink)">35</text>
+        <path class="fly" d="M148 118 Q200 50 252 118" fill="none" stroke="var(--beamer)" stroke-width="3" marker-end="url(#hh)"/>
+        <g class="q"><circle cx="305" cy="130" r="48" fill="var(--miss-wash)" stroke="var(--miss-line)" stroke-width="2.5" stroke-dasharray="7 5"/>
+          <text x="305" y="141" text-anchor="middle" style="font:600 28px var(--f-disp);fill:var(--miss)">NA</text></g>
+        <g class="a"><circle cx="305" cy="130" r="48" fill="var(--beamer)" stroke="var(--beamer)" stroke-width="2.5"/>
+          <text x="305" y="142" text-anchor="middle" style="font:600 34px var(--f-disp);fill:#04281b">35</text></g>
+        <text x="200" y="222" text-anchor="middle" style="font:italic 500 20px var(--f-body);fill:var(--ink-70)">y<tspan baseline-shift="sub" font-size="13">i</tspan>* = y<tspan baseline-shift="sub" font-size="13">d(i)</tspan></text>
+      </svg>
+    </div>
+  </div>
+</header>
+
+<main>
+<!-- ===================== CZĘŚĆ 1: idea ===================== -->
+<section class="act" id="cz1">
+  <div class="shead">
+    <span class="tag">Część 1 · Idea</span>
+    <h2>Wartość pożyczona od dawcy</h2>
+  </div>
+  <div class="col">
+    <p>Niech \(s_{r}\) oznacza próbę respondentów, a \(s_{nr}\) próbę nierespondentów. Dla każdego <b>biorcy</b> \(i \in  s_{nr}\) wybieramy <b>dawcę</b> \(d(i) \in  s_{r}\) i przyjmujemy \(y_{i}^{*} = y_{d(i)}\). Zbiór kandydatów na dawcę to <b>pula dawców</b>.</p>
+    <p>Nazwa pochodzi z czasów kart perforowanych: dawcę brano z „gorącego” stosu kart, który właśnie był przetwarzany. Jego przeciwieństwem jest <i>cold-deck</i>, czyli dawca z innego, wcześniejszego źródła.</p>
+  </div>
+  <div class="roles">
+    <div><span class="lbl na">Biorca</span><h4>Jednostka z brakiem</h4><p>Ma obserwowane zmienne pomocnicze \(\mathbf{x}\) (np. płeć, wiek), ale nie ma wartości \(Y\).</p></div>
+    <div><span class="lbl ok">Dawca</span><h4>Respondent</h4><p>Ma obserwowane \(Y\). Jego wartość zostaje skopiowana do biorcy bez żadnych przekształceń.</p></div>
+    <div><span class="lbl new">Pula dawców</span><h4>Spośród kogo wybieramy</h4><p>Wszyscy respondenci, respondenci z tej samej <button type="button" class="term" data-tip="tip-klasa">klasy imputacyjnej</button> albo poprzedni respondent w posortowanym pliku.</p></div>
+  </div>
+  <div class="keys">
+    <div><div class="big">2,3 dziecka?</div><h4>Tylko wartości, które wystąpiły</h4><p>Nie dostaniemy ułamkowej liczby dzieci ani ujemnego dochodu. Imputowana wartość jest zawsze jedną z wartości podanych przez respondentów.</p></div>
+    <div><div class="big">model niejawny</div><h4>Nie piszemy wzoru dla \(Y\)</h4><p>Nie wybieramy rozkładu ani postaci funkcyjnej, ale model i tak jest: wybór puli dawców zakłada, że w klasie respondenci i biorcy mają ten sam rozkład \(Y\).</p></div>
+    <div><div class="big">jeden dawca</div><h4>Zależności zostają</h4><p>Imputując kilka zmiennych od jednego dawcy, przenosimy cały profil odpowiedzi, a więc i zależności między zmiennymi.</p></div>
+  </div>
+
+  <div class="implicit">
+    <p class="ih">Jaki model kryje się w hot-decku?</p>
+    <div class="imp2">
+      <div>
+        <h4>Przykład A: wydatki na żywność w klasach</h4>
+        <p>\(Y\) to miesięczne wydatki gospodarstwa domowego na żywność, a klasę imputacyjną wyznacza liczba osób w gospodarstwie. W klasie gospodarstw jednoosobowych respondenci podali 700, 900 i 1100 zł. Biorca z tej klasy dostaje jedną z tych trzech wartości.</p>
+        <p>To samo można zapisać jako \(900 + e\), gdzie \(e\) losujemy z reszt \(\{-200,\ 0,\ 200\}\). Hot-deck działa więc jak model \(y_i = \mu_c + \varepsilon_i\): średnia zależy tylko od klasy, a składnik losowy ma u biorców taki sam rozkład jak u respondentów (MAR w klasie). Formalnie to regresja na zmiennych zero-jedynkowych klas z dolosowaną resztą empiryczną.</p>
+        <svg id="impA" viewBox="0 0 480 170" role="img" aria-label="Wydatki respondentów, możliwe imputacje i prawdziwe wydatki biorców w klasie gospodarstw jednoosobowych"></svg>
+        <label for="impA-r">O ile więcej naprawdę wydają biorcy: <b id="impA-v">0 zł</b></label>
+        <input type="range" id="impA-r" min="0" max="600" step="50" value="0">
+        <p class="imp-out" id="impA-out"></p>
+      </div>
+      <div>
+        <h4>Przykład B: zarobki a czas pracy</h4>
+        <p>\(X\) to tygodniowy czas pracy w godzinach, \(Y\) to miesięczne zarobki. Sekwencyjny hot-deck albo najbliższy sąsiad daje biorcy zarobki osoby o najbliższym czasie pracy.</p>
+        <p>Niejawny model to \(y = f(x) + \varepsilon\), gdzie \(f\) zmienia się łagodnie: sąsiedzi w \(X\) mają podobne \(Y\). W środku danych to działa. Poza zakresem dawców już nie: hot-deck nie ekstrapoluje.</p>
+        <svg id="impB" viewBox="0 0 480 250" role="img" aria-label="Zarobki a czas pracy: imputacja dla biorcy pracującego 33 godziny i dla biorcy pracującego 60 godzin"></svg>
+        <p style="font-size:14px;color:var(--ink-70)">Biorca pracujący 33 godziny dostaje zarobki osoby z 32 godzinami i jest blisko prawdy. Biorca pracujący 60 godzin dostaje zarobki osoby z 45 godzinami, bo dłużej pracujących dawców nie ma.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="scrolly" id="bandA" aria-label="Przykład 1: cztery warianty hot-decku">
+  <div class="sc-in">
+    <div class="sticky">
+      <div class="stage">
+        <div class="ghead"><p class="gtitle">Przykład 1: osiem jednostek, trzy braki</p><p class="gsub" id="a-sub"></p></div>
+        <svg class="uplot" id="plotA" role="img" aria-label="Jednostki rozmieszczone według X, w wierszach według płci; strzałki prowadzą od dawcy do biorcy"></svg>
+        <div class="panel" id="a-panel" aria-live="polite"></div>
+      </div>
+    </div>
+    <div class="steps">
+      <div class="step"><div class="card"><span class="stepno">Dane</span><p>Osiem osób. Płeć i \(X\) są obserwowane dla wszystkich, w \(Y\) są trzy braki: u osób nr 2, 4 i 6.</p><p>Na wykresie oś pozioma to \(X\), a wiersze to płeć. Średnia wśród respondentów: \(\bar{y}_{r}\) = (25 + 35 + 45 + 55 + 65)/5 = 45.</p></div></div>
+      <div class="step"><div class="card"><span class="stepno">Losowy hot-deck · pula</span><p>W najprostszej wersji pula dawców jest wspólna dla wszystkich biorców: pięciu respondentów z wartościami {25, 35, 45, 55, 65}.</p><p>Dla każdego biorcy losujemy dawcę ze zwracaniem, więc ta sama osoba może zostać dawcą kilka razy.</p></div></div>
+      <div class="step"><div class="card"><span class="stepno">Losowy hot-deck · wynik</span><p>Losowanie z <code>set.seed(2025)</code> i <code>impute_rhd(Y ~ 1)</code>: osoba nr 2 dostaje 65, a nr 4 i 6 po 55.</p><p>Kobieta nr 2 otrzymała wartość, która w danych występuje tylko u mężczyzny. Pula bez klas nie korzysta z żadnej informacji o biorcy.</p></div></div>
+      <div class="step"><div class="card"><span class="stepno">Losowy w klasach</span><p>Klasę imputacyjną wyznacza płeć. Pula dla kobiet to {25, 35}, a dla mężczyzn {45, 55, 65}. Dawcę losujemy tylko z klasy biorcy.</p><p>Wynik dla <code>impute_rhd(Y ~ plec)</code>: nr 2 dostaje 25, nr 4 dostaje 35, nr 6 dostaje 65.</p></div></div>
+      <div class="step"><div class="card"><span class="stepno">Sekwencyjny</span><p>Sortujemy plik według \(X\) (kropkowana linia pokazuje kolejność) i brak uzupełniamy wartością poprzedniego respondenta.</p><p>Osoby z \(X\) = 24 i 28 dostają 45 od mężczyzny z \(X\) = 22, a osoba z \(X\) = 35 dostaje 55. Nie ma tu losowania: ten sam plik zawsze da ten sam wynik.</p></div></div>
+      <div class="step"><div class="card"><span class="stepno">Sekwencyjny w klasach</span><p>To samo, ale osobno w każdej klasie: dawcą jest poprzedni respondent tej samej płci.</p><p>Kobiety dostają 25 i 35, mężczyzna nr 6 dostaje 45. To odpowiada <code>impute_shd(Y ~ X | plec)</code>.</p></div></div>
+      <div class="step"><div class="card"><span class="stepno">Porównanie</span><p>Te same dane, cztery warianty, cztery różne średnie: od 41,25 do 50.</p><p>Wyniki metod losowych zależą dodatkowo od ziarna. Imputacja średnią w klasach (K: 30, M: 55) dałaby 42,5 i żadnej zmienności z losowania, ale spłaszczyłaby rozkład \(Y\).</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== CZĘŚĆ 2: warianty ===================== -->
+<section class="act" id="cz2">
+  <div class="shead">
+    <span class="tag">Część 2 · Warianty</span>
+    <h2>Cztery sposoby wyboru dawcy</h2>
+  </div>
+  <div class="cases">
+    <div class="case"><span class="kind st">losowy</span><h4>Losowy hot-deck</h4><p>Dawca losowany ze zwracaniem spośród wszystkich respondentów.</p><p class="fn">impute_rhd(Y ~ 1)</p></div>
+    <div class="case"><span class="kind st">losowy</span><h4>Losowy w klasach</h4><p>Dawca losowany z tej samej klasy co biorca. Klasy wyznaczają zmienne \(\mathbf{x}\) obserwowane dla wszystkich jednostek.</p><p class="fn">impute_rhd(Y ~ plec)</p></div>
+    <div class="case det"><span class="kind de">deterministyczny</span><h4>Sekwencyjny</h4><p>Sortujemy zbiór według zmiennych pomocniczych, dawcą jest poprzedni respondent. Gdy brak dotyczy pierwszego rekordu, <code>impute_shd()</code> bierze ostatniego respondenta. Remisy w sortowaniu rozstrzyga kolejność rekordów w pliku.</p><p class="fn">impute_shd(Y ~ X)</p></div>
+    <div class="case det"><span class="kind de">zależy od remisów</span><h4>Najbliższy sąsiad</h4><p>Dawcą jest jednostka najbliższa według odległości \(d(\mathbf{x}_{i}, \mathbf{x}_{j})\). Metoda jest deterministyczna tylko wtedy, gdy najbliższy dawca jest jeden albo remisy rozstrzyga ustalona reguła, np. kolejność w pliku. Jeśli spośród dawców o tej samej odległości losujemy, metoda staje się losowa. Przy dyskretnych \(\mathbf{x}\) (płeć, wiek w latach) remisy są regułą, a nie wyjątkiem. Losowy jest też wariant z \(k &gt; 1\): <code>impute_knn()</code> losuje dawcę spośród \(k\) najbliższych. To temat części 4b.</p><p class="fn">impute_knn(Y ~ X, k = 1)</p></div>
+  </div>
+</section>
+
+<!-- ===================== CZĘŚĆ 3: losowanie ===================== -->
+<section class="act" id="cz3">
+  <div class="shead">
+    <span class="tag">Część 3 · Własności</span>
+    <h2>Ta sama średnia co średnia w klasach, ale z dodatkową wariancją</h2>
+  </div>
+  <div class="col">
+    <p>Niech klasa \(c\) zawiera \(r_{c}\) respondentów i \(m_{c}\) biorców, a \(\bar{y}_{rc}\) i \(s^{2}_{rc}\) to średnia i wariancja \(Y\) wśród respondentów tej klasy. Dawców losujemy ze zwracaniem. Wartość oczekiwana i wariancja są liczone względem losowania dawców, przy ustalonej próbie.</p>
+  </div>
+  <div class="formula">
+    <div class="f">\[E_I(\bar{y}_{\mathrm{HD}}) = \frac{1}{n}\sum_c (r_c + m_c)\,\bar{y}_{rc},\]\[\operatorname{Var}_I(\bar{y}_{\mathrm{HD}}) = \frac{1}{n^2}\sum_c m_c\,\frac{r_c - 1}{r_c}\,s^2_{rc}\]</div>
+    <div class="leg">Przykład 1, klasy według płci: \(E_I = (4\cdot 30 + 4\cdot 55)/8 = 42{,}5\), &nbsp; \(\operatorname{Var}_I = \tfrac{1}{64}\bigl(2\cdot\tfrac{1}{2}\cdot 50 + 1\cdot\tfrac{2}{3}\cdot 100\bigr) \approx 1{,}82\)</div>
+  </div>
+  <div class="col deriv">
+    <p class="dh">Skąd te wzory?</p>
+    <p>Niech \(R_c\) i \(M_c\) oznaczają zbiory respondentów i biorców w klasie \(c\). Średnią po imputacji rozbijamy na część obserwowaną i imputowaną. Wartości obserwowane są ustalone, losowe są tylko wartości imputowane \(y_i^{*}\):</p>
+    \[\bar{y}_{\mathrm{HD}} = \frac{1}{n}\sum_c \Bigl(\sum_{i \in R_c} y_i + \sum_{i \in M_c} y_i^{*}\Bigr).\]
+    <p>Każde \(y_i^{*}\) to jedno losowanie ze zwracaniem spośród \(r_c\) wartości respondentów tej klasy, czyli losowanie z ich rozkładu empirycznego:</p>
+    \[E_I(y_i^{*}) = \bar{y}_{rc}, \qquad \operatorname{Var}_I(y_i^{*}) = \frac{1}{r_c}\sum_{j \in R_c}(y_j - \bar{y}_{rc})^2 = \frac{r_c - 1}{r_c}\,s^2_{rc}.\]
+    <p>Czynnik \((r_c - 1)/r_c\) bierze się stąd, że \(s^2_{rc}\) ma w mianowniku \(r_c - 1\), a wariancja rozkładu empirycznego \(r_c\). Wartość oczekiwana średniej to \(\frac{1}{n}\sum_c (r_c\bar{y}_{rc} + m_c\bar{y}_{rc})\). Losowania są niezależne, więc wariancje \(m_c\) wartości imputowanych się sumują, a całość dzielimy przez \(n^2\). Ten składnik to <b>wariancja imputacji</b> (Kalton i Kish, 1984). Przy losowaniu bez zwracania byłaby mniejsza.</p>
+  </div>
+  <div class="col" style="margin-top:24px">
+    <p>Sprawdźmy to losowaniem. Każde kliknięcie powtarza imputację przykładu 1 w obu wariantach i dopisuje otrzymaną średnią do histogramu. Kreska nad słupkiem to prawdopodobieństwo dokładne, policzone przez wyliczenie wszystkich możliwych losowań.</p>
+  </div>
+  <div class="wrap">
+    <div class="lab" id="lab">
+      <div class="row">
+        <span class="k">Losuj</span>
+        <button class="chip go" type="button" data-n="1">1 raz</button>
+        <button class="chip go" type="button" data-n="100">100 razy</button>
+        <button class="chip go" type="button" data-n="1000">1000 razy</button>
+        <button class="chip ghost" type="button" id="lab-clear">Wyczyść</button>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--s-bez)"></i>Losowy bez klas</span>
+        <span><i style="background:var(--s-kl)"></i>Losowy w klasach (płeć)</span>
+        <span><i class="tick"></i>Rozkład dokładny</span>
+        <span><i class="tick" style="border-top-style:dashed;border-top-width:1.5px"></i>Wartość oczekiwana</span>
+      </div>
+      <svg class="hist" id="hist" viewBox="0 0 720 360" role="img" aria-label="Histogramy średniej Y po imputacji w dwóch wariantach"></svg>
+      <p class="last" id="lab-last"></p>
+      <div class="stats" id="lab-stats"></div>
+    </div>
+  </div>
+  <div class="col" style="margin-top:24px">
+    <p class="note"><b>Wniosek</b><span>Średnio hot-deck w klasach daje to samo co imputacja średnią w klasach (42,5), ale każda pojedyncza imputacja może się od tego odchylić. W zamian zachowuje rozkład zmiennej. Bez klas wartość oczekiwana to średnia respondentów (45), a wariancja jest pięć razy większa.</span></p>
+  </div>
+</section>
+
+<!-- ===================== CZĘŚĆ 4: sprawdź sam ===================== -->
+<section class="act" id="cz4">
+  <div class="shead">
+    <span class="tag">Część 4 · Narzędzie</span>
+    <h2>Sprawdź sam</h2>
+    <span class="sub2">Własne dane, cztery warianty</span>
+  </div>
+  <div class="col">
+    <p>Zmieniaj klasy, wartości \(X\) i \(Y\) (puste pole oznacza brak), dodawaj i usuwaj wiersze. Klasą może być dowolny tekst, np. <code>K</code>, <code>M</code> albo <code>K-wyższe</code>. Przy metodach losowych przycisk „Losuj ponownie” zmienia ziarno.</p>
+    <p class="note warn"><b>Uwaga</b><span>Generator liczb losowych w przeglądarce jest inny niż w R, więc to samo ziarno nie odtworzy wyników <code>set.seed(2025)</code>.</span></p>
+  </div>
+  <div class="wrap">
+    <div class="tool" id="tool">
+      <div class="row" role="group" aria-label="Metoda">
+        <span class="k">Metoda</span>
+        <span id="methods" style="display:contents"></span>
+      </div>
+      <div class="row" role="group" aria-label="Gotowe dane" style="margin-top:10px">
+        <span class="k">Dane</span>
+        <span id="presets" style="display:contents"></span>
+      </div>
+      <div class="tin">
+        <div>
+          <h4>Dane <small>puste pole Y = NA</small></h4>
+          <table class="ed" id="ed"><thead><tr><th></th><th>Klasa</th><th>X</th><th>Y</th><th></th></tr></thead><tbody></tbody></table>
+          <div class="row" style="margin-top:10px">
+            <button class="chip ghost" type="button" id="addrow">+ Wiersz</button>
+            <button class="chip ghost" type="button" id="reseed">Losuj ponownie</button>
+          </div>
+        </div>
+        <div>
+          <h4>Kto jest czyim dawcą</h4>
+          <svg class="uplot" id="plotT" role="img" aria-label="Wynik imputacji: strzałki od dawców do biorców"></svg>
+          <div class="tres" id="tres"></div>
+        </div>
+      </div>
+      <div id="tcode"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== CZĘŚĆ 5: wyniki ===================== -->
+<section class="act" id="cz5">
+  <div class="shead">
+    <span class="tag">Część 5 · Przykład 2 i symulacja</span>
+    <h2>Klasy usuwają obciążenie, jeśli są dobrze dobrane</h2>
+  </div>
+  <div class="col">
+    <p>Hot-deck w klasach ogranicza obciążenie, jeżeli wewnątrz klas spełnione jest założenie MAR: respondenci i nierespondenci z tej samej klasy mają taki sam rozkład \(Y\). Zmienne tworzące klasy powinny więc być powiązane z \(Y\), a żeby zmniejszyć obciążenie, także z odpowiedzią.</p>
+  </div>
+
+  <div class="res">
+    <div>
+      <h4>Przykład 2: czytelnictwo</h4>
+      <p class="hs">\(n\) = 1000, 219 braków w <code>czyta_ksiazki_z_brakami</code>, prawdziwe wartości znane. Odsetek czytających po imputacji.</p>
+      <svg class="dots" id="dots" viewBox="0 0 480 290" role="img" aria-label="Odsetek czytających według metody imputacji, z linią prawdziwej wartości 0,720"></svg>
+      <p class="notka">Po dodaniu wieku 5 klas nie ma dawców, więc 4 braki pozostają. To wyniki jednego losowania: ta sama metoda bez klas daje w Pythonie 0,720 (inny generator). Z jednej imputacji nie wyciągamy wniosków o wyższości metod.</p>
+    </div>
+    <div>
+      <h4>Symulacja: 2000 prób, model P1</h4>
+      <p class="hs">\(N\) = 50 000, \(n\) = 1000, \(y_{1} = -1 + x_{1} + x_{2} + e\), odpowiedź zależy od \(x_{1}\) i \(x_{2}\). Klasy: 16 komórek (po 4 przedziały \(x_{1}\) i \(x_{2}\)).</p>
+      <table class="g" id="simtab">
+        <thead><tr><th>Estymator</th><th>Obciążenie × 100</th><th class="r">Wariancja × 100</th><th>RMSE × 100</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <p class="notka">Odchylenie standardowe \(y_{1}\) w jednej próbie: 1,111 (pełne dane), 1,109 (<code>hd_kl</code>), 0,982 (<code>sr_kl</code>). Średnia w klasach ma najmniejszy RMSE estymatora średniej, ale zaniża rozproszenie zmiennej. Układ symulacji za: Yang, Kim (2020).</p>
+    </div>
+  </div>
+  <div class="col" style="margin-top:44px">
+    <p><b>Jak tworzyć klasy?</b> Przy kilku zmiennych pomocniczych krzyżowanie wszystkich kategorii daje setki klas, w większości małych albo pustych. Dlatego zamiast krzyżować zmienne, często streszcza się je w jedną liczbę, wynik modelu, i dzieli jednostki na przedziały tej liczby (Little, 1986; Haziza i Beaumont, 2007).</p>
+  </div>
+  <div class="cases cls">
+    <div class="case"><span class="kind de">bez modelu</span><h4>Krzyżowanie zmiennych</h4><p>Klasy to kombinacje kategorii, np. płeć × wiek × wykształcenie. Proste i łatwe do opisania, ale liczba klas rośnie szybko: 6 zmiennych po 4 kategorie to 4096 klas. Zmienne ciągłe trzeba najpierw pogrupować.</p><p class="fn">interaction(plec, wiek_kat)</p></div>
+    <div class="case"><span class="kind st">model dla Y</span><h4>Komórki przewidywanej średniej</h4><p><i>Predictive mean cells.</i> Na respondentach dopasowujemy regresję \(Y\) względem \(\mathbf{x}\), liczymy \(\hat{y}_i\) dla wszystkich jednostek i dzielimy je według kwantyli \(\hat{y}\). W klasie są jednostki o podobnej przewidywanej wartości \(Y\). Zmniejsza obciążenie i wariancję, jeśli model dla \(Y\) jest dobry.</p><p class="fn">cut(yhat, quantile(yhat, 0:16/16))</p></div>
+    <div class="case"><span class="kind st">model odpowiedzi</span><h4>Komórki skłonności do odpowiedzi</h4><p><i>Response propensity cells.</i> Dopasowujemy model logistyczny dla wskaźnika odpowiedzi, liczymy \(\hat{p}_i = \hat{P}(R_i = 1 \mid \mathbf{x}_i)\) i grupujemy według kwantyli \(\hat{p}\). Usuwa obciążenie, jeśli model odpowiedzi jest dobry. Wariancji nie zmniejsza, a może ją zwiększyć, gdy \(\hat{p}\) słabo wiąże się z \(Y\).</p><p class="fn">glm(odp ~ x, family = binomial)</p></div>
+    <div class="case"><span class="kind st">oba modele</span><h4>Krzyżowanie \(\hat{y} \times \hat{p}\)</h4><p>Klasy to kombinacje przedziałów \(\hat{y}\) i \(\hat{p}\), np. 4 × 4. Klasy jednorodne pod względem obu wyników chronią przed obciążeniem także wtedy, gdy jeden z modeli jest źle określony (Haziza i Beaumont, 2007). Koszt: więcej klas i ryzyko klas bez dawców.</p><p class="fn">interaction(kw(yhat, 4), kw(phat, 4))</p></div>
+  </div>
+  <div class="sim2">
+    <h4>Symulacja 2: sześć zmiennych pomocniczych</h4>
+    <p class="hs">\(N\) = 50 000, \(n\) = 1000, <span id="sim2-R">5000</span> prób. \(x_1, \dots, x_6 \sim U(0, 1)\), \(y = -2 + x_1 + x_2 + 2x_3 + 2x_4 + e\), \(e \sim N(0, 1)\), \(\operatorname{logit} p = -1{,}5 + 1{,}5\,(x_3 + x_4 + x_5 + x_6)\), średnio 79% odpowiedzi. Z \(Y\) i z odpowiedzią jednocześnie wiążą się tylko \(x_3\) i \(x_4\). Modele dla \(\hat{y}\) i \(\hat{p}\) zawierają wszystkie sześć zmiennych, bo analityk nie wie, które są ważne.</p>
+    <table class="g" id="simtab2">
+      <thead><tr><th>Klasy</th><th>Obciążenie × 100</th><th class="r">Wariancja × 100</th><th>RMSE × 100</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <p class="notka" id="sim2-note"></p>
+    <div class="codes">
+      <div><h4>R: klasy z modeli</h4>
+<pre class="code">library(simputation)
+dane$odp <- !is.na(dane$y)
+<span class="c"># lm() pomija braki: model na respondentach</span>
+m_y <- lm(y ~ x1 + x2 + x3 + x4 + x5 + x6, data = dane)
+dane$yhat <- predict(m_y, newdata = dane)
+<span class="c"># model odpowiedzi</span>
+m_r <- glm(odp ~ x1 + x2 + x3 + x4 + x5 + x6,
+           family = binomial, data = dane)
+dane$phat <- predict(m_r, type = "response")
+
+kw <- function(v, k) cut(v, quantile(v, 0:k / k),
+                         include.lowest = TRUE)
+dane$kl_pm   <- kw(dane$yhat, 16)
+dane$kl_rp   <- kw(dane$phat, 16)
+dane$kl_pmrp <- interaction(kw(dane$yhat, 4),
+                            kw(dane$phat, 4))
+
+impute_rhd(dane, y ~ kl_pm)</pre></div>
+      <div><h4>Python: <code>statsmodels</code> i <code>pandas</code></h4>
+<pre class="code">import statsmodels.formula.api as smf
+
+x = 'x1 + x2 + x3 + x4 + x5 + x6'
+dane['odp'] = dane['y'].notna().astype(int)
+<span class="c"># wiersze z brakiem y są pomijane przy dopasowaniu</span>
+m_y = smf.ols('y ~ ' + x, data=dane).fit()
+dane['yhat'] = m_y.predict(dane)
+m_r = smf.logit('odp ~ ' + x, data=dane).fit(disp=0)
+dane['phat'] = m_r.predict(dane)
+
+dane['kl_pm'] = pd.qcut(dane['yhat'], 16)
+dane['kl_rp'] = pd.qcut(dane['phat'], 16)
+a = pd.qcut(dane['yhat'], 4, labels=False)
+b = pd.qcut(dane['phat'], 4, labels=False)
+dane['kl_pmrp'] = a.astype(str) + '_' + b.astype(str)
+
+<span class="c"># funkcja hotdeck_losowy() z części 7</span>
+hotdeck_losowy(dane, 'y', klasy='kl_pm')</pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== CZĘŚĆ 6: pamiętaj ===================== -->
+<section class="act" id="cz6">
+  <div class="shead">
+    <span class="tag">Część 6 · Pamiętaj</span>
+    <h2>O czym łatwo zapomnieć</h2>
+  </div>
+  <div class="limits">
+    <div><h4>Klasa bez dawców</h4><p>Im więcej klas, tym bardziej podobni dawca i biorca, ale tym większe ryzyko pustych klas. Braki w nich zostają albo trzeba łączyć klasy.</p></div>
+    <div><h4>Mało dawców, duża wariancja</h4><p>Gdy w klasie jest dwóch dawców, a biorców dziesięciu, te same wartości powtarzają się wiele razy. Rośnie wariancja estymatora.</p></div>
+    <div><h4>Imputacja jednokrotna zaniża niepewność</h4><p>Wzory dla pełnych danych traktują wartości imputowane jak obserwowane. Błąd standardowy wychodzi za mały. Odpowiedzią jest imputacja wielokrotna (część 7).</p></div>
+    <div><h4>Klasy bez związku z odpowiedzią nie pomagają</h4><p>Hot-deck bez klas ma takie samo obciążenie jak średnia z respondentów, bo nie korzysta z \(\mathbf{x}\). Sortowanie tylko po \(x_{1}\) usuwa obciążenie częściowo, bo odpowiedź zależy też od \(x_{2}\).</p></div>
+    <div><h4>Sekwencyjny hot-deck to nie dedukcja</h4><p>Technicznie działa jak <code>fill()</code>, <code>na.locf()</code> czy <code>ffill()</code>. W imputacji dedukcyjnej porządek <i>wyznacza</i> wartość. W hot-decku zakładamy tylko, że sąsiednie jednostki są <i>podobne</i>.</p></div>
+    <div><h4>Nie ma ekstrapolacji</h4><p>Hot-deck nie wyjdzie poza zakres zaobserwowanych wartości. To zaleta przy zmiennych dyskretnych, ale wada, gdy braki dotyczą głównie jednostek o skrajnych wartościach.</p></div>
+  </div>
+</section>
+
+<!-- ===================== CZĘŚĆ 7: kod ===================== -->
+<section class="act" id="cz7">
+  <div class="shead">
+    <span class="tag">Część 7 · R i Python</span>
+    <h2>To samo w kodzie</h2>
+  </div>
+  <div class="col">
+    <p>Pełne skrypty są w repozytorium: <code>codes/R/4a-imputacja-hotdeck.R</code> i <code>codes/python/4a-imputacja-hotdeck.py</code>. Poniżej przykład 1.</p>
+  </div>
+  <div class="codes">
+    <div><h4>R: <code>simputation</code> i <code>VIM</code></h4>
+<pre class="code">library(simputation)
+
+przyklad1 <- data.frame(
+  plec = c("K", "K", "K", "K", "M", "M", "M", "M"),
+  X    = c(21, 24, 30, 35, 22, 28, 33, 40),
+  Y    = c(25, NA, 35, NA, 45, NA, 55, 65))
+
+set.seed(2025)
+impute_rhd(przyklad1, Y ~ 1)        <span class="c"># losowy</span>
+set.seed(2025)
+impute_rhd(przyklad1, Y ~ plec)     <span class="c"># losowy w klasach</span>
+impute_shd(przyklad1, Y ~ X)        <span class="c"># sekwencyjny</span>
+impute_shd(przyklad1, Y ~ X | plec) <span class="c"># sekwencyjny w klasach</span>
+
+<span class="c"># to samo w pakiecie VIM</span>
+VIM::hotdeck(przyklad1, variable = "Y",
+             ord_var = "X", domain_var = "plec")</pre></div>
+    <div><h4>Python: <code>pandas</code></h4>
+<pre class="code">def hotdeck_losowy(dane, y, klasy=None):
+    wynik = dane[y].copy()
+    grupy = [dane.index] if klasy is None else \
+        dane.groupby(klasy, observed=True).groups.values()
+    for idx in grupy:
+        y_gr = dane.loc[idx, y]
+        biorcy = y_gr.index[y_gr.isna()]
+        dawcy = y_gr.dropna().to_numpy()
+        <span class="c"># klasa bez dawców: braki zostają</span>
+        if len(biorcy) > 0 and len(dawcy) > 0:
+            wynik.loc[biorcy] = np.random.choice(
+                dawcy, size=len(biorcy), replace=True)
+    return wynik
+
+np.random.seed(2025)
+hotdeck_losowy(przyklad1, 'Y', klasy='plec')</pre></div>
+  </div>
+</section>
+</main>
+
+<footer class="wrap">
+  <p><b>Źródła.</b> R. R. Andridge, R. J. A. Little (2010), A review of hot deck imputation for survey non-response, <i>International Statistical Review</i>, 78(1), 40–64, <a href="https://doi.org/10.1111/j.1751-5823.2010.00103.x">doi:10.1111/j.1751-5823.2010.00103.x</a>. S. Yang, J. K. Kim (2020), Asymptotic theory and inference of predictive mean matching imputation using a superpopulation model framework, <i>Scandinavian Journal of Statistics</i>, 47(3), 839–861, <a href="https://doi.org/10.1111/sjos.12429">doi:10.1111/sjos.12429</a> (układ symulacji). J. K. Kim, W. A. Fuller, W. R. Bell (2011), Variance estimation for nearest neighbor imputation for US Census long form data, <i>The Annals of Applied Statistics</i>, 5(2A), 824–842, <a href="https://doi.org/10.1214/10-AOAS419">doi:10.1214/10-AOAS419</a> (hot-deck metodą najbliższego sąsiada w praktyce urzędu statystycznego i estymacja wariancji). G. Kalton, L. Kish (1984), Some efficient random imputation methods, <i>Communications in Statistics – Theory and Methods</i>, 13(16), 1919–1939, <a href="https://doi.org/10.1080/03610928408828805">doi:10.1080/03610928408828805</a> (wariancja imputacji losowej). R. J. A. Little (1986), Survey nonresponse adjustments for estimates of means, <i>International Statistical Review</i>, 54(2), 139–157, <a href="https://doi.org/10.2307/1403140">doi:10.2307/1403140</a> (komórki przewidywanej średniej i skłonności do odpowiedzi). D. Haziza, J.-F. Beaumont (2007), On the construction of imputation classes in surveys, <i>International Statistical Review</i>, 75(1), 25–43, <a href="https://doi.org/10.1111/j.1751-5823.2006.00002.x">doi:10.1111/j.1751-5823.2006.00002.x</a>.</p>
+  <p><b>Zajęcia.</b> Analiza danych niekompletnych, Uniwersytet Ekonomiczny w Poznaniu, Katedra Statystyki. Prowadzący: dr Maciej Beręsewicz, prof. UEP.</p>
+  <p><b>O stronie.</b> Opracowanie: Maciej Beręsewicz. Strona przygotowana z pomocą Claude (Anthropic). Forma interaktywnego podsumowania jest wzorowana na stronie <a href="https://migration.guillaumeblanc.com">„Escaping Malthus”</a>, przygotowanej przez Guillaume'a Blanca (Simon Fraser University) i Romaina Wacziarga (UCLA i NBER) jako podsumowanie ich artykułu „Malthusian Migrations”.</p>
+</footer>
+
+<div hidden>
+  <div id="tip-klasa"><span class="tt">Klasa imputacyjna</span><p>Grupa jednostek wyznaczona przez zmienne obserwowane dla wszystkich, np. płeć × wykształcenie. Biorca dostaje dawcę tylko ze swojej klasy.</p><p>Klasy działają, gdy wewnątrz nich respondenci i nierespondenci są do siebie podobni pod względem <i>Y</i> (założenie MAR w klasach).</p></div>
+</div>
+<div id="tip" role="tooltip"></div>
+<div id="vtip" role="tooltip"></div>
+
+<script>
+/*ENGINE-START*/
+/* generator z ziarnem (mulberry32) */
+function rng(seed) {
+  var a = seed >>> 0;
+  return function () {
+    a = (a + 0x6D2B79F5) >>> 0;
+    var t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function groupsOf(rows, byClass) {
+  var g = {}, order = [];
+  rows.forEach(function (r, i) {
+    var k = byClass ? r.cls : "__all";
+    if (!g[k]) { g[k] = []; order.push(k); }
+    g[k].push(i);
+  });
+  return order.map(function (k) { return { key: k, idx: g[k] }; });
+}
+/* zwraca tablicę {v, donor} dla każdego wiersza; donor = indeks dawcy albo -1 (brak dawcy), null = wartość obserwowana */
+function hdRandom(rows, byClass, rand) {
+  var out = rows.map(function (r) { return { v: r.y, donor: null }; });
+  groupsOf(rows, byClass).forEach(function (gr) {
+    var don = gr.idx.filter(function (i) { return rows[i].y !== null; });
+    gr.idx.forEach(function (i) {
+      if (rows[i].y !== null) return;
+      if (!don.length) { out[i] = { v: null, donor: -1 }; return; }
+      var d = don[Math.floor(rand() * don.length)];
+      out[i] = { v: rows[d].y, donor: d };
+    });
+  });
+  return out;
+}
+function hdSeq(rows, byClass) {
+  var out = rows.map(function (r) { return { v: r.y, donor: null }; });
+  groupsOf(rows, byClass).forEach(function (gr) {
+    var s = gr.idx.slice().sort(function (a, b) { return rows[a].x - rows[b].x || a - b; });
+    var last = -1, pending = [];
+    s.forEach(function (i) {
+      if (rows[i].y !== null) { last = i; return; }
+      if (last >= 0) out[i] = { v: rows[last].y, donor: last }; else pending.push(i);
+    });
+    /* brak na początku: ostatni respondent w grupie (jak impute_shd) */
+    pending.forEach(function (i) { out[i] = last >= 0 ? { v: rows[last].y, donor: last } : { v: null, donor: -1 }; });
+  });
+  return out;
+}
+function meanOf(vals) { var s = 0, n = 0; vals.forEach(function (v) { if (v !== null) { s += v; n++; } }); return n ? s / n : NaN; }
+/* E i Var średniej po losowym hot-decku (dawcy ze zwracaniem); null, gdy jakaś klasa nie ma dawców */
+function hdMoments(rows, byClass) {
+  var n = rows.length, E = 0, V = 0, ok = true;
+  groupsOf(rows, byClass).forEach(function (gr) {
+    var ys = gr.idx.filter(function (i) { return rows[i].y !== null; }).map(function (i) { return rows[i].y; });
+    var m = gr.idx.length - ys.length, r = ys.length;
+    if (!r) { if (m) ok = false; return; }
+    var yb = ys.reduce(function (a, b) { return a + b; }, 0) / r;
+    var pv = ys.reduce(function (a, b) { return a + (b - yb) * (b - yb); }, 0) / r;  /* (r-1)/r * s^2 */
+    E += (r + m) * yb; V += m * pv;
+  });
+  return ok ? { E: E / n, V: V / (n * n) } : null;
+}
+/*ENGINE-END*/
+
+(function () {
+  "use strict";
+
+  /* skład wzorów: KaTeX (auto-render) dla treści statycznej i dynamicznej */
+  function tex(el) {
+    if (!window.renderMathInElement) return;
+    renderMathInElement(el, {
+      delimiters: [{ left: "\\[", right: "\\]", display: true }, { left: "\\(", right: "\\)", display: false }],
+      throwOnError: false, strict: "ignore",
+      trust: function (c) { return c.command === "\\htmlClass"; }
+    });
+  }
+  var $ = function (id) { return document.getElementById(id); };
+  var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function fmt(v, d) {
+    if (v === null || v === undefined || isNaN(v)) return "NA";
+    var p = Math.pow(10, d === undefined ? 4 : d);
+    return (Math.round(v * p) / p).toLocaleString("pl-PL", { maximumFractionDigits: d === undefined ? 4 : d, useGrouping: false }).replace("-", "−");
+  }
+  function fmtf(v, d) { return v.toLocaleString("pl-PL", { minimumFractionDigits: d, maximumFractionDigits: d }).replace("-", "−"); }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  var NS = "http://www.w3.org/2000/svg";
+  function el(tag, at, parent, txt) { var e = document.createElementNS(NS, tag); for (var k in at) e.setAttribute(k, at[k]); if (txt !== undefined) e.textContent = txt; if (parent) parent.appendChild(e); return e; }
+
+  /* ---------- wykres jednostek ---------- */
+  var plotN = 0;
+  function niceTicks(lo, hi) {
+    var span = hi - lo || 1, step = Math.pow(10, Math.floor(Math.log10(span / 4)));
+    [1, 2, 2.5, 5, 10].some(function (m) { if (span / (step * m) <= 6) { step *= m; return true; } return false; });
+    var t = [], s = Math.ceil(lo / step) * step;
+    for (var v = s; v <= hi + 1e-9; v += step) t.push(Math.round(v * 1e6) / 1e6);
+    return t;
+  }
+  /* o: {res, zones:'none'|'all'|'class', pool:boolean, order:'none'|'all'|'class', arrows, anim, classes} */
+  function drawUnits(svg, rows, o) {
+    o = o || {};
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    var id = "ah" + (++plotN);
+    var classes = o.classes || groupsOf(rows, true).map(function (g) { return g.key; });
+    var W = 600, top = 22, rowH = 104, L = 64, R = 572, H = top + classes.length * rowH + 44;
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    var defs = el("defs", {}, svg), mk = el("marker", { id: id, viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 6, markerHeight: 6, orient: "auto" }, defs);
+    el("path", { d: "M0 0 L10 5 L0 10 z", "class": "ahead" }, mk);
+    var xs = rows.map(function (r) { return r.x; }).filter(function (v) { return !isNaN(v); });
+    var lo = xs.length ? Math.min.apply(null, xs) : 0, hi = xs.length ? Math.max.apply(null, xs) : 1;
+    var pad = (hi - lo) * 0.06 || 1; lo -= pad; hi += pad;
+    var sx = function (v) { return L + (v - lo) / (hi - lo) * (R - L); };
+    var cy = function (c) { return top + classes.indexOf(c) * rowH + rowH / 2 + 6; };
+    var pos = rows.map(function (r) { return { x: sx(isNaN(r.x) ? lo : r.x), y: cy(r.cls) }; });
+    var res = o.res;
+    /* strefy: pula wspólna albo klasy */
+    if (o.zones === "all") {
+      el("rect", { x: L - 30, y: top - 6, width: R - L + 60, height: classes.length * rowH + 4, rx: 10, "class": "zone" + (o.pool ? " pool" : "") }, svg);
+    } else if (o.zones === "class") {
+      classes.forEach(function (c) {
+        var y0 = top + classes.indexOf(c) * rowH;
+        el("rect", { x: L - 30, y: y0 - 2, width: R - L + 60, height: rowH - 8, rx: 10, "class": "zone" + (o.pool ? " pool" : "") }, svg);
+        if (o.pool) {
+          var pv = rows.filter(function (r) { return r.cls === c && r.y !== null; }).map(function (r) { return fmt(r.y); });
+          el("text", { x: L - 20, y: y0 + 13, "class": "zlab pool" }, svg, "pula " + c + ": {" + (pv.join(", ") || "brak dawców") + "}");
+        }
+      });
+    }
+    if (o.zones === "all" && o.pool) {
+      var pa = rows.filter(function (r) { return r.y !== null; }).map(function (r) { return fmt(r.y); });
+      el("text", { x: L - 20, y: top + 10, "class": "zlab pool" }, svg, "pula wspólna: {" + pa.join(", ") + "}");
+    }
+    classes.forEach(function (c) { el("text", { x: 6, y: cy(c) + 5, "class": "rowlab" }, svg, c.length > 7 ? c.slice(0, 6) + "…" : c); });
+    /* oś */
+    var ay = top + classes.length * rowH + 6, ax = el("g", { "class": "ax" }, svg);
+    el("line", { x1: L - 10, x2: R + 10, y1: ay, y2: ay }, ax);
+    niceTicks(lo, hi).forEach(function (t) {
+      el("line", { x1: sx(t), x2: sx(t), y1: ay, y2: ay + 5 }, ax);
+      el("text", { x: sx(t), y: ay + 20, "text-anchor": "middle" }, ax, fmt(t));
+    });
+    el("text", { x: R + 10, y: ay + 36, "text-anchor": "end", "font-style": "italic" }, ax, "X");
+    /* kolejność sortowania */
+    if (o.order && o.order !== "none") {
+      groupsOf(rows, o.order === "class").forEach(function (g) {
+        var s = g.idx.slice().sort(function (a, b) { return rows[a].x - rows[b].x || a - b; });
+        if (s.length < 2) return;
+        el("path", { d: s.map(function (i, k) { return (k ? "L" : "M") + pos[i].x + " " + pos[i].y; }).join(" "), "class": "ord" }, svg);
+      });
+    }
+    /* jednostki */
+    var donors = {};
+    if (res && o.arrows) res.forEach(function (q) { if (q.donor !== null && q.donor >= 0) donors[q.donor] = 1; });
+    rows.forEach(function (r, i) {
+      var q = res && res[i], cls = "u";
+      var txt = r.y !== null ? fmt(r.y) : "NA";
+      if (r.y === null) {
+        if (q && q.v !== null && o.arrows) { cls += " imp"; txt = fmt(q.v); }
+        else { cls += " na"; if (q && q.donor === -1) cls += " left"; }
+      } else {
+        if (o.pool && o.zones !== "none") cls += " pool";
+        if (donors[i]) cls += " don";
+        if (o.dimResp) cls += " dim";
+      }
+      var g = el("g", { "class": cls, transform: "translate(" + pos[i].x + "," + pos[i].y + ")" }, svg);
+      el("circle", { r: 21 }, g);
+      el("text", { "class": "v", y: 1 }, g, txt);
+      el("text", { "class": "id", y: -28 }, g, "nr " + (r.id !== undefined ? r.id : i + 1));
+    });
+    /* strzałki dawca → biorca */
+    if (res && o.arrows) res.forEach(function (q, i) {
+      if (q.donor === null || q.donor < 0) return;
+      var a = pos[q.donor], b = pos[i], dx = b.x - a.x, dy = b.y - a.y, d = Math.sqrt(dx * dx + dy * dy) || 1;
+      var ux = dx / d, uy = dy / d, sx0 = a.x + ux * 23, sy0 = a.y + uy * 23, ex = b.x - ux * 25, ey = b.y - uy * 25;
+      var bend = Math.min(60, 18 + d * 0.18), mx = (sx0 + ex) / 2 - uy * bend * (dx >= 0 ? 1 : -1), my = (sy0 + ey) / 2 + ux * bend * (dx >= 0 ? -1 : 1);
+      if (Math.abs(dy) < 1) my = Math.min(sy0, ey) - bend;
+      el("path", { d: "M" + sx0 + " " + sy0 + " Q" + mx + " " + my + " " + ex + " " + ey, "class": "arr" + (o.anim && !reduced ? " anim" : ""), "marker-end": "url(#" + id + ")" }, svg);
+    });
+  }
+
+  /* ---------- przewijanie ---------- */
+  var desk = window.matchMedia("(min-width: 980px)"), updaters = [];
+  function scroller(id, cb) {
+    var box = $(id), steps = box.querySelectorAll(".step"), cur = -1;
+    function go(i) {
+      if (i === cur) return;
+      var prev = cur; cur = i;
+      steps.forEach(function (s, k) { s.classList.toggle("on", k === i); });
+      cb(i, prev);
+    }
+    go(0);
+    updaters.push(function () {
+      var r = box.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > innerHeight) return;
+      var line = innerHeight * (desk.matches ? .5 : .8), k = 0;
+      steps.forEach(function (s, j) { if (s.getBoundingClientRect().top < line) k = j; });
+      go(k);
+    });
+  }
+  var ticking = false;
+  function runUpdaters() {
+    ticking = false;
+    updaters.forEach(function (f) { f(); });
+    var mx = document.documentElement.scrollHeight - innerHeight;
+    $("prog").style.width = (mx > 0 ? Math.min(100, scrollY / mx * 100) : 0) + "%";
+  }
+  window.addEventListener("scroll", function () { if (!ticking) { ticking = true; requestAnimationFrame(runUpdaters); } }, { passive: true });
+  window.addEventListener("resize", runUpdaters);
+  function setPanel(p, html) {
+    p.innerHTML = html;
+    if (!reduced) { p.classList.remove("fade"); void p.offsetWidth; p.classList.add("fade"); }
+  }
+
+  /* ---------- dane przykładu 1 ---------- */
+  var EX1 = [
+    { id: 1, cls: "K", x: 21, y: 25 }, { id: 2, cls: "K", x: 24, y: null }, { id: 3, cls: "K", x: 30, y: 35 }, { id: 4, cls: "K", x: 35, y: null },
+    { id: 5, cls: "M", x: 22, y: 45 }, { id: 6, cls: "M", x: 28, y: null }, { id: 7, cls: "M", x: 33, y: 55 }, { id: 8, cls: "M", x: 40, y: 65 }
+  ];
+  /* losowania z R (set.seed(2025), impute_rhd) ze slajdów; indeksy dawców to pozycje w EX1 */
+  function fixed(map) { return EX1.map(function (r, i) { return r.y !== null ? { v: r.y, donor: null } : { v: EX1[map[i]].y, donor: map[i] }; }); }
+  var R_HD = fixed({ 1: 7, 3: 6, 5: 6 });   /* 2 ← 65 (nr 8), 4 ← 55 (nr 7), 6 ← 55 (nr 7) */
+  var R_HDK = fixed({ 1: 0, 3: 2, 5: 7 });  /* 2 ← 25 (nr 1), 4 ← 35 (nr 3), 6 ← 65 (nr 8) */
+  var R_SHD = hdSeq(EX1, false), R_SHDK = hdSeq(EX1, true);
+
+  /* ---------- pasmo A ---------- */
+  (function () {
+    var svg = $("plotA"), P = $("a-panel");
+    var SUB = ["Płeć i X obserwowane, Y z brakami", "Losowy hot-deck: wspólna pula dawców", "Losowy hot-deck: wynik losowania",
+               "Losowy hot-deck w klasach płci", "Sekwencyjny hot-deck po X", "Sekwencyjny hot-deck po X w klasach płci", "Cztery warianty, cztery średnie"];
+    var miss = [1, 3, 5];
+    function tab(res, label) {
+      var m = meanOf(res.map(function (q) { return q.v; }));
+      return '<table class="mini"><tr><th class="l">' + label + "</th>" + miss.map(function (i) { return "<th>nr " + EX1[i].id + " (" + EX1[i].cls + ")</th>"; }).join("") + "<th>średnia Y</th></tr>" +
+        '<tr><td class="l">imputacja</td>' + miss.map(function (i) { return '<td class="im">' + fmt(res[i].v) + " <small>← nr " + EX1[res[i].donor].id + "</small></td>"; }).join("") + "<td><b>" + fmtf(m, 2) + "</b></td></tr></table>";
+    }
+    scroller("bandA", function (s) {
+      $("a-sub").textContent = SUB[s];
+      var h = "";
+      if (s === 0) { drawUnits(svg, EX1, {}); h = '<p class="cap">Średnia wśród respondentów</p><table class="mini"><tr><th>ȳ<sub>r</sub></th><th>respondenci</th><th>braki</th></tr><tr><td><b>45</b></td><td>5</td><td>3</td></tr></table>'; }
+      if (s === 1) { drawUnits(svg, EX1, { zones: "all", pool: true }); h = '<p class="cap">Pula dawców jest wspólna dla wszystkich biorców</p>'; }
+      if (s === 2) { drawUnits(svg, EX1, { zones: "all", pool: true, res: R_HD, arrows: true, anim: true }); h = tab(R_HD, "bez klas") + '<span class="chipnote">nr 2 (K) ← 65 od mężczyzny</span>'; }
+      if (s === 3) { drawUnits(svg, EX1, { zones: "class", pool: true, res: R_HDK, arrows: true, anim: true }); h = tab(R_HDK, "w klasach"); }
+      if (s === 4) { drawUnits(svg, EX1, { order: "all", res: R_SHD, arrows: true, anim: true }); h = tab(R_SHD, "sekwencyjny"); }
+      if (s === 5) { drawUnits(svg, EX1, { zones: "class", order: "class", res: R_SHDK, arrows: true, anim: true }); h = tab(R_SHDK, "sekw. w klasach"); }
+      if (s === 6) {
+        drawUnits(svg, EX1, { dimResp: true });
+        var all = [["Losowy", R_HD], ["Losowy w klasach", R_HDK], ["Sekwencyjny", R_SHD], ["Sekw. w klasach", R_SHDK]];
+        h = '<table class="mini"><tr><th class="l">Wariant</th>' + miss.map(function (i) { return "<th>nr " + EX1[i].id + "</th>"; }).join("") + "<th>średnia Y</th></tr>" +
+          all.map(function (a) { return '<tr><td class="l">' + a[0] + "</td>" + miss.map(function (i) { return '<td class="im">' + fmt(a[1][i].v) + "</td>"; }).join("") + "<td><b>" + fmtf(meanOf(a[1].map(function (q) { return q.v; })), 2) + "</b></td></tr>"; }).join("") +
+          '<tr class="sum"><td class="l">Średnia w klasach</td><td>30</td><td>30</td><td>55</td><td>42,50</td></tr></table>';
+      }
+      setPanel(P, h);
+    });
+  })();
+
+  /* ---------- część 3: histogram średnich ---------- */
+  (function () {
+    var svg = $("hist"), stats = $("lab-stats"), last = $("lab-last"), vt = $("vtip");
+    var V = [
+      { key: "bez", name: "Losowy bez klas", by: false, col: "var(--s-bez)" },
+      { key: "kl", name: "Losowy w klasach (płeć)", by: true, col: "var(--s-kl)" }
+    ];
+    /* rozkład dokładny przez wyliczenie wszystkich losowań */
+    function exact(by) {
+      var miss = [], pools = [];
+      groupsOf(EX1, by).forEach(function (g) {
+        var don = g.idx.filter(function (i) { return EX1[i].y !== null; }).map(function (i) { return EX1[i].y; });
+        g.idx.forEach(function (i) { if (EX1[i].y === null) { miss.push(i); pools.push(don); } });
+      });
+      var base = EX1.reduce(function (s, r) { return s + (r.y || 0); }, 0), dist = {};
+      (function rec(k, sum, p) {
+        if (k === miss.length) { var m = Math.round((base + sum) / EX1.length * 100) / 100; dist[m] = (dist[m] || 0) + p; return; }
+        pools[k].forEach(function (v) { rec(k + 1, sum + v, p / pools[k].length); });
+      })(0, 0, 1);
+      return dist;
+    }
+    V.forEach(function (v) { v.ex = exact(v.by); v.mom = hdMoments(EX1, v.by); v.cnt = {}; v.n = 0; v.s = 0; v.ss = 0; });
+    var bins = []; for (var b = 37.5; b <= 52.5 + 1e-9; b += 1.25) bins.push(Math.round(b * 100) / 100);
+    var seed = 7, rand = rng(seed);
+    var W = 720, L = 46, R = 700, panelH = 140, gap = 30, top = 26, ymax = 0.42;
+    var bw = (R - L) / bins.length;
+    var sx = function (m) { return L + (bins.indexOf(m) + .5) * bw; };
+    var bars = {};
+    function build() {
+      while (svg.firstChild) svg.removeChild(svg.firstChild);
+      V.forEach(function (v, k) {
+        var y0 = top + k * (panelH + gap), base = y0 + panelH;
+        var sy = function (p) { return base - p / ymax * panelH; };
+        [0.1, 0.2, 0.3].forEach(function (t) {
+          el("line", { x1: L, x2: R, y1: sy(t), y2: sy(t), "class": "gl" }, svg);
+          el("text", { x: L - 8, y: sy(t) + 4, "text-anchor": "end" }, svg, fmt(t * 100, 0) + "%");
+        });
+        el("text", { x: L, y: y0 - 8, "class": "ttl" }, svg, v.name);
+        bars[v.key] = {};
+        bins.forEach(function (m) {
+          var cx = sx(m), w = bw - 4;
+          var hit = el("rect", { x: cx - bw / 2, y: y0, width: bw, height: panelH, "class": "hit" }, svg);
+          var r = el("rect", { x: cx - w / 2, y: base, width: w, height: 0, rx: 3, "class": "bar", fill: v.col }, svg);
+          bars[v.key][m] = r;
+          if (v.ex[m]) el("line", { x1: cx - w / 2 - 2, x2: cx + w / 2 + 2, y1: sy(v.ex[m]), y2: sy(v.ex[m]), "class": "ex" }, svg);
+          hit.addEventListener("mousemove", function (e) { tipFor(e, v, m); r.classList.add("hov"); });
+          hit.addEventListener("mouseleave", function () { vt.classList.remove("show"); r.classList.remove("hov"); });
+        });
+        el("line", { x1: L, x2: R, y1: base, y2: base, "class": "bl" }, svg);
+        var ex = L + (v.mom.E - bins[0]) / 1.25 * bw + bw / 2;
+        el("line", { x1: ex, x2: ex, y1: y0 + 4, y2: base, "class": "ev" }, svg);
+        el("text", { x: ex + 6, y: y0 + 9 }, svg, "E = " + fmt(v.mom.E, 2));
+      });
+      var axY = top + 2 * panelH + gap + 18;
+      bins.forEach(function (m, i) { if (i % 2 === 0) el("text", { x: sx(m), y: axY, "text-anchor": "middle" }, svg, fmtf(m, 2)); });
+      el("text", { x: R, y: axY + 18, "text-anchor": "end" }, svg, "średnia Y po imputacji");
+    }
+    function tipFor(e, v, m) {
+      var c = v.cnt[m] || 0, ex = v.ex[m] || 0;
+      vt.innerHTML = "<b>" + v.name + "</b><br>średnia " + fmtf(m, 2) + "<br>losowania: " + c + (v.n ? " (" + fmt(c / v.n * 100, 1) + "%)" : "") + "<br>dokładnie: " + fmt(ex * 100, 1) + "%";
+      vt.classList.add("show");
+      var x = Math.min(e.clientX + 14, innerWidth - vt.offsetWidth - 8), y = e.clientY - vt.offsetHeight - 10;
+      vt.style.transform = "translate(" + x + "px," + (y < 8 ? e.clientY + 16 : y) + "px)";
+    }
+    function update() {
+      V.forEach(function (v, k) {
+        var base = top + k * (panelH + gap) + panelH;
+        bins.forEach(function (m) {
+          var p = v.n ? (v.cnt[m] || 0) / v.n : 0, h = Math.min(panelH, p / ymax * panelH);
+          bars[v.key][m].setAttribute("height", h); bars[v.key][m].setAttribute("y", base - h);
+        });
+      });
+      stats.innerHTML = V.map(function (v) {
+        var mean = v.n ? v.s / v.n : NaN, vr = v.n > 1 ? (v.ss - v.n * mean * mean) / (v.n - 1) : NaN;
+        return '<div class="' + v.key + '"><h5>' + v.name + '</h5><table><tr><th></th><th>z losowań</th><th>teoria</th></tr>' +
+          "<tr><td>liczba losowań</td><td>" + v.n + "</td><td>–</td></tr>" +
+          "<tr><td>średnia</td><td>" + (v.n ? fmtf(mean, 3) : "–") + "</td><td>" + fmtf(v.mom.E, 3) + "</td></tr>" +
+          "<tr><td>wariancja</td><td>" + (v.n > 1 ? fmtf(vr, 3) : "–") + "</td><td>" + fmtf(v.mom.V, 3) + "</td></tr></table></div>";
+      }).join("");
+    }
+    function draw(n) {
+      var lastTxt = [];
+      for (var t = 0; t < n; t++) {
+        V.forEach(function (v) {
+          var res = hdRandom(EX1, v.by, rand), m = Math.round(meanOf(res.map(function (q) { return q.v; })) * 100) / 100;
+          v.cnt[m] = (v.cnt[m] || 0) + 1; v.n++; v.s += m; v.ss += m * m;
+          if (t === n - 1) lastTxt.push(v.name + ": " + [1, 3, 5].map(function (i) { return "nr " + EX1[i].id + " ← " + res[i].v; }).join(", ") + " → średnia " + fmtf(m, 2));
+        });
+      }
+      last.textContent = "Ostatnie losowanie. " + lastTxt.join(" · ");
+      update();
+    }
+    document.querySelectorAll("#lab .go").forEach(function (b) { b.addEventListener("click", function () { draw(+b.dataset.n); }); });
+    $("lab-clear").addEventListener("click", function () { V.forEach(function (v) { v.cnt = {}; v.n = 0; v.s = 0; v.ss = 0; }); last.textContent = ""; update(); });
+    build(); update();
+  })();
+
+  /* ---------- część 4: narzędzie ---------- */
+  (function () {
+    var METHODS = [
+      { id: "rhd", name: "Losowy", rand: true, by: false },
+      { id: "rhdk", name: "Losowy w klasach", rand: true, by: true },
+      { id: "shd", name: "Sekwencyjny", rand: false, by: false },
+      { id: "shdk", name: "Sekwencyjny w klasach", rand: false, by: true }
+    ];
+    var PRESETS = [
+      { id: "p1", name: "Przykład 1", rows: EX1.map(function (r) { return { cls: r.cls, x: r.x, y: r.y }; }) },
+      { id: "pusta", name: "Klasa bez dawców", rows: [
+        { cls: "K", x: 21, y: 25 }, { cls: "K", x: 24, y: null }, { cls: "K", x: 30, y: 35 }, { cls: "M", x: 22, y: null },
+        { cls: "M", x: 28, y: null }, { cls: "M", x: 33, y: null }] },
+      { id: "pocz", name: "Brak na początku", rows: [
+        { cls: "K", x: 19, y: null }, { cls: "K", x: 24, y: 30 }, { cls: "K", x: 30, y: 35 }, { cls: "M", x: 20, y: null },
+        { cls: "M", x: 28, y: 50 }, { cls: "M", x: 33, y: 55 }, { cls: "M", x: 40, y: 65 }] },
+      { id: "malo", name: "Jeden dawca, wielu biorców", rows: [
+        { cls: "K", x: 21, y: 25 }, { cls: "K", x: 24, y: null }, { cls: "K", x: 27, y: null }, { cls: "K", x: 31, y: null }, { cls: "K", x: 35, y: null },
+        { cls: "M", x: 22, y: 45 }, { cls: "M", x: 28, y: null }, { cls: "M", x: 33, y: 55 }, { cls: "M", x: 40, y: 65 }] }
+    ];
+    var tbody = document.querySelector("#ed tbody"), svg = $("plotT"), out = $("tres"), codeBox = $("tcode");
+    var method = METHODS[1], rows = [], seed = 2025, codeTab = "r";
+    function chips(box, list, onClick) {
+      list.forEach(function (it) {
+        var b = document.createElement("button");
+        b.type = "button"; b.className = "chip"; b.textContent = it.name; b.dataset.id = it.id;
+        b.addEventListener("click", function () { onClick(it); });
+        box.appendChild(b);
+      });
+    }
+    function mark(box, id) { box.querySelectorAll(".chip").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.id === id ? "true" : "false"); }); }
+    chips($("methods"), METHODS, function (m) { method = m; mark($("methods"), m.id); run(); });
+    chips($("presets"), PRESETS, function (p) { load(p); });
+    function load(p) {
+      rows = p.rows.map(function (r) { return { cls: r.cls, x: r.x, y: r.y }; });
+      mark($("presets"), p.id); table(); run();
+    }
+    function table() {
+      tbody.innerHTML = rows.map(function (r, i) {
+        return '<tr data-i="' + i + '"><td class="n">' + (i + 1) + '</td><td><input data-f="cls" value="' + esc(r.cls) + '" aria-label="Klasa, wiersz ' + (i + 1) + '"></td>' +
+          '<td><input data-f="x" inputmode="decimal" value="' + (isNaN(r.x) ? "" : String(r.x).replace(".", ",")) + '" aria-label="X, wiersz ' + (i + 1) + '"></td>' +
+          '<td><input class="y" data-f="y" inputmode="decimal" placeholder="NA" value="' + (r.y === null ? "" : String(r.y).replace(".", ",")) + '" aria-label="Y, wiersz ' + (i + 1) + '"></td>' +
+          '<td><button type="button" class="del" aria-label="Usuń wiersz ' + (i + 1) + '">×</button></td></tr>';
+      }).join("");
+    }
+    function num(s) { s = s.trim().replace(",", ".").replace("−", "-"); if (s === "") return null; var v = Number(s); return isNaN(v) ? null : v; }
+    tbody.addEventListener("input", function (e) {
+      var inp = e.target, i = +inp.closest("tr").dataset.i, f = inp.dataset.f;
+      if (f === "cls") rows[i].cls = inp.value.trim() || "?";
+      else if (f === "x") { var v = num(inp.value); rows[i].x = v === null ? NaN : v; }
+      else rows[i].y = num(inp.value);
+      mark($("presets"), ""); run();
+    });
+    tbody.addEventListener("click", function (e) {
+      if (!e.target.classList.contains("del") || rows.length <= 2) return;
+      rows.splice(+e.target.closest("tr").dataset.i, 1); mark($("presets"), ""); table(); run();
+    });
+    $("addrow").addEventListener("click", function () {
+      if (rows.length >= 16) return;
+      var xs = rows.map(function (r) { return r.x; }).filter(function (v) { return !isNaN(v); });
+      rows.push({ cls: rows.length ? rows[rows.length - 1].cls : "K", x: xs.length ? Math.max.apply(null, xs) + 2 : 20, y: null });
+      mark($("presets"), ""); table(); run();
+    });
+    $("reseed").addEventListener("click", function () { seed++; run(); });
+    function rcode() {
+      var df = "dane <- data.frame(\n  klasa = c(" + rows.map(function (r) { return '"' + esc(r.cls) + '"'; }).join(", ") + "),\n  X = c(" +
+        rows.map(function (r) { return isNaN(r.x) ? "NA" : r.x; }).join(", ") + "),\n  Y = c(" + rows.map(function (r) { return r.y === null ? "NA" : r.y; }).join(", ") + "))\n\n";
+      var f = { rhd: "set.seed(2025)\nimpute_rhd(dane, Y ~ 1)", rhdk: "set.seed(2025)\nimpute_rhd(dane, Y ~ klasa)", shd: "impute_shd(dane, Y ~ X)", shdk: "impute_shd(dane, Y ~ X | klasa)" }[method.id];
+      return "library(simputation)\n\n" + df + f;
+    }
+    function pycode() {
+      var df = "dane = pd.DataFrame({\n    'klasa': [" + rows.map(function (r) { return "'" + esc(r.cls) + "'"; }).join(", ") + "],\n    'X': [" +
+        rows.map(function (r) { return isNaN(r.x) ? "np.nan" : r.x; }).join(", ") + "],\n    'Y': [" + rows.map(function (r) { return r.y === null ? "np.nan" : r.y; }).join(", ") + "]})\n\n";
+      var f = { rhd: "np.random.seed(2025)\nhotdeck_losowy(dane, 'Y')", rhdk: "np.random.seed(2025)\nhotdeck_losowy(dane, 'Y', klasy='klasa')",
+                shd: "hotdeck_sekwencyjny(dane, 'Y', 'X')", shdk: "hotdeck_sekwencyjny(dane, 'Y', 'X', klasy='klasa')" }[method.id];
+      return "import numpy as np\nimport pandas as pd\n" + '<span class="c"># funkcje hotdeck_losowy i hotdeck_sekwencyjny: codes/python/4a-imputacja-hotdeck.py</span>\n\n' + df + f;
+    }
+    function run() {
+      var res = method.rand ? hdRandom(rows, method.by, rng(seed)) : hdSeq(rows, method.by);
+      drawUnits(svg, rows, { zones: method.by ? "class" : (method.rand ? "all" : "none"), pool: method.rand, order: method.rand ? "none" : (method.by ? "class" : "all"), res: res, arrows: true, anim: true });
+      var nMiss = rows.filter(function (r) { return r.y === null; }).length, left = res.filter(function (q) { return q.donor === -1; }).length;
+      var resp = meanOf(rows.map(function (r) { return r.y; })), after = meanOf(res.map(function (q) { return q.v; }));
+      var uses = {}; res.forEach(function (q) { if (q.donor !== null && q.donor >= 0) uses[q.donor] = (uses[q.donor] || 0) + 1; });
+      var maxUse = Math.max.apply(null, [0].concat(Object.keys(uses).map(function (k) { return uses[k]; })));
+      var h = '<div class="kpis"><div><div class="kv">' + fmtf(resp, 2).replace("NaN", "–") + '</div><div class="kk">średnia respondentów</div></div>' +
+        '<div><div class="kv">' + (isNaN(after) ? "–" : fmtf(after, 2)) + '</div><div class="kk">średnia po imputacji' + (left ? " (bez " + left + " braków)" : "") + "</div></div>";
+      if (method.rand) {
+        var mo = hdMoments(rows, method.by);
+        h += mo ? '<div><div class="kv">' + fmtf(mo.E, 2) + '</div><div class="kk">\\(E_I\\) średniej</div></div><div><div class="kv">' + fmtf(mo.V, 3) + '</div><div class="kk">\\(\\operatorname{Var}_I\\) średniej</div></div>'
+                : '<div><div class="kv">–</div><div class="kk">E i Var nieokreślone: klasa bez dawców</div></div>';
+      } else h += '<div><div class="kv">0</div><div class="kk">\\(\\operatorname{Var}_I\\): metoda deterministyczna</div></div>';
+      h += "</div>";
+      if (method.rand) h += '<p class="notka">Ziarno: ' + seed + ". Kolejne kliknięcie „Losuj ponownie” daje inne dawstwa przy tych samych danych.</p>";
+      if (left) h += '<p class="warnl">' + left + " z " + nMiss + " braków nie ma dawcy w swojej klasie i zostaje pustych (obwódka na wykresie).</p>";
+      if (maxUse >= 3) h += '<p class="warnl">Jeden dawca został użyty ' + maxUse + " razy. Mała pula zwiększa wariancję.</p>";
+      if (!method.rand) {
+        var first = rows.some(function (r, i) {
+          if (r.y !== null) return false;
+          return !rows.some(function (s) { return s.y !== null && (!method.by || s.cls === r.cls) && s.x < r.x; }) && res[i].donor >= 0;
+        });
+        if (first) h += '<p class="notka">Brak na początku posortowanej grupy dostał wartość ostatniego respondenta, tak jak w <code>impute_shd()</code>.</p>';
+      }
+      out.innerHTML = h;
+      tex(out);
+      codeBox.innerHTML = '<div class="tabs" role="tablist"><button type="button" role="tab" data-t="r" aria-selected="' + (codeTab === "r") + '">R</button>' +
+        '<button type="button" role="tab" data-t="py" aria-selected="' + (codeTab === "py") + '">Python</button></div>' +
+        '<pre class="code"><button class="copy" type="button">Kopiuj</button><span class="ct">' + (codeTab === "r" ? rcode() : pycode()) + "</span></pre>";
+      codeBox.querySelectorAll(".tabs button").forEach(function (b) { b.addEventListener("click", function () { codeTab = b.dataset.t; run(); }); });
+      codeBox.querySelector(".copy").addEventListener("click", function () {
+        var btn = this, txt = codeBox.querySelector(".ct").textContent;
+        if (navigator.clipboard) navigator.clipboard.writeText(txt).then(function () { btn.textContent = "Skopiowano"; setTimeout(function () { btn.textContent = "Kopiuj"; }, 1400); }, function () {});
+      });
+    }
+    mark($("methods"), method.id);
+    load(PRESETS[0]);
+  })();
+
+  /* ---------- część 5: przykład 2 i symulacja ---------- */
+  (function () {
+    var D = [
+      ["Prawda", 0.720, 0], ["Respondenci", 0.730, 219], ["Losowy", 0.736, 0],
+      ["Klasy: płeć, wykształcenie", 0.711, 0], ["Klasy: płeć, wykszt., wiek", 0.712, 4], ["Sekwencyjny: wiek", 0.726, 0]
+    ];
+    var svg = $("dots"), L = 214, R = 452, lo = 0.70, hi = 0.74, top = 34, rh = 38;
+    var sx = function (v) { return L + (v - lo) / (hi - lo) * (R - L); };
+    [0.70, 0.71, 0.72, 0.73, 0.74].forEach(function (t) {
+      el("line", { x1: sx(t), x2: sx(t), y1: top - 14, y2: top + D.length * rh - 10, "class": "gl" }, svg);
+      el("text", { x: sx(t), y: top + D.length * rh + 8, "text-anchor": "middle" }, svg, fmtf(t, 2));
+    });
+    el("line", { x1: sx(0.72), x2: sx(0.72), y1: top - 20, y2: top + D.length * rh - 10, "class": "ref" }, svg);
+    el("text", { x: sx(0.72), y: top - 24, "text-anchor": "middle" }, svg, "prawda 0,720");
+    D.forEach(function (d, i) {
+      var y = top + i * rh + 8;
+      el("text", { x: 0, y: y + 5, "class": "nm" }, svg, d[0]);
+      var c = el("circle", { cx: sx(d[1]), cy: y, r: 7, "class": "dot" + (i < 2 ? " base" : "") }, svg);
+      el("text", { x: sx(d[1]) + (d[1] > 0.733 ? -12 : 12), y: y + 4, "class": "val", "text-anchor": d[1] > 0.733 ? "end" : "start" }, svg, fmtf(d[1], 3));
+      var t = el("title", {}, c); t.textContent = d[0] + ": " + fmtf(d[1], 3) + ", braków: " + d[2];
+    });
+    var S = [["naive", "średnia z respondentów", 3.85, 0.1499, 5.46], ["hd", "losowy bez klas", 3.82, 0.1751, 5.67], ["hd_kl", "losowy w klasach", 0.28, 0.1716, 4.15],
+             ["sr_kl", "średnia w klasach", 0.30, 0.1471, 3.85], ["shd", "sekwencyjny po x₁", 1.95, 0.1819, 4.69]];
+    var maxB = 4, maxR = 6;
+    document.querySelector("#simtab tbody").innerHTML = S.map(function (s) {
+      var hi = s[0] === "hd_kl" || s[0] === "sr_kl";
+      return "<tr" + (hi ? ' class="grp"' : "") + "><td><code>" + s[0] + "</code><br><small>" + s[1] + "</small></td>" +
+        '<td><div class="ib"><span>' + fmtf(s[2], 2) + '</span><i class="w" style="width:' + (s[2] / maxB * 90) + 'px"></i></div></td>' +
+        '<td class="r">' + fmtf(s[3], 4) + "</td>" +
+        '<td><div class="ib"><span>' + fmtf(s[4], 2) + '</span><i style="width:' + (s[4] / maxR * 90) + 'px"></i></div></td></tr>';
+    }).join("");
+  })();
+
+
+  /* ---------- model niejawny: przykład A ---------- */
+  (function () {
+    var svg = $("impA"), r = $("impA-r"), X0 = 118, X1 = 462, lo = 500, hi = 1900;
+    function sx(v) { return X0 + (v - lo) / (hi - lo) * (X1 - X0); }
+    var RESP = [700, 900, 1100];
+    function draw() {
+      var d = +r.value; svg.innerHTML = "";
+      for (var t = 600; t <= 1800; t += 200) {
+        el("line", { x1: sx(t), x2: sx(t), y1: 14, y2: 128, "class": "gl" }, svg);
+        el("text", { x: sx(t), y: 146, "text-anchor": "middle" }, svg, t);
+      }
+      el("text", { x: X1, y: 164, "text-anchor": "end" }, svg, "zł miesięcznie");
+      [["Respondenci", 30], ["Możliwe imputacje", 70], ["Biorcy: prawda", 110]].forEach(function (a) { el("text", { x: 0, y: a[1] + 4, "class": "rn" }, svg, a[0]); });
+      el("line", { x1: sx(900), x2: sx(900), y1: 14, y2: 128, "class": "ml" }, svg);
+      if (d > 0) el("line", { x1: sx(900 + d), x2: sx(900 + d), y1: 92, y2: 128, "class": "mt" }, svg);
+      RESP.forEach(function (v) {
+        var c = el("circle", { cx: sx(v), cy: 30, r: 7, "class": "rd" }, svg); el("title", {}, c, "Respondent: " + v + " zł");
+        var q = el("circle", { cx: sx(v), cy: 70, r: 6, "class": "im" }, svg); el("title", {}, q, "Możliwa imputacja: " + v + " zł");
+        var b = el("circle", { cx: sx(v + d), cy: 110, r: 7, "class": "tr" }, svg); el("title", {}, b, "Prawdziwe wydatki biorcy: " + (v + d) + " zł");
+      });
+      $("impA-v").textContent = d + " zł";
+      $("impA-out").innerHTML = d === 0
+        ? "Założenie spełnione: biorcy mają taki sam rozkład wydatków jak respondenci. Średnia imputacji (900 zł) jest równa prawdziwej średniej biorców."
+        : "Średnia imputacji wynosi 900 zł, a prawdziwa średnia biorców " + (900 + d) + " zł. Hot-deck zaniża ją o " + d + " zł, bo w klasie nie odpowiadają głównie zamożniejsi, więc założenie MAR w klasie nie jest spełnione." + (d > 200 ? " Imputacja nigdy nie przekroczy 1100 zł, bo tyle wynosi największa wartość dawcy." : "");
+    }
+    r.addEventListener("input", draw); draw();
+  })();
+
+  /* ---------- model niejawny: przykład B ---------- */
+  (function () {
+    var svg = $("impB"), X0 = 58, X1 = 400, Y0 = 210, Y1 = 14;
+    function sx(h) { return X0 + (h - 15) / (65 - 15) * (X1 - X0); }
+    function sy(v) { return Y0 - (v - 2000) / (9500 - 2000) * (Y0 - Y1); }
+    function f(h) { return 300 + 125 * h; }
+    var H = [20, 22, 24, 25, 27, 28, 30, 31, 32, 34, 35, 36, 38, 40, 40, 41, 42, 44, 45],
+        E = [-150, 210, -80, 120, 260, -230, 40, -310, 90, 180, -120, 300, -60, 150, -240, 70, -190, 230, -100];
+    for (var t = 2000; t <= 9000; t += 1000) {
+      el("line", { x1: X0, x2: X1, y1: sy(t), y2: sy(t), "class": "gl" }, svg);
+      el("text", { x: X0 - 8, y: sy(t) + 4, "text-anchor": "end" }, svg, fmtf(t, 0));
+    }
+    [20, 30, 40, 50, 60].forEach(function (h) { el("text", { x: sx(h), y: Y0 + 18, "text-anchor": "middle" }, svg, h); });
+    el("text", { x: X1, y: Y0 + 36, "text-anchor": "end" }, svg, "godziny pracy w tygodniu");
+    el("line", { x1: X0, x2: X1, y1: Y0, y2: Y0, "class": "gl" }, svg);
+    el("text", { x: X0 - 8, y: 8, "text-anchor": "end" }, svg, "zł");
+    el("path", { d: "M" + sx(15) + " " + sy(f(15)) + " L" + sx(65) + " " + sy(f(65)), "class": "trend" }, svg);
+    el("text", { x: sx(52), y: sy(f(52)) - 10, "text-anchor": "end" }, svg, "prawdziwa zależność");
+    H.forEach(function (h, i) {
+      var c = el("circle", { cx: sx(h), cy: sy(f(h) + E[i]), r: 5.5, "class": "rd" }, svg);
+      el("title", {}, c, "Dawca: " + h + " h, " + fmtf(f(h) + E[i], 0) + " zł");
+    });
+    function rec(h, hd, yTrue, lab, anchor) {
+      var yd = f(hd) + E[H.indexOf(hd)];
+      el("path", { d: "M" + sx(hd) + " " + sy(yd) + " H" + sx(h), "class": "arr" }, svg);
+      var a = el("circle", { cx: sx(h), cy: sy(yd), r: 6.5, "class": "tr" }, svg); el("title", {}, a, "Imputacja: " + fmtf(yd, 0) + " zł (od dawcy z " + hd + " h)");
+      var b = el("circle", { cx: sx(h), cy: sy(yTrue), r: 6.5, "class": "trh" }, svg); el("title", {}, b, "Prawdziwe zarobki biorcy: " + fmtf(yTrue, 0) + " zł");
+      el("text", { x: sx(h) + (anchor === "end" ? -10 : 10), y: sy(yTrue) + 4, "text-anchor": anchor }, svg, lab);
+    }
+    rec(33, 32, f(33) - 60, "", "end");
+    el("text", { x: sx(33) + 4, y: sy(f(33)) + 26, "text-anchor": "start" }, svg, "biorca 33 h");
+    rec(60, 45, f(60) + 120, "", "end");
+    el("text", { x: sx(60) + 12, y: sy(f(60) + 120) + 4, "text-anchor": "start" }, svg, "prawda");
+    var yd = f(45) + E[H.indexOf(45)];
+    el("text", { x: sx(60) + 10, y: sy(yd) + 4, "text-anchor": "start", "class": "em" }, svg, "imputacja");
+    el("line", { x1: sx(60), x2: sx(60), y1: sy(f(60) + 120) + 8, y2: sy(yd) - 8, "class": "bias" }, svg);
+  })();
+
+  var SIM2 = {
+    rows: [["naive", "średnia z respondentów", 9.71, 0.2314, 10.83],
+           ["hd", "losowy bez klas", 9.75, 0.2717, 11.05],
+           ["hd_x12", "x₁ × x₂ po 4 przedziały (16 klas)", 9.71, 0.2582, 10.96],
+           ["hd_x6", "6 zmiennych po 2 przedziały (64 klasy)", 2.66, 0.2454, 5.62],
+           ["hd_pm", "16 przedziałów ŷ", 0.26, 0.2351, 4.86],
+           ["hd_rp", "16 przedziałów p̂", 0.23, 0.2507, 5.01],
+           ["hd_pmrp", "ŷ × p̂ po 4 przedziały (16 klas)", 0.41, 0.2366, 4.88]],
+    note: "Klasy według \\(x_1 \\times x_2\\) wiążą się z \\(Y\\), ale nie z odpowiedzią, więc obciążenie zostaje. 64 klasy ze wszystkich zmiennych są za grube: zostaje około jednej czwartej obciążenia, a przy 4 przedziałach na zmienną byłoby 4096 klas. Jedna liczba, \\(\\hat{y}\\) albo \\(\\hat{p}\\), usuwa obciążenie prawie całkowicie. Resztka 0,2–0,4 bierze się stąd, że w 16 przedziałach jednostki nie są identyczne (błąd symulacji obciążenia to około 0,07). Najmniejszą wariancję dają klasy według \\(\\hat{y}\\), największą według \\(\\hat{p}\\), bo te drugie nie są jednorodne pod względem \\(Y\\). Przy \\(\\hat{y} \\times \\hat{p}\\) średnio 0,03 braku zostaje w klasach bez dawców. Skrypt: <code>codes/R/4a-hotdeck-klasy-symulacja.R</code>."
+  };
+  /* ---------- symulacja 2: klasy z modeli ---------- */
+  (function () {
+    var S2 = SIM2.rows, maxB = 10, maxR = 11;
+    document.querySelector("#simtab2 tbody").innerHTML = S2.map(function (s) {
+      var hi = s[0] === "hd_pm" || s[0] === "hd_rp" || s[0] === "hd_pmrp";
+      return "<tr" + (hi ? ' class="grp"' : "") + "><td><code>" + s[0] + "</code><br><small>" + s[1] + "</small></td>" +
+        '<td><div class="ib"><span>' + fmtf(s[2], 2) + '</span><i class="w" style="width:' + (Math.abs(s[2]) / maxB * 90) + 'px"></i></div></td>' +
+        '<td class="r">' + fmtf(s[3], 4) + "</td>" +
+        '<td><div class="ib"><span>' + fmtf(s[4], 2) + '</span><i style="width:' + (s[4] / maxR * 90) + 'px"></i></div></td></tr>';
+    }).join("");
+    $("sim2-note").innerHTML = SIM2.note;
+  })();
+
+  /* ---------- dymki ---------- */
+  (function () {
+    var tip = $("tip"), open = null;
+    function show(btn) {
+      var src = $(btn.dataset.tip); if (!src) return;
+      tip.innerHTML = src.innerHTML; tip.classList.add("show"); open = btn;
+      btn.setAttribute("aria-expanded", "true");
+      var r = btn.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
+      var x = Math.min(Math.max(12, r.left + r.width / 2 - tw / 2), innerWidth - tw - 12);
+      var y = r.bottom + 10; if (y + th > innerHeight - 12) y = r.top - th - 10;
+      tip.style.transform = "translate(" + x + "px," + Math.max(12, y) + "px)";
+    }
+    function hide() { if (open) open.setAttribute("aria-expanded", "false"); open = null; tip.classList.remove("show"); }
+    document.querySelectorAll(".term").forEach(function (b) {
+      b.setAttribute("aria-expanded", "false");
+      b.addEventListener("mouseenter", function () { show(b); });
+      b.addEventListener("mouseleave", hide);
+      b.addEventListener("focus", function () { show(b); });
+      b.addEventListener("blur", hide);
+      b.addEventListener("click", function (e) { e.stopPropagation(); open === b ? hide() : show(b); });
+    });
+    document.addEventListener("click", hide);
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") hide(); });
+    window.addEventListener("scroll", function () { hide(); $("vtip").classList.remove("show"); }, { passive: true });
+  })();
+
+  tex(document.body);
+  runUpdaters();
+})();
+</script>
+
+<script>
+/* Nawigacja strzałkami: ← → przechodzą między krokami pasm przewijanych, a poza nimi między częściami strony. */
+(function () {
+  "use strict";
+  var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var bands = Array.prototype.slice.call(document.querySelectorAll(".scrolly"));
+  function sections() { return Array.prototype.slice.call(document.querySelectorAll("header.hero, main > section, footer")); }
+  function go(y) { window.scrollTo({ top: Math.max(0, Math.round(y)), behavior: reduced ? "auto" : "smooth" }); }
+  function topOf(el) { return el.getBoundingClientRect().top + window.scrollY; }
+  function steps(b) { return Array.prototype.slice.call(b.querySelectorAll(".step")); }
+  var desk = window.matchMedia("(min-width: 980px)"), pending = null;
+  function curStep(b, noPending) {
+    if (!noPending && pending && pending.b === b && Date.now() < pending.t) return pending.i;
+    var line = innerHeight * (desk.matches ? .5 : .8), k = 0;
+    steps(b).forEach(function (x, j) { if (x.getBoundingClientRect().top < line) k = j; });
+    return k;
+  }
+  function bandInView() {
+    var mid = innerHeight * .5;
+    return bands.find(function (b) { var r = b.getBoundingClientRect(); return r.top <= mid && r.bottom > mid; }) || null;
+  }
+  function stepTo(b, i) {
+    var s = steps(b);
+    if (i < 0) { var p = b.previousElementSibling; go(p ? topOf(p) : 0); return; }
+    if (i >= s.length) { var n = b.nextElementSibling; go(n ? topOf(n) : topOf(b) + b.offsetHeight); return; }
+    pending = { b: b, i: i, t: Date.now() + (reduced ? 0 : 700) };
+    go(topOf(s[i]) + 2);
+  }
+  function move(d) {
+    var b = bandInView();
+    if (b) { stepTo(b, curStep(b) + d); return; }
+    var secs = sections(), y = window.scrollY + 4, k = -1;
+    secs.forEach(function (s, j) { if (topOf(s) <= y) k = j; });
+    var t = secs[Math.min(secs.length - 1, Math.max(0, k + d))];
+    if (d < 0 && k >= 0 && topOf(secs[k]) < y - 40) t = secs[k];
+    if (t) {
+      if (t.classList.contains("scrolly")) stepTo(t, d > 0 ? 0 : steps(t).length - 1);
+      else go(topOf(t));
+    }
+  }
+  document.addEventListener("keydown", function (e) {
+    if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+    var a = document.activeElement, tag = a && a.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (a && a.isContentEditable)) return;
+    e.preventDefault();
+    move(e.key === "ArrowRight" ? 1 : -1);
+  });
+  /* przyciski w paśmie */
+  var navs = bands.map(function (b) {
+    var head = b.querySelector(".ghead"); if (!head) return null;
+    var n = document.createElement("div"); n.className = "snav";
+    n.innerHTML = '<button type="button" aria-label="Poprzedni krok">‹</button><span></span><button type="button" aria-label="Następny krok">›</button>';
+    var bt = n.querySelectorAll("button");
+    bt[0].addEventListener("click", function () { var i = curStep(b); if (i > 0) stepTo(b, i - 1); });
+    bt[1].addEventListener("click", function () { var i = curStep(b); if (i < steps(b).length - 1) stepTo(b, i + 1); });
+    head.insertBefore(n, head.firstChild);
+    return { b: b, prev: bt[0], next: bt[1], lab: n.querySelector("span") };
+  }).filter(Boolean);
+  function upd() {
+    navs.forEach(function (o) {
+      var i = curStep(o.b, true), n = steps(o.b).length;
+      o.lab.textContent = (i + 1) + " / " + n;
+      o.prev.disabled = i === 0; o.next.disabled = i === n - 1;
+    });
+  }
+  var t = false;
+  window.addEventListener("scroll", function () { if (!t) { t = true; requestAnimationFrame(function () { t = false; upd(); }); } }, { passive: true });
+  upd();
+})();
+</script>
+</body>
+</html>
