@@ -370,10 +370,40 @@ footer b { color: var(--ink); }
 .snav button:disabled { opacity: .35; cursor: default; }
 .snav span { font: 500 14px/1 var(--f-disp); color: var(--band-mut); font-variant-numeric: tabular-nums; min-width: 3.2em; text-align: center; }
 .kbd { display: inline-block; font: 600 11px/1 var(--f-body); border: 1px solid var(--grid); border-bottom-width: 2px; border-radius: 3px; padding: 3px 5px; margin: 0 2px; color: var(--ink-70); text-transform: none; letter-spacing: 0; }
+
+/* --- quiz --- */
+.qeq { text-align: center; font-size: 18px !important; }
+.qrec { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; max-width: 820px; margin: 6px auto 0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.qrec > div { min-width: 72px; border: 1.5px solid var(--grid); border-radius: 4px; padding: 6px 10px; text-align: center; }
+.qrec > div.na { border-style: dashed; border-color: var(--miss-line); background: var(--miss-wash); }
+.qrec i { display: block; font-size: 13px; color: var(--ink-70); }
+.qrec b { font: 600 20px/1.2 var(--f-disp); font-variant-numeric: tabular-nums; }
+.qrec .na b { color: var(--miss); }
+.quiz { max-width: 820px; margin: 28px auto 0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.q { border-top: 2px solid var(--ink); padding: 14px 0 18px; }
+.q h4 { font: 600 19px/1.3 var(--f-disp); margin: 0 0 10px; display: flex; gap: 10px; align-items: baseline; }
+.q h4 > .qn { flex: none; display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--uep); color: #fff; font-size: 14px; }
+.q > label { display: flex; gap: 10px; align-items: baseline; padding: 7px 10px; border: 1px solid var(--grid); border-radius: 4px; margin: 0 0 6px; font-size: 15.5px; cursor: pointer; }
+.q > label:hover { border-color: var(--beamer); }
+.q > label input { accent-color: var(--beamer); flex: none; }
+.q > label.right { border-color: var(--beamer); background: var(--wash); }
+.q > label.wrong { border-color: var(--miss-line); background: var(--miss-wash); }
+.qnum { display: flex; flex-wrap: wrap; gap: 14px; }
+.qnum label { display: flex; align-items: center; gap: 8px; font-size: 16px; }
+.qnum input { width: 90px; font: 600 18px/1.2 var(--f-disp); padding: 7px 9px; border: 1.5px solid var(--grid); border-radius: 4px; background: var(--paper); color: var(--ink); text-align: center; }
+.qnum input:focus { border-color: var(--beamer); outline: none; }
+.qnum input.right { border-color: var(--beamer); background: var(--wash); }
+.qnum input.wrong { border-color: var(--miss-line); background: var(--miss-wash); }
+.qact { display: flex; gap: 8px; margin-top: 10px; }
+.qh { font-size: 15px; color: var(--ink-70); margin: 10px 0 0; }
+.fb { margin-top: 10px; padding: 10px 14px; border-radius: 4px; font-size: 15px; line-height: 1.55; background: var(--wash); border-left: 3px solid var(--beamer); }
+.fb.bad { background: var(--miss-wash); border-left-color: var(--miss-line); }
+.fb b { display: block; margin-bottom: 2px; }
+.qsum { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; border-top: 2px solid var(--ink); padding-top: 14px; }
+.qsum p { margin: 0; font: 600 18px/1.3 var(--f-disp); }
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
 <style>
 .katex { font-size: 1.07em; }
 .formula .katex-display { margin: .2em 0; overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
@@ -584,10 +614,72 @@ footer b { color: var(--ink); }
   </div>
 </section>
 
-<!-- ===================== CZĘŚĆ 5: pamiętaj ===================== -->
+<!-- ===================== CZĘŚĆ 5: quiz ===================== -->
+<section class="act" id="quiz">
+  <div class="shead">
+    <span class="tag">Część 5 · Quiz</span>
+    <h2>Sprawdź się na jednym rekordzie</h2>
+  </div>
+  <div class="col">
+    <p>Firma podaje w sprawozdaniu siedem wartości: sprzedaż krajową \(x_{1}\) i zagraniczną \(x_{2}\), przychody ogółem \(x_{5}\), koszty materiałów \(x_{3}\) i pracy \(x_{4}\), koszty ogółem \(x_{6}\) oraz wynik finansowy \(x_{7}\). Rekord musi spełniać trzy ograniczenia:</p>
+    <p class="qeq">\(x_{1} + x_{2} = x_{5}, \qquad x_{3} + x_{4} = x_{6}, \qquad x_{5} - x_{6} = x_{7}.\)</p>
+  </div>
+  <div class="qrec" aria-label="Rekord">
+    <div><i>\(x_{1}\)</i><b>120</b></div><div class="na"><i>\(x_{2}\)</i><b>?</b></div><div class="na"><i>\(x_{3}\)</i><b>?</b></div><div><i>\(x_{4}\)</i><b>30</b></div><div><i>\(x_{5}\)</i><b>200</b></div><div class="na"><i>\(x_{6}\)</i><b>?</b></div><div><i>\(x_{7}\)</i><b>50</b></div>
+  </div>
+  <div class="quiz" id="qz">
+    <div class="q" data-k="1" data-type="radio" data-ok="a">
+      <h4><span class="qn">1</span><span>Ile wynosi liczba braków \(n_{m}\) i rząd \(\operatorname{rz}(\mathbf{A}_{m})\)?</span></h4>
+      <label><input type="radio" name="q1" value="a"><span>\(n_{m} = 3\), \(\operatorname{rz}(\mathbf{A}_{m}) = 3\)</span></label>
+      <label><input type="radio" name="q1" value="b"><span>\(n_{m} = 3\), \(\operatorname{rz}(\mathbf{A}_{m}) = 2\)</span></label>
+      <label><input type="radio" name="q1" value="c"><span>\(n_{m} = 4\), \(\operatorname{rz}(\mathbf{A}_{m}) = 3\)</span></label>
+      <div class="qact"><button type="button" class="chip">Sprawdź</button></div>
+      <div class="fb" hidden data-ok="Braki to \(x_{2}, x_{3}, x_{6}\), więc \(n_{m} = 3\). Macierz \(\mathbf{A}_{m}\) ma kolumny tych zmiennych: \(x_{2}\) występuje tylko w pierwszym ograniczeniu, \(x_{3}\) tylko w drugim, a \(x_{6}\) w drugim i trzecim. Kolumny są liniowo niezależne, więc rząd wynosi 3." data-bad="Policz znaki zapytania w rekordzie. Potem sprawdź, czy któraś kolumna \(\mathbf{A}_{m}\) (dla \(x_{2}\), \(x_{3}\), \(x_{6}\)) jest kombinacją pozostałych."></div>
+    </div>
+    <div class="q" data-k="2" data-type="radio" data-ok="b">
+      <h4><span class="qn">2</span><span>Który to przypadek z części 2?</span></h4>
+      <label><input type="radio" name="q2" value="a"><span>Przypadek 1: brak rozwiązań</span></label>
+      <label><input type="radio" name="q2" value="b"><span>Przypadek 2: dokładnie jedno rozwiązanie</span></label>
+      <label><input type="radio" name="q2" value="c"><span>Przypadek 3: nieskończenie wiele rozwiązań</span></label>
+      <div class="qact"><button type="button" class="chip">Sprawdź</button></div>
+      <div class="fb" hidden data-ok="Układ jest niesprzeczny, a \(\operatorname{rz}(\mathbf{A}_{m}) = n_{m} = 3\). Rozwiązanie jest jedno, więc imputujemy wszystkie trzy braki." data-bad="Porównaj rząd \(\mathbf{A}_{m}\) z liczbą braków. Gdy są równe, a układ jest niesprzeczny, rozwiązanie jest jedno."></div>
+    </div>
+    <div class="q" data-k="3" data-type="num" data-ok="80,120,150">
+      <h4><span class="qn">3</span><span>Wpisz wartości imputowane.</span></h4>
+      <div class="qnum">
+        <label>\(x_{2}\)<input type="text" inputmode="decimal" autocomplete="off"></label>
+        <label>\(x_{3}\)<input type="text" inputmode="decimal" autocomplete="off"></label>
+        <label>\(x_{6}\)<input type="text" inputmode="decimal" autocomplete="off"></label>
+      </div>
+      <div class="qact"><button type="button" class="chip">Sprawdź</button><button type="button" class="chip ghost qhint">Podpowiedź</button></div>
+      <p class="qh" hidden>Zacznij od ograniczeń, w których brakuje tylko jednej wartości. Pierwsze daje \(x_{2}\), trzecie daje \(x_{6}\). Dopiero znając \(x_{6}\), wyznaczysz \(x_{3}\) z drugiego.</p>
+      <div class="fb" hidden data-ok="\(x_{2} = 200 - 120 = 80\), \(x_{6} = x_{5} - x_{7} = 200 - 50 = 150\), \(x_{3} = x_{6} - x_{4} = 150 - 30 = 120\). Wynik możesz sprawdzić w narzędziu w części 4, układ „Quiz”." data-bad="Co najmniej jedna wartość się nie zgadza. Sprawdź, czy rekord z Twoimi wartościami spełnia wszystkie trzy równania."></div>
+    </div>
+    <div class="q" data-k="4" data-type="check" data-ok="x2,x6">
+      <h4><span class="qn">4</span><span>Teraz brakuje także \(x_{4}\). Które braki nadal można imputować dedukcyjnie?</span></h4>
+      <label><input type="checkbox" value="x2"><span>\(x_{2}\)</span></label>
+      <label><input type="checkbox" value="x3"><span>\(x_{3}\)</span></label>
+      <label><input type="checkbox" value="x4"><span>\(x_{4}\)</span></label>
+      <label><input type="checkbox" value="x6"><span>\(x_{6}\)</span></label>
+      <div class="qact"><button type="button" class="chip">Sprawdź</button></div>
+      <div class="fb" hidden data-ok="Teraz \(n_{m} = 4\), a rząd nadal wynosi 3, więc to przypadek 3. Wartości \(x_{2} = 80\) i \(x_{6} = 150\) nie zależą od \(x_{4}\). Wiemy tylko, że \(x_{3} + x_{4} = 150\): tych dwóch braków nie imputujemy dedukcyjnie, a ich wiersze w \(\mathbf{I} - \mathbf{A}_{m}^{+}\mathbf{A}_{m}\) nie są zerowe." data-bad="Sprawdź, które ograniczenia nadal zawierają tylko jeden brak. Zaznacz wszystkie braki, które da się wyznaczyć, i tylko je."></div>
+    </div>
+    <div class="q" data-k="5" data-type="radio" data-ok="b">
+      <h4><span class="qn">5</span><span>Inny rekord: \(x_{1} = 120\), \(x_{4} = 30\), \(x_{5} = 200\), \(x_{6} = 160\), \(x_{7} = 50\), brakuje \(x_{2}\) i \(x_{3}\). Co robimy?</span></h4>
+      <label><input type="radio" name="q5" value="a"><span>Imputujemy \(x_{2} = 80\) i \(x_{3} = 130\).</span></label>
+      <label><input type="radio" name="q5" value="b"><span>Nic nie imputujemy: rekord narusza ograniczenia, najpierw trzeba znaleźć błąd.</span></label>
+      <label><input type="radio" name="q5" value="c"><span>Imputujemy tylko \(x_{2}\), bo \(x_{3}\) nie jest wyznaczony jednoznacznie.</span></label>
+      <div class="qact"><button type="button" class="chip">Sprawdź</button></div>
+      <div class="fb" hidden data-ok="Trzecie ograniczenie zawiera same wartości obserwowane: \(200 - 160 = 40 \ne 50\). Układ jest sprzeczny, \(\operatorname{rz}[\mathbf{A}_{m} \mid \mathbf{b}^{*}] = 3 > \operatorname{rz}(\mathbf{A}_{m}) = 2\). Tego nie naprawi żadna wartość w brakach." data-bad="Sprawdź najpierw ograniczenie, w którym nie ma żadnego braku."></div>
+    </div>
+    <div class="qsum"><p id="qz-score" aria-live="polite">Odpowiedziano na 0 z 5 pytań.</p><button type="button" class="chip ghost" id="qz-reset">Zacznij od nowa</button></div>
+  </div>
+</section>
+
+<!-- ===================== CZĘŚĆ 6: pamiętaj ===================== -->
 <section class="act" id="cz5">
   <div class="shead">
-    <span class="tag">Część 5 · Pamiętaj</span>
+    <span class="tag">Część 6 · Pamiętaj</span>
     <h2>O czym łatwo zapomnieć</h2>
   </div>
   <div class="limits">
@@ -603,7 +695,7 @@ footer b { color: var(--ink); }
 <!-- ===================== CZĘŚĆ 6: kod ===================== -->
 <section class="act" id="cz6">
   <div class="shead">
-    <span class="tag">Część 6 · R i Python</span>
+    <span class="tag">Część 7 · R i Python</span>
     <h2>To samo w kodzie</h2>
   </div>
   <div class="col">
@@ -797,19 +889,38 @@ function analyze(sys, rec) {
 
   /* skład wzorów: KaTeX (auto-render) dla treści statycznej i dynamicznej */
   function tex(el) {
-    /* KaTeX ładuje się z CDN; przy podglądzie przez htmlpreview.github.io skrypty zewnętrzne
-       wczytują się asynchronicznie, więc czekamy, aż auto-render będzie dostępny. */
-    if (!window.renderMathInElement) {
+    /* KaTeX ładuje się z CDN. Przy podglądzie przez htmlpreview.github.io skrypty zewnętrzne
+       wczytują się asynchronicznie i w dowolnej kolejności, więc nie korzystamy z auto-render:
+       czekamy na sam KaTeX i sami wyszukujemy wzory \( … \) oraz \[ … \]. */
+    if (!window.katex) {
       el.__texTry = (el.__texTry || 0) + 1;
-      if (el.__texTry <= 150) setTimeout(function () { tex(el); }, 100);
+      if (el.__texTry <= 200) setTimeout(function () { tex(el); }, 100);
       return;
     }
     el.__texTry = 0;
-    renderMathInElement(el, {
-      delimiters: [{ left: "\\[", right: "\\]", display: true }, { left: "\\(", right: "\\)", display: false }],
-      throwOnError: false, strict: "ignore",
-      trust: function (c) { return c.command === "\\htmlClass"; }
-    });
+    var SKIP = { SCRIPT: 1, STYLE: 1, TEXTAREA: 1, PRE: 1, CODE: 1, OPTION: 1, NOSCRIPT: 1 };
+    var RX = /\\\[([\s\S]+?)\\\]|\\\(([\s\S]+?)\\\)/g;
+    var opts = function (disp) { return { displayMode: disp, throwOnError: false, strict: "ignore", trust: function (c) { return c.command === "\\htmlClass"; } }; };
+    (function walk(node) {
+      Array.prototype.slice.call(node.childNodes).forEach(function (ch) {
+        if (ch.nodeType === 3) {
+          var s = ch.nodeValue; RX.lastIndex = 0;
+          if (s.indexOf("\\(") < 0 && s.indexOf("\\[") < 0) return;
+          var frag = document.createDocumentFragment(), last = 0, m;
+          while ((m = RX.exec(s))) {
+            if (m.index > last) frag.appendChild(document.createTextNode(s.slice(last, m.index)));
+            var span = document.createElement("span"), disp = m[1] !== undefined;
+            try { katex.render(disp ? m[1] : m[2], span, opts(disp)); } catch (e) { span.textContent = m[0]; }
+            frag.appendChild(span); last = RX.lastIndex;
+          }
+          if (last === 0) return;
+          if (last < s.length) frag.appendChild(document.createTextNode(s.slice(last)));
+          ch.parentNode.replaceChild(frag, ch);
+        } else if (ch.nodeType === 1 && !SKIP[ch.tagName] && !(ch.classList && ch.classList.contains("katex"))) {
+          walk(ch);
+        }
+      });
+    })(el);
   }
   var $ = function (id) { return document.getElementById(id); };
   var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -945,7 +1056,9 @@ function analyze(sys, rec) {
     { id: "v1", name: "Układ v1 z kodu", rules: "x1 + x2 == x3\nx4 + x5 == x1\nx6 + x7 == x2\nx8 + x9 == x3",
       rec: { x1: 80, x2: null, x3: null, x4: null, x5: 50, x6: null, x7: null, x8: 10, x9: 20 } },
     { id: "v2", name: "Układ v2 z kodu", rules: "x1 + x2 == x3\nx4 + x5 + x6 == x2\nx7 + x8 == x1\nx9 + x10 == x3\nx4 + x7 == x9",
-      rec: { x1: null, x2: 90, x3: null, x4: 30, x5: 40, x6: null, x7: 45, x8: null, x9: null, x10: 10 } }
+      rec: { x1: null, x2: 90, x3: null, x4: 30, x5: 40, x6: null, x7: 45, x8: null, x9: null, x10: 10 } },
+    { id: "quiz", name: "Quiz", rules: "x1 + x2 == x5\nx3 + x4 == x6\nx5 - x6 == x7",
+      rec: { x1: 120, x2: null, x3: null, x4: 30, x5: 200, x6: null, x7: 50 } }
   ];
 
   /* ---------- pasmo A: przykład 1 ---------- */
@@ -1176,6 +1289,56 @@ function analyze(sys, rec) {
     });
     $("allna").addEventListener("click", function () { if (sys) sys.vars.forEach(function (v) { vals[v] = null; }); parse(true); });
     load(PRESETS[0]);
+  })();
+
+  /* ---------- quiz ---------- */
+  (function () {
+    var box = $("qz"); if (!box) return;
+    var qs = Array.prototype.slice.call(box.querySelectorAll(".q")), done = {};
+    function parseNum(v) { v = String(v).trim().replace(",", ".").replace(/\s/g, ""); return v === "" ? NaN : Number(v); }
+    function score() {
+      var n = Object.keys(done).length, ok = Object.keys(done).filter(function (k) { return done[k]; }).length;
+      $("qz-score").textContent = n < qs.length ? "Odpowiedziano na " + n + " z " + qs.length + " pytań, poprawnie: " + ok + "."
+        : "Wynik: " + ok + " z " + qs.length + (ok === qs.length ? ". Wszystko dobrze!" : ". Popraw odpowiedzi oznaczone na pomarańczowo i sprawdź ponownie.");
+    }
+    qs.forEach(function (q) {
+      var type = q.dataset.type, ok = q.dataset.ok, fb = q.querySelector(".fb"), btn = q.querySelector(".qact .chip:not(.qhint)");
+      var hintBtn = q.querySelector(".qhint");
+      if (hintBtn) hintBtn.addEventListener("click", function () { var h = q.querySelector(".qh"); h.hidden = !h.hidden; });
+      btn.addEventListener("click", function () {
+        var right;
+        q.querySelectorAll("label, input").forEach(function (e) { e.classList.remove("right", "wrong"); });
+        if (type === "radio") {
+          var sel = q.querySelector("input:checked");
+          if (!sel) { fb.hidden = false; fb.className = "fb bad"; fb.innerHTML = "Zaznacz odpowiedź."; return; }
+          right = sel.value === ok;
+          sel.parentNode.classList.add(right ? "right" : "wrong");
+        } else if (type === "check") {
+          var want = ok.split(","), got = [];
+          q.querySelectorAll("input:checked").forEach(function (e) { got.push(e.value); });
+          right = got.length === want.length && want.every(function (w) { return got.indexOf(w) >= 0; });
+          q.querySelectorAll("input").forEach(function (e) {
+            var should = want.indexOf(e.value) >= 0;
+            if (e.checked || should) e.parentNode.classList.add(e.checked === should ? "right" : "wrong");
+          });
+        } else {
+          var vals = ok.split(",").map(Number), ins = q.querySelectorAll(".qnum input");
+          right = true;
+          ins.forEach(function (e, i) { var v = parseNum(e.value), g = Math.abs(v - vals[i]) < 1e-9; if (!g) right = false; e.classList.add(g ? "right" : "wrong"); });
+        }
+        done[q.dataset.k] = right;
+        fb.hidden = false; fb.className = "fb" + (right ? "" : " bad");
+        fb.innerHTML = "<b>" + (right ? "Dobrze." : "Jeszcze nie.") + "</b>" + (right ? fb.dataset.ok : fb.dataset.bad);
+        tex(fb); score();
+      });
+    });
+    $("qz-reset").addEventListener("click", function () {
+      done = {};
+      box.querySelectorAll("input").forEach(function (e) { if (e.type === "text") e.value = ""; else e.checked = false; e.classList.remove("right", "wrong"); });
+      box.querySelectorAll("label").forEach(function (e) { e.classList.remove("right", "wrong"); });
+      box.querySelectorAll(".fb, .qh").forEach(function (e) { e.hidden = true; });
+      score();
+    });
   })();
 
   /* ---------- dymki ---------- */

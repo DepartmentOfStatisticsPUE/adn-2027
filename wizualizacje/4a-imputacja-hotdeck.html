@@ -422,7 +422,6 @@ footer b { color: var(--ink); }
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
 <style>
 .katex { font-size: 1.07em; }
 .formula .katex-display { margin: .2em 0; overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
@@ -877,19 +876,38 @@ function hdMoments(rows, byClass) {
 
   /* skład wzorów: KaTeX (auto-render) dla treści statycznej i dynamicznej */
   function tex(el) {
-    /* KaTeX ładuje się z CDN; przy podglądzie przez htmlpreview.github.io skrypty zewnętrzne
-       wczytują się asynchronicznie, więc czekamy, aż auto-render będzie dostępny. */
-    if (!window.renderMathInElement) {
+    /* KaTeX ładuje się z CDN. Przy podglądzie przez htmlpreview.github.io skrypty zewnętrzne
+       wczytują się asynchronicznie i w dowolnej kolejności, więc nie korzystamy z auto-render:
+       czekamy na sam KaTeX i sami wyszukujemy wzory \( … \) oraz \[ … \]. */
+    if (!window.katex) {
       el.__texTry = (el.__texTry || 0) + 1;
-      if (el.__texTry <= 150) setTimeout(function () { tex(el); }, 100);
+      if (el.__texTry <= 200) setTimeout(function () { tex(el); }, 100);
       return;
     }
     el.__texTry = 0;
-    renderMathInElement(el, {
-      delimiters: [{ left: "\\[", right: "\\]", display: true }, { left: "\\(", right: "\\)", display: false }],
-      throwOnError: false, strict: "ignore",
-      trust: function (c) { return c.command === "\\htmlClass"; }
-    });
+    var SKIP = { SCRIPT: 1, STYLE: 1, TEXTAREA: 1, PRE: 1, CODE: 1, OPTION: 1, NOSCRIPT: 1 };
+    var RX = /\\\[([\s\S]+?)\\\]|\\\(([\s\S]+?)\\\)/g;
+    var opts = function (disp) { return { displayMode: disp, throwOnError: false, strict: "ignore", trust: function (c) { return c.command === "\\htmlClass"; } }; };
+    (function walk(node) {
+      Array.prototype.slice.call(node.childNodes).forEach(function (ch) {
+        if (ch.nodeType === 3) {
+          var s = ch.nodeValue; RX.lastIndex = 0;
+          if (s.indexOf("\\(") < 0 && s.indexOf("\\[") < 0) return;
+          var frag = document.createDocumentFragment(), last = 0, m;
+          while ((m = RX.exec(s))) {
+            if (m.index > last) frag.appendChild(document.createTextNode(s.slice(last, m.index)));
+            var span = document.createElement("span"), disp = m[1] !== undefined;
+            try { katex.render(disp ? m[1] : m[2], span, opts(disp)); } catch (e) { span.textContent = m[0]; }
+            frag.appendChild(span); last = RX.lastIndex;
+          }
+          if (last === 0) return;
+          if (last < s.length) frag.appendChild(document.createTextNode(s.slice(last)));
+          ch.parentNode.replaceChild(frag, ch);
+        } else if (ch.nodeType === 1 && !SKIP[ch.tagName] && !(ch.classList && ch.classList.contains("katex"))) {
+          walk(ch);
+        }
+      });
+    })(el);
   }
   var $ = function (id) { return document.getElementById(id); };
   var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;

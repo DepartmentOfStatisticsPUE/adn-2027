@@ -15,7 +15,7 @@ Podsumowania w formie stron przewijanych: przykłady krok po kroku, narzędzia d
 
 | # | Temat | Strona | Co zawiera |
 |---|-------|--------|------------|
-| 3a | Imputacja dedukcyjna z ograniczeniami liniowymi | [otwórz](https://htmlpreview.github.io/?https://raw.githubusercontent.com/DepartmentOfStatisticsPUE/adn-2027/refs/heads/main/wizualizacje/3a-imputacja-dedukcyjna-ograniczenia.html) | zapis $Ax = b$, trzy przypadki rozwiązań, pseudoodwrotność, zadanie z 10 zmiennymi, narzędzie do własnych reguł |
+| 3a | Imputacja dedukcyjna z ograniczeniami liniowymi | [otwórz](https://htmlpreview.github.io/?https://raw.githubusercontent.com/DepartmentOfStatisticsPUE/adn-2027/refs/heads/main/wizualizacje/3a-imputacja-dedukcyjna-ograniczenia.html) | zapis $Ax = b$, trzy przypadki rozwiązań, pseudoodwrotność, zadanie z 10 zmiennymi, narzędzie do własnych reguł, quiz |
 | 3b | Imputacja dedukcyjna z tekstu i innych zmiennych | [otwórz](https://htmlpreview.github.io/?https://raw.githubusercontent.com/DepartmentOfStatisticsPUE/adn-2027/refs/heads/main/wizualizacje/3b-imputacja-dedukcyjna-tekst.html) | wyrażenia regularne, kody TERYT i PESEL, reguły z definicji, porządek pliku, modele językowe |
 | 4a | Imputacja hot-deck | [otwórz](https://htmlpreview.github.io/?https://raw.githubusercontent.com/DepartmentOfStatisticsPUE/adn-2027/refs/heads/main/wizualizacje/4a-imputacja-hotdeck.html) | warianty hot-decku, niejawny model, rozkład średniej, tworzenie klas imputacyjnych, symulacje |
 | -- | Wizualizacja imputacji danych (Shiny) | [otwórz](https://berenz.shinyapps.io/missing-data-class1/) | aplikacja Shiny |
