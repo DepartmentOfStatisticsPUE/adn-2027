@@ -896,6 +896,13 @@ function nameRule(n) {
        wczytują się asynchronicznie i w dowolnej kolejności, więc nie korzystamy z auto-render:
        czekamy na sam KaTeX i sami wyszukujemy wzory \( … \) oraz \[ … \]. */
     if (!window.katex) {
+      /* htmlpreview nie wykonuje <script src> z CDN, więc w razie potrzeby dołączamy KaTeX sami */
+      if (!window.__katexLoad) {
+        window.__katexLoad = true;
+        var sc = document.createElement("script");
+        sc.src = "https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js";
+        document.head.appendChild(sc);
+      }
       el.__texTry = (el.__texTry || 0) + 1;
       if (el.__texTry <= 200) setTimeout(function () { tex(el); }, 100);
       return;
