@@ -797,7 +797,14 @@ function analyze(sys, rec) {
 
   /* skład wzorów: KaTeX (auto-render) dla treści statycznej i dynamicznej */
   function tex(el) {
-    if (!window.renderMathInElement) return;
+    /* KaTeX ładuje się z CDN; przy podglądzie przez htmlpreview.github.io skrypty zewnętrzne
+       wczytują się asynchronicznie, więc czekamy, aż auto-render będzie dostępny. */
+    if (!window.renderMathInElement) {
+      el.__texTry = (el.__texTry || 0) + 1;
+      if (el.__texTry <= 150) setTimeout(function () { tex(el); }, 100);
+      return;
+    }
+    el.__texTry = 0;
     renderMathInElement(el, {
       delimiters: [{ left: "\\[", right: "\\]", display: true }, { left: "\\(", right: "\\)", display: false }],
       throwOnError: false, strict: "ignore",
