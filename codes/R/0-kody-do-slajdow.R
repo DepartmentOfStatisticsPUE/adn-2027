@@ -161,3 +161,66 @@ final_plot <- (plot_combined + plot_age + plot_gender) +
 
 # Save the combined plot as a PDF
 ggsave("fig-riddles.pdf", final_plot, width = 10, height = 7, units = "in")
+
+# Hot-deck: klasy według wartości teoretycznych (przykład 1) ----
+# Wartości do tabel na slajdach "Klasy według wartości teoretycznych" (adn.tex).
+# Dane z przykładu 1 (slajdy o hot-decku): 8 jednostek, braki w Y u jednostek 2, 4 i 6
+przyklad1 <- data.frame(
+  nr   = 1:8,
+  plec = c("K", "K", "K", "K", "M", "M", "M", "M"),
+  x    = c(21, 24, 30, 35, 22, 28, 33, 40),
+  y    = c(25, NA, 35, NA, 45, NA, 55, 65)
+)
+przyklad1$R <- as.integer(!is.na(przyklad1$y))  # wskaźnik odpowiedzi
+
+# Wartości teoretyczne Y: MNK na respondentach (lm pomija wiersze z NA w y)
+model_y <- lm(y ~ x + plec, data = przyklad1)
+coef(model_y)
+przyklad1$mu_hat <- predict(model_y, newdata = przyklad1)
+
+# Skłonność do odpowiedzi: regresja logistyczna R na wszystkich 8 jednostkach
+model_r <- glm(R ~ x + plec, family = binomial, data = przyklad1)
+coef(model_r)
+przyklad1$p_hat <- fitted(model_r)
+
+# Tabela "Przykład 1 -- wartości teoretyczne"
+przyklad1[order(przyklad1$mu_hat), c("nr", "plec", "x", "y", "mu_hat", "p_hat")] |>
+  transform(mu_hat = round(mu_hat, 2), p_hat = round(p_hat, 2))
+
+# Klasy według mu_hat metodą równych kwantyli (domyślne kwantyle R, type = 7)
+klasy_kwantylowe <- function(wt, C) {
+  granice <- quantile(wt, probs = seq(0, 1, length.out = C + 1))
+  as.integer(cut(wt, breaks = granice, include.lowest = TRUE))
+}
+
+# R^2 z jednoczynnikowej ANOVA wartości teoretycznych; czynnik = przynależność do klasy
+# (udział zmienności międzyklasowej, klasa jako zmienna jakościowa)
+r2_klas <- function(wt, klasa) summary(lm(wt ~ factor(klasa)))$r.squared
+
+# Wartość oczekiwana średniej po losowym hot-decku w klasach:
+# E_I(ybar_HD) = (1/n) * sum_c n_c * ybar_rc
+srednia_hd <- function(y, klasa) {
+  n_c <- tapply(y, klasa, length)
+  ybar_rc <- tapply(y, klasa, mean, na.rm = TRUE)
+  sum(n_c * ybar_rc) / length(y)
+}
+
+for (C in 2:4) przyklad1[[paste0("C", C)]] <- klasy_kwantylowe(przyklad1$mu_hat, C)
+
+# Tabela "Przykład 1 -- klasy według mu_hat"
+przyklad1[, c("nr", "plec", "mu_hat", "y", "C2", "C3", "C4")]
+sapply(2:4, function(C) {
+  klasa <- przyklad1[[paste0("C", C)]]
+  c(C = C,
+    R2 = round(r2_klas(przyklad1$mu_hat, klasa), 3),
+    srednia = srednia_hd(przyklad1$y, klasa))
+})
+
+# Przypadek graniczny C = r: dawcą jest respondent o najbliższej wartości mu_hat (PMM)
+resp <- przyklad1[przyklad1$R == 1, ]
+biorcy <- przyklad1$R == 0
+dawca <- sapply(przyklad1$mu_hat[biorcy], function(m) resp$y[which.min(abs(resp$mu_hat - m))])
+data.frame(nr = przyklad1$nr[biorcy], dawca)
+y_pmm <- przyklad1$y
+y_pmm[biorcy] <- dawca
+mean(y_pmm)
