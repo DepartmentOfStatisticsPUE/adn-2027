@@ -5,9 +5,13 @@ Repozytorium na potrzeby zajęć z przedmiotu „Analiza danych niekompletnych�
 ## Podstawowe informacje
 
 -   Materiały: GitHub, Moodle
--   Zaliczenie: kolokwium (stacjonarni), projekt (niestacjonarni)
+-   Zaliczenie: kolokwium (stacjonarni), [projekt](#projekt-zaliczeniowy-niestacjonarni) (niestacjonarni)
 -   Sylabus: [stacjonarni](https://esylabus.ue.poznan.pl/pl/document/fbb48377-9db7-4bbc-8d72-de1eb839a0a1.pdf) | [niestacjonarni](https://esylabus.ue.poznan.pl/pl/document/5aa99be4-4418-4e73-ba48-76b8474734e6.pdf)
 -   [Slajdy (Overleaf)](https://www.overleaf.com/read/cndnkcyqrjjx#42c1d9)
+
+## Projekt zaliczeniowy (niestacjonarni)
+
+Szablony: [qmd (R)](projekt/szablon-projektu.qmd) | [ipynb (Python)](projekt/szablon-projektu.ipynb)
 
 ## Interaktywne materiały
 

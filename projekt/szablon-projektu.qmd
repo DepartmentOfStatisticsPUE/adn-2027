@@ -1,0 +1,122 @@
+---
+title: "Tytuł projektu"
+subtitle: "Analiza danych niekompletnych 2026/27: projekt zaliczeniowy"
+author:
+  - "Imię Nazwisko (nr albumu)"
+  - "Imię Nazwisko (nr albumu)"
+  - "Imię Nazwisko (nr albumu)"
+date: today
+lang: pl
+format:
+  html:
+    self-contained: true
+    number-sections: true
+    toc: true
+    toc-title: "Spis treści"
+execute:
+  warning: false
+  message: false
+editor: source
+---
+
+# Podział pracy {.unnumbered}
+
+| Osoba | Zakres prac |
+|-------|-------------|
+| Imię Nazwisko | ... |
+| Imię Nazwisko | ... |
+| Imię Nazwisko | ... |
+
+# Wprowadzenie
+
+Cel projektu, wybrana zmienna Y i uzasadnienie wyboru, zastosowane metody.
+
+# Pakiety i ustawienia
+
+```{r}
+# pakiety
+
+set.seed(2027)
+```
+
+# Dane
+
+Źródło: Bilans Kapitału Ludzkiego, badanie ludności, *Połączona baza danych z badania ludności z lat 2017, 2019 i 2021*.
+
+```{r}
+# wczytanie danych
+```
+
+## Rekodowanie kodów specjalnych
+
+Weryfikacja kodów (-7, -8, -1) i ich zamiana na braki danych.
+
+```{r}
+
+```
+
+## Zmienne do modelu
+
+Y, dochód per capita, najniższa akceptowana pensja, zmienne kontrolne (wiek, płeć, wykształcenie, umowa o pracę).
+
+```{r}
+
+```
+
+# Opis braków danych
+
+Odsetki braków, wzorce, dyskusja mechanizmu (MCAR / MAR / MNAR).
+
+```{r}
+
+```
+
+# Model bazowy: analiza kompletnych przypadków
+
+```{r}
+
+```
+
+# Imputacja pojedyncza
+
+Metoda, jej uzasadnienie, diagnostyka (rozkłady wartości obserwowanych i imputowanych), regresja logistyczna.
+
+```{r}
+
+```
+
+# Imputacja wielokrotna
+
+Model imputacyjny, imputacja pasywna dochodu per capita, diagnostyka, regresja logistyczna, łączenie wyników regułami Rubina.
+
+```{r}
+
+```
+
+# Porównanie wyników
+
+Oszacowania i błędy standardowe dla wszystkich metod.
+
+```{r}
+
+```
+
+# Predykcja na tablicę wyników
+
+Wybrana metoda i uzasadnienie wyboru.
+
+```{r}
+
+```
+
+# Podsumowanie
+
+Najważniejsze wnioski i ograniczenia analizy.
+
+# Literatura {.unnumbered}
+
+# Informacje o sesji {.unnumbered}
+
+```{r}
+sessionInfo()
+```
