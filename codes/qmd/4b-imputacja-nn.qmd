@@ -1,5 +1,5 @@
 ---
-title: "3b. Imputacja NN"
+title: "4b. Imputacja metodą najbliższego sąsiada"
 format: 
   html:
     self-contained: true
@@ -9,7 +9,7 @@ format:
 editor: source
 ---
 
-# Wczytanie potrzebych pakietów
+# Wczytanie potrzebnych pakietów
 
 ::: panel-tabset
 ## R
@@ -25,15 +25,386 @@ library(VIM)
 ```{python moduly}
 import numpy as np
 import pandas as pd
-from scipy.stats import norm
-from sklearn.preprocessing import MinMaxScaler, PolynomialFeatures
+from sklearn.preprocessing import MinMaxScaler, PolynomialFeatures, StandardScaler
 from sklearn.neighbors import NearestNeighbors
 from sklearn.linear_model import LinearRegression
+from sklearn.impute import KNNImputer
 import matplotlib.pyplot as plt
 import gower
 ```
 
 :::
+
+# Krok 0 -- dane i braki
+
+Dane `data6-wydatki.csv`: 1000 gospodarstw domowych, miesięczne wydatki (`wydatki`) z brakami i ich prawdziwa wartość (`wydatki_prawda`). Zmienne `wzrost`, `czas_wywiadu`, `nr_ankietera` i `miesiac_urodzenia` nie są związane ani z wydatkami, ani z brakami.
+
+::: panel-tabset
+
+## R
+
+Wczytanie danych i odsetek braków
+
+```{r}
+dane <- read.csv("../../data/data6-wydatki.csv", stringsAsFactors = TRUE)
+## wydatki jako liczby rzeczywiste (VIM::kNN() obcina średnią do liczby całkowitej)
+dane$wydatki <- as.numeric(dane$wydatki)
+braki <- is.na(dane$wydatki)
+mean(braki)
+```
+
+Średnia prawdziwa i średnia z respondentów
+
+```{r}
+mean(dane$wydatki_prawda)
+mean(dane$wydatki, na.rm = TRUE)
+```
+
+Czy braki zależą od dochodu i wieku?
+
+```{r}
+par(mfrow = c(1, 2))
+boxplot(dochod ~ braki, data = dane)
+boxplot(wiek ~ braki, data = dane)
+```
+
+Obciążenie: średnia po imputacji minus średnia prawdziwa. Obciążenie imputacji średnią z respondentów:
+
+```{r}
+## obciążenie: średnia po imputacji minus średnia prawdziwa
+obciazenie <- function(y) mean(y) - mean(dane$wydatki_prawda)
+obciazenie(ifelse(braki, mean(dane$wydatki, na.rm = TRUE), dane$wydatki))
+```
+
+## Python
+
+Wczytanie danych i odsetek braków
+
+```{python}
+dane = pd.read_csv("../../data/data6-wydatki.csv")
+braki = dane['wydatki'].isna().to_numpy()
+braki.mean()
+```
+
+Średnia prawdziwa i średnia z respondentów
+
+```{python}
+print(dane['wydatki_prawda'].mean())
+print(dane['wydatki'].mean())
+```
+
+Czy braki zależą od dochodu i wieku?
+
+```{python}
+dane.assign(brak=braki).boxplot(column=['dochod', 'wiek'], by='brak')
+plt.show()
+```
+
+Obciążenie: średnia po imputacji minus średnia prawdziwa. Obciążenie imputacji średnią z respondentów:
+
+```{python}
+# obciążenie: średnia po imputacji minus średnia prawdziwa
+def obciazenie(y):
+    return np.mean(y) - dane['wydatki_prawda'].mean()
+
+obciazenie(dane['wydatki'].fillna(dane['wydatki'].mean()))
+```
+
+W Pythonie nie ma odpowiednika `impute_knn()`, dlatego definiujemy dwie krótkie funkcje pomocnicze.
+
+```{python}
+dawcy = dane[~braki]
+y_dawcow = dawcy['wydatki'].to_numpy()
+
+def sasiedzi(X, k=1):
+    """Numery k najbliższych dawców każdego biorcy (zmienne przeskalowane do [0, 1], odległość miejska)."""
+    X = MinMaxScaler().fit_transform(X)
+    nn = NearestNeighbors(n_neighbors=k, metric='manhattan').fit(X[~braki])
+    return nn.kneighbors(X[braki], return_distance=False)
+
+def wstaw(wartosci):
+    """Wstawia wartości w miejsce braków."""
+    y = dane['wydatki'].to_numpy().copy()
+    y[braki] = wartosci
+    return y
+```
+
+:::
+
+**Pytania:**
+
++ Czym różnią się respondenci od nierespondentów pod względem dochodu i wieku?
++ Dlaczego średnia z respondentów zaniża wydatki?
++ Czy imputacja średnią usuwa obciążenie?
+
+# Krok 1 -- najbliższy sąsiad krok po kroku
+
+Imputujemy wydatki na podstawie jednej zmiennej: dochodu.
+
+::: panel-tabset
+
+## R
+
+Pierwszy biorca i jego najbliższy dawca
+
+```{r}
+biorca <- which(braki)[1]
+dawcy <- dane[!braki, ]
+dane[biorca, c("dochod", "wiek", "liczba_osob", "wydatki_prawda")]
+```
+
+```{r}
+odl <- abs(dawcy$dochod - dane$dochod[biorca])
+dawcy[which.min(odl), c("dochod", "wiek", "liczba_osob", "wydatki")]
+```
+
+Imputacja wszystkich braków
+
+```{r}
+imp <- impute_knn(dane, wydatki ~ dochod, k = 1)
+obciazenie(imp$wydatki)
+```
+
+## Python
+
+Pierwszy biorca i jego najbliższy dawca
+
+```{python}
+biorca = np.flatnonzero(braki)[0]
+dane.loc[biorca, ['dochod', 'wiek', 'liczba_osob', 'wydatki_prawda']]
+```
+
+```{python}
+odl = (dawcy['dochod'] - dane.loc[biorca, 'dochod']).abs()
+dawcy.loc[odl.idxmin(), ['dochod', 'wiek', 'liczba_osob', 'wydatki']]
+```
+
+Imputacja wszystkich braków
+
+```{python}
+idx = sasiedzi(dane[['dochod']], k=1)
+obciazenie(wstaw(y_dawcow[idx[:, 0]]))
+```
+
+:::
+
+**Pytania:**
+
++ Czym różni się dawca od biorcy poza dochodem?
++ Czy średnia po imputacji jest bliżej prawdy niż średnia z respondentów?
+
+# Krok 2 -- same zmienne jakościowe
+
+Dawców szukamy tylko po płci, wykształceniu i klasie miejscowości.
+
+::: panel-tabset
+
+## R
+
+Odległości Gowera pierwszego biorcy od dawców
+
+```{r}
+klasy <- c("plec", "wyksztalcenie", "klasa_miejsc")
+table(gower::gower_dist(dane[biorca, klasy], dawcy[klasy]))
+```
+
+Hot-deck w klasach i najbliższy sąsiad; liczba różnych wstawionych wartości
+
+```{r}
+set.seed(2025)
+imp_hd <- impute_rhd(dane, wydatki ~ plec + wyksztalcenie + klasa_miejsc)
+imp_nn <- impute_knn(dane, wydatki ~ plec + wyksztalcenie + klasa_miejsc, k = 1)
+obciazenie(imp_hd$wydatki)
+obciazenie(imp_nn$wydatki)
+length(unique(imp_hd$wydatki[braki]))
+length(unique(imp_nn$wydatki[braki]))
+```
+
+## Python
+
+Na ilu zmiennych dawcy różnią się od pierwszego biorcy?
+
+```{python}
+klasy = ['plec', 'wyksztalcenie', 'klasa_miejsc']
+# na ilu zmiennych dawcy różnią się od pierwszego biorcy?
+(dawcy[klasy] != dane.loc[biorca, klasy]).sum(axis=1).value_counts().sort_index()
+```
+
+Hot-deck w klasach i najbliższy sąsiad; liczba różnych wstawionych wartości
+
+```{python}
+rng = np.random.default_rng(2025)
+# losowy hot-deck w klasach
+imp_hd = dane.groupby(klasy)['wydatki'].transform(
+    lambda s: s.fillna(pd.Series(rng.choice(s.dropna(), len(s)), index=s.index)))
+# najbliższy sąsiad (k = 1); zmienne jakościowe zamieniamy na zero-jedynkowe
+idx = sasiedzi(pd.get_dummies(dane[klasy]), k=1)
+imp_nn = wstaw(y_dawcow[idx[:, 0]])
+print(obciazenie(imp_hd), obciazenie(imp_nn))
+print(len(np.unique(imp_hd[braki])), len(np.unique(imp_nn[braki])))
+```
+
+:::
+
+**Pytania:**
+
++ Ilu dawców ma odległość 0 od pierwszego biorcy? Kim są ci dawcy?
++ Dlaczego najbliższy sąsiad ($k = 1$) wstawia tak mało różnych wartości?
++ Dlaczego obie metody prawie nie zmniejszają obciążenia?
+
+# Krok 3 -- liczba zmiennych
+
+Dokładamy kolejne zmienne do odległości ($k = 1$): dochód; + wiek i liczba osób; + wzrost i czas wywiadu; + numer ankietera i miesiąc urodzenia.
+
+::: panel-tabset
+
+## R
+
+```{r}
+imp1 <- impute_knn(dane, wydatki ~ dochod, k = 1)
+imp2 <- impute_knn(dane, wydatki ~ dochod + wiek + liczba_osob, k = 1)
+imp3 <- impute_knn(dane, wydatki ~ dochod + wiek + liczba_osob + wzrost + czas_wywiadu, k = 1)
+imp4 <- impute_knn(dane, wydatki ~ dochod + wiek + liczba_osob + wzrost + czas_wywiadu +
+                     nr_ankietera + miesiac_urodzenia, k = 1)
+c(obciazenie(imp1$wydatki), obciazenie(imp2$wydatki), obciazenie(imp3$wydatki), obciazenie(imp4$wydatki))
+```
+
+## Python
+
+```{python}
+zm1 = ['dochod']
+zm2 = zm1 + ['wiek', 'liczba_osob']
+zm3 = zm2 + ['wzrost', 'czas_wywiadu']
+zm4 = zm3 + ['nr_ankietera', 'miesiac_urodzenia']
+pd.Series([obciazenie(wstaw(y_dawcow[sasiedzi(dane[zm], k=1)[:, 0]])) for zm in [zm1, zm2, zm3, zm4]]).round(1)
+```
+
+:::
+
+**Pytania:**
+
++ Co się dzieje z obciążeniem, gdy dodajemy zmienne niezwiązane z wydatkami?
+
+# Krok 4 -- liczba sąsiadów i korekta obciążenia
+
+Zmienne: `dochod`, `wiek`, `liczba_osob`. Porównujemy dawcę losowanego spośród $k$ najbliższych, średnią z $k$ najbliższych i korektę obciążenia dla $k = 5$ i $k = 31$.
+
+::: panel-tabset
+
+## R
+
+Dawca losowy i średnia z $k$ sąsiadów
+
+```{r}
+xs <- c("dochod", "wiek", "liczba_osob")
+set.seed(2025)
+## dawca losowany spośród k najbliższych
+imp_los5 <- impute_knn(dane, wydatki ~ dochod + wiek + liczba_osob, k = 5)
+imp_los31 <- impute_knn(dane, wydatki ~ dochod + wiek + liczba_osob, k = 31)
+## średnia z k najbliższych
+imp_sr5 <- kNN(dane, variable = "wydatki", dist_var = xs, k = 5, numFun = mean)
+imp_sr31 <- kNN(dane, variable = "wydatki", dist_var = xs, k = 31, numFun = mean)
+c(obciazenie(imp_los5$wydatki), obciazenie(imp_los31$wydatki),
+  obciazenie(imp_sr5$wydatki), obciazenie(imp_sr31$wydatki))
+```
+
+Korekta obciążenia: imputujemy reszty modelu średnią z 31 sąsiadów i dodajemy je do wartości teoretycznych
+
+```{r}
+## korekta obciążenia: wartość teoretyczna z modelu + średnia reszt k najbliższych dawców
+model <- lm(wydatki ~ dochod + wiek + liczba_osob, data = dane)
+dane$reszta <- dane$wydatki - predict(model, dane)    # dla biorców reszta to brak
+imp_r <- kNN(dane, variable = "reszta", dist_var = xs, k = 31, numFun = mean)
+obciazenie(predict(model, dane) + imp_r$reszta)
+```
+
+## Python
+
+Dawca losowy i średnia z $k$ sąsiadów
+
+```{python}
+xs = ['dochod', 'wiek', 'liczba_osob']
+rng = np.random.default_rng(2025)
+idx5 = sasiedzi(dane[xs], k=5)
+idx31 = sasiedzi(dane[xs], k=31)
+# dawca losowany spośród k najbliższych
+print(obciazenie(wstaw([rng.choice(y_dawcow[i]) for i in idx5])),
+      obciazenie(wstaw([rng.choice(y_dawcow[i]) for i in idx31])))
+# średnia z k najbliższych
+print(obciazenie(wstaw(y_dawcow[idx5].mean(axis=1))),
+      obciazenie(wstaw(y_dawcow[idx31].mean(axis=1))))
+```
+
+Korekta obciążenia: wartość teoretyczna + średnia reszt 31 najbliższych dawców
+
+```{python}
+# korekta obciążenia: wartość teoretyczna z modelu + średnia reszt k najbliższych dawców
+model = LinearRegression().fit(dawcy[xs], y_dawcow)
+mu = model.predict(dane[xs])
+reszty = y_dawcow - mu[~braki]
+obciazenie(wstaw(mu[braki] + reszty[idx31].mean(axis=1)))
+```
+
+:::
+
+**Pytania:**
+
++ Co się dzieje z obciążeniem, gdy zwiększamy $k$ z 5 do 31? Dlaczego?
++ Dlaczego korekta obciążenia działa także przy dużym $k$?
+
+# Krok 5 -- odległość i skalowanie zmiennych
+
+Najbliższy sąsiad według odległości euklidesowej na danych surowych i po standaryzacji.
+
+::: panel-tabset
+
+## R
+
+```{r}
+X <- dane[, xs]
+X_std <- scale(X)
+nn_sur <- FNN::get.knnx(X[!braki, ], X[braki, ], k = 1)$nn.index
+nn_std <- FNN::get.knnx(X_std[!braki, ], X_std[braki, ], k = 1)$nn.index
+## najbliższy dawca pierwszego biorcy
+dane[biorca, xs]
+dawcy[nn_sur[1], xs]
+dawcy[nn_std[1], xs]
+```
+
+Imputacja wszystkich braków
+
+```{r}
+imp_sur <- imp_std <- dane$wydatki
+imp_sur[braki] <- dawcy$wydatki[nn_sur]
+imp_std[braki] <- dawcy$wydatki[nn_std]
+obciazenie(imp_sur)
+obciazenie(imp_std)
+```
+
+## Python
+
+```{python}
+X = dane[xs].to_numpy(dtype=float)
+X_std = StandardScaler().fit_transform(X)
+nn_sur = NearestNeighbors(n_neighbors=1).fit(X[~braki]).kneighbors(X[braki], return_distance=False)[:, 0]
+nn_std = NearestNeighbors(n_neighbors=1).fit(X_std[~braki]).kneighbors(X_std[braki], return_distance=False)[:, 0]
+# najbliższy dawca pierwszego biorcy
+print(dane.loc[biorca, xs])
+dawcy.iloc[[nn_sur[0], nn_std[0]]][xs]
+```
+
+Imputacja wszystkich braków
+
+```{python}
+print(obciazenie(wstaw(y_dawcow[nn_sur])), obciazenie(wstaw(y_dawcow[nn_std])))
+```
+
+:::
+
+**Pytania:**
+
++ Dlaczego bez standaryzacji dawca ma inny wiek niż biorca?
++ Jak standaryzacja zmienia obciążenie?
 
 # Przykład 1 -- symulacja
 
@@ -41,10 +412,10 @@ Porównujemy cztery estymatory średniej:
 
 + `naive` -- średnia wyłącznie z respondentów,
 + `nn` -- imputacja wartością najbliższego sąsiada ($k=1$),
-+ `nn_avg` -- imputacja średnią z $M$ najbliższych sąsiadów,
++ `nn_avg` -- imputacja średnią z $k$ najbliższych sąsiadów,
 + `nn_bc` -- jak `nn_avg`, ale z korektą obciążenia opartą na modelu regresji (wielomian drugiego stopnia).
 
-Liczba sąsiadów rośnie wraz z wielkością próby: $M = \lfloor n^{2/(2+d)} \rfloor$, gdzie $d$ to liczba zmiennych pomocniczych. Jest to wybór zalecany w pracy Lin, Z., Ding, P., & Han, F. (2023). Estimation based on nearest neighbor matching: From density ratio to average treatment effect. *Econometrica*, 91(6), 2187--2217. Wyniki teoretyczne z tej pracy dla $d>1$ dotyczą estymatora z korektą obciążenia.
+Liczba sąsiadów rośnie wraz z wielkością próby: $k = \lfloor n^{2/(2+p)} \rfloor$, gdzie $p$ to liczba ciągłych zmiennych pomocniczych. Taki wybór ($k = \alpha n^{2/(2+p)}$ z $\alpha = 1$) autorzy zalecają na podstawie symulacji w pracy Lin, Z., Ding, P., & Han, F. (2023). Estimation based on nearest neighbor matching: From density ratio to average treatment effect. *Econometrica*, 91(6), 2187--2217. Wyniki teoretyczne z tej pracy dla $p>1$ dotyczą estymatora z korektą obciążenia.
 
 ::: panel-tabset
 
@@ -93,27 +464,27 @@ populacja <- data.frame(
 )
 y_true <- colMeans(populacja[, c("y1", "y2", "y3")])
 
-## imputacja średnią z M najbliższych sąsiadów (odległość Gowera, tak jak w impute_knn)
+## imputacja średnią z k najbliższych sąsiadów (odległość Gowera, tak jak w impute_knn)
 ## bc = TRUE: korekta obciążenia na podstawie modelu regresji z wielomianem 2 stopnia
-impute_nn_mean <- function(proba, y, xs, M, bc = FALSE) {
+impute_nn_mean <- function(proba, y, xs, k, bc = FALSE) {
   resp <- !is.na(proba[[y]])
   y_resp <- proba[[y]][resp]
-  ## macierz M x liczba nierespondentów z numerami wierszy dawców
-  nn <- gower::gower_topn(x = proba[!resp, xs], y = proba[resp, xs], n = M)$index
+  ## macierz k x liczba nierespondentów z numerami wierszy dawców
+  nn <- gower::gower_topn(x = proba[!resp, xs], y = proba[resp, xs], n = k)$index
   if (bc) {
     model <- lm(reformulate(sprintf("polym(%s, degree = 2, raw = TRUE)",
                                     paste(xs, collapse = ", ")), response = y),
                 data = proba[resp, ])
     mu <- predict(model, proba)
-    y_imp <- mu[!resp] + colMeans(matrix((y_resp - mu[resp])[nn], nrow = M))
+    y_imp <- mu[!resp] + colMeans(matrix((y_resp - mu[resp])[nn], nrow = k))
   } else {
-    y_imp <- colMeans(matrix(y_resp[nn], nrow = M))
+    y_imp <- colMeans(matrix(y_resp[nn], nrow = k))
   }
   proba[[y]][!resp] <- y_imp
   proba[[y]]
 }
 
-## sumulacja (2000 razy)
+## symulacja (2000 razy)
 R <- 2000
 results <- matrix(0, R, 12)
 colnames(results) <- paste0(rep(c("naive", "nn", "nn_avg", "nn_bc"), each = 3),
@@ -121,8 +492,8 @@ colnames(results) <- paste0(rep(c("naive", "nn", "nn_avg", "nn_bc"), each = 3),
 
 xs_2 <- c("x1", "x2")
 xs_6 <- c("x1", "x2", "x3", "x4", "x5", "x6")
-M_2 <- floor(n^(2/(2+2))) ## M=31 dla d=2
-M_6 <- floor(n^(2/(2+6))) ## M=5 dla d=6
+k_2 <- floor(n^(2/(2+2))) ## k=31 dla p=2
+k_6 <- floor(n^(2/(2+6))) ## k=5 dla p=6
 
 for (r in 1:R) {
   proba <- populacja[sample(1:N, n), ]
@@ -138,21 +509,21 @@ for (r in 1:R) {
   res_y3 <- impute_knn(proba, y3  ~ x1 + x2 + x3  + x4 + x5 + x6, k=1)
   results[r, 4:6] <- c(mean(res_y1_y2$y1), mean(res_y1_y2$y2), mean(res_y3$y3))
 
-  ## średnia z M najbliższych sąsiadów
-  results[r, 7:9] <- c(mean(impute_nn_mean(proba, "y1", xs_2, M_2)),
-                       mean(impute_nn_mean(proba, "y2", xs_2, M_2)),
-                       mean(impute_nn_mean(proba, "y3", xs_6, M_6)))
+  ## średnia z k najbliższych sąsiadów
+  results[r, 7:9] <- c(mean(impute_nn_mean(proba, "y1", xs_2, k_2)),
+                       mean(impute_nn_mean(proba, "y2", xs_2, k_2)),
+                       mean(impute_nn_mean(proba, "y3", xs_6, k_6)))
 
-  ## średnia z M najbliższych sąsiadów z korektą obciążenia
-  results[r, 10:12] <- c(mean(impute_nn_mean(proba, "y1", xs_2, M_2, bc = TRUE)),
-                         mean(impute_nn_mean(proba, "y2", xs_2, M_2, bc = TRUE)),
-                         mean(impute_nn_mean(proba, "y3", xs_6, M_6, bc = TRUE)))
+  ## średnia z k najbliższych sąsiadów z korektą obciążenia
+  results[r, 10:12] <- c(mean(impute_nn_mean(proba, "y1", xs_2, k_2, bc = TRUE)),
+                         mean(impute_nn_mean(proba, "y2", xs_2, k_2, bc = TRUE)),
+                         mean(impute_nn_mean(proba, "y3", xs_6, k_6, bc = TRUE)))
 
 }
 
 boxplot(results -  matrix(rep(y_true, times = 4), byrow=T, ncol = 12, nrow=R),
         xlab = "", ylab = "Obciążenie",
-        main = "Imputacja NN: jeden sąsiad, średnia z M sąsiadów i korekta obciążenia",
+        main = "Imputacja NN: jeden sąsiad, średnia z k sąsiadów i korekta obciążenia",
         las = 2)
 abline(a=0,b=0,col="red")
 ```
@@ -173,6 +544,12 @@ RMSE
 ```{r}
 bias <- (colMeans(results) - rep(y_true, times = 4))
 round(sqrt(bias^2 + apply(results, 2, var))*100,2)
+```
+
+Błąd Monte Carlo obciążenia (x100). Różnice obciążeń mniejsze niż około dwa takie błędy mogą wynikać z losowości symulacji.
+
+```{r}
+round(sqrt(apply(results, 2, var)/R)*100,3)
 ```
 
 ## Python
@@ -219,13 +596,13 @@ populacja = pd.DataFrame({
 
 y_true = populacja[['y1', 'y2', 'y3']].mean()
 
-# Imputacja średnią z M najbliższych sąsiadów (dla M=1: wartość najbliższego sąsiada)
+# Imputacja średnią z k najbliższych sąsiadów (dla k=1: wartość najbliższego sąsiada)
 # Dla zmiennych ilościowych odległość Gowera = odległość Manhattan na zmiennych przeskalowanych rozstępem
 # bc=True: korekta obciążenia na podstawie modelu regresji z wielomianem 2 stopnia
-def impute_nn(proba, y_col, x_cols, M, bc=False):
+def impute_nn(proba, y_col, x_cols, k, bc=False):
    obs = proba[y_col].notna().to_numpy()
    X = MinMaxScaler().fit_transform(proba[x_cols])
-   nn = NearestNeighbors(n_neighbors=M, metric='manhattan').fit(X[obs])
+   nn = NearestNeighbors(n_neighbors=k, metric='manhattan').fit(X[obs])
    idx = nn.kneighbors(X[~obs], return_distance=False)
    y = proba[y_col].to_numpy().copy()
    y_obs = y[obs]
@@ -244,8 +621,8 @@ columns = [f"{t}_{y}" for t in ['naive', 'nn', 'nn_avg', 'nn_bc'] for y in ['y1'
 
 xs_2 = ['x1', 'x2']
 xs_6 = ['x1', 'x2', 'x3', 'x4', 'x5', 'x6']
-M_2 = int(np.floor(n**(2/(2+2)))) # M=31 dla d=2
-M_6 = int(np.floor(n**(2/(2+6)))) # M=5 dla d=6
+k_2 = int(np.floor(n**(2/(2+2)))) # k=31 dla p=2
+k_6 = int(np.floor(n**(2/(2+6)))) # k=5 dla p=6
 
 for r in range(R):
    # Losowanie próby
@@ -263,15 +640,15 @@ for r in range(R):
                       impute_nn(proba, 'y2', xs_2, 1).mean(),
                       impute_nn(proba, 'y3', xs_6, 1).mean()]
 
-   # Średnia z M najbliższych sąsiadów
-   results[r, 6:9] = [impute_nn(proba, 'y1', xs_2, M_2).mean(),
-                      impute_nn(proba, 'y2', xs_2, M_2).mean(),
-                      impute_nn(proba, 'y3', xs_6, M_6).mean()]
+   # Średnia z k najbliższych sąsiadów
+   results[r, 6:9] = [impute_nn(proba, 'y1', xs_2, k_2).mean(),
+                      impute_nn(proba, 'y2', xs_2, k_2).mean(),
+                      impute_nn(proba, 'y3', xs_6, k_6).mean()]
 
-   # Średnia z M najbliższych sąsiadów z korektą obciążenia
-   results[r, 9:12] = [impute_nn(proba, 'y1', xs_2, M_2, bc=True).mean(),
-                       impute_nn(proba, 'y2', xs_2, M_2, bc=True).mean(),
-                       impute_nn(proba, 'y3', xs_6, M_6, bc=True).mean()]
+   # Średnia z k najbliższych sąsiadów z korektą obciążenia
+   results[r, 9:12] = [impute_nn(proba, 'y1', xs_2, k_2, bc=True).mean(),
+                       impute_nn(proba, 'y2', xs_2, k_2, bc=True).mean(),
+                       impute_nn(proba, 'y3', xs_6, k_6, bc=True).mean()]
 
 plt.figure(figsize=(10, 6))
 bias = results - np.tile(y_true, 4)
@@ -279,19 +656,20 @@ plt.boxplot(bias)
 plt.axhline(y=0, color='r', linestyle='-')
 plt.xlabel('')
 plt.ylabel('Obciążenie')
-plt.title('Imputacja NN: jeden sąsiad, średnia z M sąsiadów i korekta obciążenia')
+plt.title('Imputacja NN: jeden sąsiad, średnia z k sąsiadów i korekta obciążenia')
 plt.xticks(range(1, 13), columns, rotation=90)
 plt.tight_layout()
 plt.show()
 ```
 
-Obciążenie estymatora (x100), wariancja (x100) i RMSE (x100)
+Obciążenie estymatora (x100), wariancja (x100), RMSE (x100) i błąd Monte Carlo obciążenia (x100)
 
 ```{python}
 bias = results.mean(axis=0) - np.tile(y_true, 4)
 pd.DataFrame({'bias': np.round(bias*100, 2),
               'var': np.round(results.var(axis=0, ddof=1)*100, 4),
-              'rmse': np.round(np.sqrt(bias**2 + results.var(axis=0, ddof=1))*100, 2)},
+              'rmse': np.round(np.sqrt(bias**2 + results.var(axis=0, ddof=1))*100, 2),
+              'mc_se': np.round(np.sqrt(results.var(axis=0, ddof=1)/R)*100, 3)},
              index=columns)
 ```
 
@@ -356,7 +734,9 @@ gower.gower_matrix(dane.astype({'plec': object, 'wyksztalcenie': object}))
 :::
 
 
-# Przyklad 3
+# Przykład 3 -- czytelnictwo
+
+Imputujemy `czyta_ksiazki_z_brakami` na podstawie zmiennych `plec`, `wiek` i `wyksztalcenie` (odległość Gowera) i porównujemy wyniki ze znaną prawdziwą wartością (`czyta_ksiazki`).
 
 ::: panel-tabset
 
@@ -369,15 +749,139 @@ data <- read.csv(file = "../../data/data4-czytelnictwo.csv",
 
 ```
 
+Od czego zależy występowanie braku?
+
 ```{r}
 glm(I(is.na(czyta_ksiazki_z_brakami)) ~ plec + wiek + wyksztalcenie,
     data = data, family = binomial()) |>
   summary()
 ```
 
+Liczba remisów: ilu dawców leży w minimalnej odległości od biorcy. Wiek jest podany w latach, więc wielu dawców ma dokładnie te same wartości zmiennych co biorca.
 
+```{r}
+xs <- c("plec", "wiek", "wyksztalcenie")
+resp <- !is.na(data$czyta_ksiazki_z_brakami)
+remisy <- sapply(which(!resp), function(i) {
+  d <- gower::gower_dist(data[i, xs], data[resp, xs])
+  sum(d == min(d))
+})
+table(remisy)
+mean(remisy > 1)
+```
+
+Funkcja `impute_knn()` losuje dawcę spośród `k` najbliższych sąsiadów. Przy `k = 1` nie ma losowania, a remis rozstrzyga kolejność dawców w danych, więc ten sam dawca trafia do wszystkich biorców o tych samych wartościach zmiennych. Poniższa funkcja losuje dawcę spośród wszystkich dawców w minimalnej odległości.
+
+```{r}
+impute_nn_remisy <- function(dane, y, xs) {
+  resp <- !is.na(dane[[y]])
+  dawcy <- dane[resp, ]
+  dane[[y]][!resp] <- sapply(which(!resp), function(i) {
+    d <- gower::gower_dist(dane[i, xs], dawcy[xs])
+    kandydaci <- which(d == min(d))
+    dawcy[[y]][kandydaci[sample.int(length(kandydaci), 1)]]
+  })
+  dane[[y]]
+}
+```
+
+Imputacja i porównanie. Trafność to odsetek biorców, którym przypisano prawdziwą wartość.
+
+```{r}
+set.seed(2025)
+f <- czyta_ksiazki_z_brakami ~ plec + wiek + wyksztalcenie
+## k = 1: przy remisie wybierany jest pierwszy dawca w kolejności danych
+wynik_nn1 <- impute_knn(data, f, k = 1)$czyta_ksiazki_z_brakami
+## k = 1: dawca losowany spośród remisów
+wynik_nn1_los <- impute_nn_remisy(data, "czyta_ksiazki_z_brakami", xs)
+## k = 5: dawca losowany spośród 5 najbliższych sąsiadów
+wynik_nn5 <- impute_knn(data, f, k = 5)$czyta_ksiazki_z_brakami
+## k = 5: dominanta wartości 5 najbliższych sąsiadów (pakiet VIM)
+wynik_nn5_dom <- kNN(data, variable = "czyta_ksiazki_z_brakami", dist_var = xs,
+                     k = 5, imp_var = FALSE)$czyta_ksiazki_z_brakami
+
+wyniki <- list(`k = 1` = wynik_nn1,
+               `k = 1, remisy losowo` = wynik_nn1_los,
+               `k = 5, dawca losowy` = wynik_nn5,
+               `k = 5, dominanta` = wynik_nn5_dom)
+
+data.frame(
+  metoda = c("prawda", "respondenci", names(wyniki)),
+  srednia = c(mean(data$czyta_ksiazki),
+              mean(data$czyta_ksiazki_z_brakami, na.rm = TRUE),
+              sapply(wyniki, mean)),
+  trafnosc = c(NA, NA, sapply(wyniki, function(w) mean(w[!resp] == data$czyta_ksiazki[!resp]))),
+  row.names = NULL
+)
+```
+
+Wynik jednej imputacji losowej zależy od ziarna. Powtarzamy imputację z `k = 5` dla 100 losowań.
+
+```{r}
+srednie_nn5 <- replicate(100, mean(impute_knn(data, f, k = 5)$czyta_ksiazki_z_brakami))
+summary(srednie_nn5)
+```
 
 ## Python
 
-TBA
+```{python}
+data = pd.read_csv("../../data/data4-czytelnictwo.csv",
+                   dtype={'plec': 'category',
+                          'wiek': 'float64',
+                          'wyksztalcenie': 'category',
+                          'czyta_ksiazki': 'float64',
+                          'czyta_ksiazki_z_brakami': 'float64'})
+
+y = 'czyta_ksiazki_z_brakami'
+xs = ['plec', 'wiek', 'wyksztalcenie']
+resp = data[y].notna().to_numpy()
+y_resp = data.loc[resp, y].to_numpy()
+```
+
+Macierz odległości Gowera (wiersze -- biorcy, kolumny -- dawcy) i liczba remisów: ilu dawców leży w minimalnej odległości od biorcy.
+
+```{python}
+X = data[xs].astype({'plec': object, 'wyksztalcenie': object})
+D = gower.gower_matrix(X[~resp], X[resp])
+
+remisy = (D == D.min(axis=1, keepdims=True)).sum(axis=1)
+print(pd.Series(remisy).value_counts().sort_index())
+(remisy > 1).mean()
+```
+
+Imputacja i porównanie. Trafność to odsetek biorców, którym przypisano prawdziwą wartość. `KNNImputer` z `sklearn` wstawia średnią z `k` sąsiadów (tu wartość ułamkową, więc trafności nie liczymy) i stosuje odległość euklidesową, dlatego zmienne jakościowe zamieniamy na zero-jedynkowe, a wiek skalujemy do przedziału [0, 1].
+
+```{python}
+rng = np.random.default_rng(2025)
+# dawcy uporządkowani od najbliższego; przy remisie decyduje kolejność w danych
+kolejnosc = np.argsort(D, axis=1, kind='stable')
+biorcy = np.arange(D.shape[0])
+
+imputacje = {
+    # k = 1: pierwszy dawca w kolejności danych
+    'k = 1': y_resp[kolejnosc[:, 0]],
+    # k = 1: dawca losowany spośród remisów
+    'k = 1, remisy losowo': np.array([rng.choice(y_resp[D[i] == D[i].min()]) for i in biorcy]),
+    # k = 5: dawca losowany spośród 5 najbliższych
+    'k = 5, dawca losowy': y_resp[kolejnosc[biorcy, rng.integers(0, 5, len(biorcy))]],
+    # k = 5: dominanta wartości 5 najbliższych (przy nieparzystym k nie ma remisu)
+    'k = 5, dominanta': (y_resp[kolejnosc[:, :5]].mean(axis=1) > 0.5).astype(float),
+}
+
+Z = pd.get_dummies(data[['plec', 'wyksztalcenie']]).astype(float)
+Z['wiek'] = (data['wiek'] - data['wiek'].min()) / (data['wiek'].max() - data['wiek'].min())
+Z[y] = data[y]
+knn_srednia = KNNImputer(n_neighbors=5).fit_transform(Z)[~resp, -1]
+
+prawda = data.loc[~resp, 'czyta_ksiazki'].to_numpy()
+pd.DataFrame({
+    'srednia': [data['czyta_ksiazki'].mean(), data[y].mean()] +
+               [(y_resp.sum() + v.sum()) / len(data) for v in imputacje.values()] +
+               [(y_resp.sum() + knn_srednia.sum()) / len(data)],
+    'trafnosc': [np.nan, np.nan] + [np.mean(v == prawda) for v in imputacje.values()] + [np.nan]
+}, index=['prawda', 'respondenci'] + list(imputacje.keys()) + ['k = 5, średnia (KNNImputer)']).round(3)
+```
+
+Uwaga: warianty losowe dają inne wyniki niż w R, bo inny jest generator liczb losowych. Warianty bez losowania (`k = 1` i dominanta) dają te same średnie co w R z dokładnością do sposobu rozstrzygania remisów.
+
 :::
