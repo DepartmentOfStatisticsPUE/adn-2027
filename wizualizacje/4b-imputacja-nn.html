@@ -1,0 +1,1471 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Imputacja metodą najbliższego sąsiada</title>
+<meta name="description" content="Interaktywne podsumowanie imputacji metodą najbliższego sąsiada: wybór dawcy według odległości, k sąsiadów, dawca losowy i średnia z k, korekta obciążenia, skalowanie zmiennych i odległość Gowera, liczba zmiennych a odległość do dawcy, wyniki symulacji.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Sans:ital,wght@0,400;0,600;1,400&family=Fira+Sans+Extra+Condensed:wght@500;600&family=Fira+Mono&display=swap">
+<style>
+/* Układ jak w podsumowaniach zeszytów metodologicznych: części na białym tle przeplatane pasmami
+   przewijanymi w zieleni UEP. Kolory: zieleń z logo UEP (#215932) i zieleń motywu slajdów Beamer
+   (beamer@blendedblue = rgb 0.10, 0.60, 0.41 = #1a9969). Braki danych oznaczono bursztynem.
+   Para serii na wykresach (w klasach / bez klas) sprawdzona walidatorem palety w obu motywach. */
+:root {
+  --paper: #ffffff;
+  --paper-2: #f3f6f4;
+  --ink: #111111;
+  --ink-70: #4a504c;
+  --tint: #e6ebe8;
+  --rule: #666b68;
+  --grid: #c3cac6;
+  --uep: #215932;
+  --beamer: #1a9969;
+  --acc-text: #137352;
+  --wash: #e2f3eb;
+  --on-acc: #04281b;
+  --miss: #a8650d;
+  --miss-wash: #fbeedb;
+  --miss-line: #d9962f;
+  --s-kl: #1a9969;
+  --s-bez: #c77f1a;
+  --band: #215932;
+  --band-ink: #eef6f0;
+  --band-mut: #a9cdb6;
+  --band-line: rgba(238, 246, 240, .26);
+  --band-soft: rgba(238, 246, 240, .07);
+  --band-acc: #7fe0b3;
+  --band-miss: #f4bf62;
+  --card: #ffffff;
+  --shadow: 0 2px 4px rgba(6, 26, 14, .25), 0 12px 32px rgba(6, 26, 14, .32);
+  --f-body: "Fira Sans", "Helvetica Neue", Arial, sans-serif;
+  --f-disp: "Fira Sans Extra Condensed", "Fira Sans", "Arial Narrow", sans-serif;
+  --f-mono: "Fira Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0f1411; --paper-2: #161d18; --ink: #e9ece9; --ink-70: #b1b8b3; --tint: #212a24;
+    --rule: #8d948f; --grid: #39433c; --uep: #2f7a46; --beamer: #3cc08d; --acc-text: #7fe0b3;
+    --wash: #173226; --on-acc: #04281b; --miss: #f4bf62; --miss-wash: #3a2c14; --miss-line: #d9962f;
+    --s-kl: #25a072; --s-bez: #c0841f;
+    --band: #133520; --band-ink: #eef6f0; --band-mut: #9cc4ab; --band-line: rgba(238,246,240,.2); --band-soft: rgba(238,246,240,.05);
+    --card: #161d18; --shadow: 0 2px 4px rgba(0,0,0,.4), 0 12px 32px rgba(0,0,0,.5);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0f1411; --paper-2: #161d18; --ink: #e9ece9; --ink-70: #b1b8b3; --tint: #212a24;
+  --rule: #8d948f; --grid: #39433c; --uep: #2f7a46; --beamer: #3cc08d; --acc-text: #7fe0b3;
+  --wash: #173226; --on-acc: #04281b; --miss: #f4bf62; --miss-wash: #3a2c14; --miss-line: #d9962f;
+  --s-kl: #25a072; --s-bez: #c0841f;
+  --band: #133520; --band-ink: #eef6f0; --band-mut: #9cc4ab; --band-line: rgba(238,246,240,.2); --band-soft: rgba(238,246,240,.05);
+  --card: #161d18; --shadow: 0 2px 4px rgba(0,0,0,.4), 0 12px 32px rgba(0,0,0,.5);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 400 16px/1.6 var(--f-body); -webkit-font-smoothing: antialiased; }
+a { color: var(--acc-text); text-underline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--beamer); outline-offset: 2px; }
+b, strong { font-weight: 600; }
+code { font-family: var(--f-mono); font-size: .9em; }
+.m { font-style: italic; white-space: nowrap; }
+.m b { font-style: normal; font-weight: 600; }
+.m sub, .m sup { font-style: normal; font-size: .7em; }
+
+.progress { position: fixed; top: env(safe-area-inset-top, 0px); left: 0; right: 0; height: 3px; z-index: 30; }
+.progress i { display: block; height: 100%; width: 0; background: var(--beamer); }
+
+.wrap { max-width: 1080px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.col { max-width: 700px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.col p { margin: 0 0 1.05em; font-size: 17px; line-height: 1.65; }
+
+/* --- nagłówek --- */
+.hero { padding-block: 28px 40px; }
+.topbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+.pill { display: inline-flex; flex-direction: column; background: var(--uep); color: #fff; padding: 7px 26px 8px 18px; border-radius: 999px; line-height: 1.2; }
+.pill b { font: 600 14px/1.2 var(--f-disp); }
+.pill span { font-size: 12px; opacity: .85; }
+.topr { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; text-align: right; }
+.org { font: 600 16px/1.2 var(--f-disp); color: var(--uep); }
+:root[data-theme="dark"] .org { color: var(--acc-text); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .org { color: var(--acc-text); } }
+.unoff { font-size: 12px; color: var(--ink-70); }
+.hero-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 48px; align-items: center; margin-top: 36px; }
+.hero-grid > * { min-width: 0; }
+.eyebrow { font: 600 13px/1.2 var(--f-disp); letter-spacing: .09em; text-transform: uppercase; color: var(--acc-text); margin: 0; }
+h1 { font: 600 clamp(42px, 6vw, 72px)/.95 var(--f-disp); margin: .14em 0 .2em; letter-spacing: -.012em; }
+h1 span { color: var(--beamer); }
+.dek { font: 500 clamp(20px, 2.6vw, 27px)/1.22 var(--f-disp); color: var(--ink-70); margin: 0 0 1em; text-wrap: balance; }
+.lede { font-size: 18px; line-height: 1.6; margin: 0; }
+.authors { margin-top: 24px; border-top: 2px solid var(--ink); padding-top: 10px; display: grid; gap: 6px; }
+.authors p { margin: 0; font-size: 15px; line-height: 1.45; display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 10px; }
+.authors .k { font: 600 12px/1.6 var(--f-disp); letter-spacing: .08em; text-transform: uppercase; color: var(--acc-text); }
+.hero-art svg { width: 100%; height: auto; display: block; max-width: 420px; margin-left: auto; }
+.hero-art .fly { stroke-dasharray: 260; stroke-dashoffset: 260; animation: lec 5s ease-in-out infinite; }
+.hero-art .q { animation: znik 5s ease-in-out infinite; }
+.hero-art .a { animation: znik 5s ease-in-out infinite reverse; }
+@keyframes lec { 0%, 15% { stroke-dashoffset: 260; } 45%, 85% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes znik { 0%, 42% { opacity: 1; } 50%, 92% { opacity: 0; } 100% { opacity: 1; } }
+.scrollhint { display: flex; align-items: center; gap: 10px; margin-top: 34px; font: 500 14px/1.2 var(--f-disp); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-70); }
+.scrollhint i { width: 1px; height: 34px; background: linear-gradient(var(--beamer), transparent); display: block; animation: kapie 1.8s ease-in-out infinite; transform-origin: top; }
+@keyframes kapie { 0% { transform: scaleY(0); } 60% { transform: scaleY(1); } 100% { transform: scaleY(1); opacity: 0; } }
+
+/* --- pojęcia z dymkiem --- */
+.term { font: inherit; color: inherit; background: none; border: 0; padding: 0; margin: 0; cursor: help; text-decoration: underline dotted var(--beamer); text-decoration-thickness: 2px; text-underline-offset: 4px; }
+.term::after { content: "?"; display: inline-grid; place-items: center; width: 1.05em; height: 1.05em; margin-left: .18em; border-radius: 50%; background: var(--beamer); color: var(--on-acc); font: 600 .6em/1 var(--f-body); vertical-align: .45em; }
+#tip { position: fixed; left: 0; top: 0; z-index: 60; width: max-content; max-width: min(380px, calc(100vw - 24px)); background: var(--band); color: var(--band-ink); border: 1px solid var(--beamer); padding: 12px 15px 13px; border-radius: 5px; font: 400 14px/1.5 var(--f-body); box-shadow: var(--shadow); opacity: 0; visibility: hidden; transition: opacity .15s, visibility .15s; pointer-events: none; }
+#tip.show { opacity: 1; visibility: visible; }
+#tip .tt { display: block; font: 600 16px/1.2 var(--f-disp); color: var(--band-acc); margin-bottom: 5px; }
+#tip p { margin: 0 0 .5em; }
+#tip p:last-child { margin-bottom: 0; }
+
+/* --- głowy części --- */
+section.act { padding-block: 72px 36px; }
+.shead { text-align: center; overflow: hidden; margin-bottom: 30px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.echo { font: 600 clamp(34px, 6vw, 60px)/1.02 var(--f-disp); letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; user-select: none; margin-bottom: 18px; }
+.echo span { display: block; color: transparent; -webkit-text-stroke: 1.1px var(--grid); }
+.echo span.fill { color: var(--beamer); -webkit-text-stroke: 0; }
+.tag { display: inline-block; font: 600 12px/1 var(--f-disp); letter-spacing: .1em; text-transform: uppercase; padding: 6px 10px; border-radius: 3px; background: var(--wash); color: var(--acc-text); margin-bottom: 14px; }
+h2 { font: 600 clamp(32px, 4.6vw, 50px)/1.04 var(--f-disp); margin: 0 auto; max-width: 20ch; text-wrap: balance; }
+.sub2 { display: block; font: 500 clamp(17px, 2vw, 21px)/1.25 var(--f-disp); color: var(--ink-70); margin-top: 8px; }
+
+.keys { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; max-width: 900px; margin: 36px auto 0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.keys > div { min-width: 0; border-top: 2px solid var(--ink); padding-top: 12px; }
+.keys .big { font: 600 40px/1.1 var(--f-disp); color: var(--acc-text); white-space: nowrap; }
+.keys h4 { font: 600 19px/1.2 var(--f-disp); margin: 8px 0 4px; }
+.keys p { margin: 0; font-size: 15px; color: var(--ink-70); }
+.roles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 900px; margin: 30px auto 0; border-top: 2px solid var(--ink); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.roles > div { padding: 16px 20px 0 0; min-width: 0; }
+.roles > div + div { padding-left: 20px; border-left: 1px solid var(--grid); }
+.roles h4 { font: 600 20px/1.2 var(--f-disp); margin: 8px 0 6px; }
+.roles p { margin: 0; font-size: 15px; }
+.lbl { display: inline-block; font: 600 12px/1 var(--f-disp); letter-spacing: .07em; text-transform: uppercase; padding: 4px 8px; border-radius: 3px; }
+.lbl.na { background: var(--miss-wash); color: var(--miss); border: 1px dashed var(--miss-line); }
+.lbl.ok { background: var(--tint); color: var(--ink); }
+.lbl.new { background: var(--beamer); color: var(--on-acc); }
+
+.note { display: flex; gap: 12px; align-items: flex-start; background: var(--wash); border-left: 3px solid var(--beamer); padding: 12px 16px; margin: 0 0 1.05em; font-size: 15px; line-height: 1.5; }
+.note > b:first-child { font: 600 12px/1.6 var(--f-disp); letter-spacing: .08em; text-transform: uppercase; color: var(--acc-text); flex: none; }
+.note.warn { background: var(--miss-wash); border-left-color: var(--miss-line); }
+.note.warn > b:first-child { color: var(--miss); }
+
+/* --- warianty --- */
+.cases { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; max-width: 1080px; margin: 28px auto 0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.case { border: 1px solid var(--grid); border-top: 4px solid var(--beamer); border-radius: 4px; padding: 14px 16px 16px; min-width: 0; background: var(--paper); }
+.case.det { border-top-color: var(--rule); }
+.case .no { font: 600 12px/1 var(--f-disp); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-70); }
+.case h4 { font: 600 20px/1.15 var(--f-disp); margin: 6px 0 8px; }
+.case p { margin: 0 0 .5em; font-size: 14.5px; }
+.case .fn { font: 13px/1.4 var(--f-mono); color: var(--ink-70); margin-top: 8px; }
+.kind { display: inline-block; font: 600 11px/1 var(--f-disp); letter-spacing: .08em; text-transform: uppercase; padding: 4px 7px; border-radius: 3px; margin-bottom: 8px; }
+.kind.st { background: var(--wash); color: var(--acc-text); }
+.kind.de { background: var(--tint); color: var(--ink-70); }
+
+.formula { max-width: 760px; margin: 30px auto 0; text-align: center; padding: 22px 16px; border-top: 2px solid var(--ink); border-bottom: 1px solid var(--grid); }
+.formula .f { font-size: clamp(18px, 2.7vw, 26px); line-height: 1.9; }
+.formula .f .frac { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; font-size: .85em; line-height: 1.15; margin: 0 2px; }
+.formula .f .frac > span:first-child { border-bottom: 1.4px solid currentColor; padding: 0 3px; }
+.deriv { margin-top: 26px; }
+.deriv .dh { font: 600 12px/1 var(--f-disp); letter-spacing: .1em; text-transform: uppercase; color: var(--acc-text); margin: 0 0 10px; }
+.deriv p:not(.dh) { font-size: 15.5px; }
+.deriv .katex-display { margin: .4em 0 1em; overflow-x: auto; overflow-y: hidden; padding: 2px 0; }
+.formula .leg { font-size: 14px; color: var(--ink-70); margin-top: 10px; }
+
+/* --- pasma przewijane --- */
+.scrolly { background: var(--band); color: var(--band-ink); margin: 40px 0;
+  --u-line: var(--band-line); --u-soft: var(--band-soft); --u-ink: var(--band-ink); --u-mut: var(--band-mut);
+  --u-miss: var(--band-miss); --u-imp: var(--band-acc); --u-imp-ink: #08301d; --u-zone: rgba(238, 246, 240, .06); }
+.sc-in { max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr); }
+.sticky { grid-area: 1 / 1; align-self: start; position: sticky; top: 0; height: 100vh; height: 100svh; z-index: 1; display: flex; flex-direction: column; justify-content: flex-start; padding: calc(env(safe-area-inset-top, 0px) + 24px) max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)); overflow: hidden; }
+.stage { width: 100%; max-width: 760px; margin: 0 auto; }
+.ghead { margin-bottom: 8px; }
+.gtitle { font: 600 22px/1.2 var(--f-disp); color: var(--band-ink); margin: 0; }
+.gsub { font: 500 15px/1.3 var(--f-disp); color: var(--band-mut); margin: 3px 0 0; min-height: 1.3em; }
+.steps { grid-area: 1 / 1; position: relative; z-index: 2; pointer-events: none; }
+.step { min-height: 92vh; min-height: 92svh; display: flex; align-items: flex-end; justify-content: center; padding: 0 max(16px, env(safe-area-inset-right, 0px)) 6vh max(16px, env(safe-area-inset-left, 0px)); }
+.step:first-child { min-height: 110vh; min-height: 110svh; }
+.step:last-child { min-height: 120vh; min-height: 120svh; }
+.steps::after { content: ""; display: block; height: 60vh; height: 60svh; }
+.card { pointer-events: auto; width: min(500px, 100%); background: var(--card); color: var(--ink); box-shadow: var(--shadow); padding: 18px 20px 16px; border-radius: 4px; font-size: 15.5px; line-height: 1.55; opacity: .55; transform: translateY(10px); transition: opacity .45s, transform .45s; }
+.card p { margin: 0 0 .6em; }
+.card p:last-child { margin-bottom: 0; }
+.step.on .card { opacity: 1; transform: none; }
+.stepno { display: inline-block; background: var(--beamer); color: var(--on-acc); font: 600 11px/1 var(--f-disp); letter-spacing: .12em; text-transform: uppercase; padding: 5px 8px; border-radius: 2px; margin-bottom: 10px; }
+@media (max-width: 979px) {
+  .step { padding-bottom: 0; }
+  .card { position: sticky; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); opacity: 0; transform: translateY(14px); }
+  .step:not(.on) .card { pointer-events: none; }
+}
+@media (min-width: 980px) {
+  .sc-in { grid-template-columns: minmax(320px, 400px) minmax(0, 1fr); column-gap: 56px; padding-left: max(32px, env(safe-area-inset-left, 0px)); padding-right: max(32px, env(safe-area-inset-right, 0px)); }
+  .sticky { grid-area: auto; grid-column: 2; grid-row: 1; justify-content: center; padding: 0; }
+  .steps { grid-area: auto; grid-column: 1; grid-row: 1; }
+  .step { align-items: center; justify-content: flex-start; padding: 0; min-height: 100vh; }
+  .step:first-child { min-height: 100vh; }
+  .step:last-child { min-height: 110vh; }
+  .steps::after { height: 0; }
+  .card { opacity: .3; }
+}
+
+/* --- wykres jednostek (dawcy i biorcy) --- */
+.uplot { width: 100%; height: auto; display: block; overflow: visible; }
+.uplot .ax line, .uplot .ax path { stroke: var(--u-line); stroke-width: 1.2; fill: none; }
+.uplot .ax text { fill: var(--u-mut); font: 400 13px var(--f-body); }
+.uplot .rowlab { fill: var(--u-mut); font: 600 15px var(--f-disp); letter-spacing: .04em; }
+.uplot .zone { fill: var(--u-zone); stroke: var(--u-line); stroke-width: 1; }
+.uplot .zone.pool { stroke: var(--u-imp); stroke-dasharray: 4 4; }
+.uplot .zlab { fill: var(--u-mut); font: 500 13px var(--f-disp); letter-spacing: .03em; }
+.uplot .zlab.pool { fill: var(--u-imp); }
+.uplot .ord { fill: none; stroke: var(--u-mut); stroke-width: 1.4; stroke-dasharray: 2 5; stroke-linecap: round; }
+.u circle { fill: var(--u-soft); stroke: var(--u-line); stroke-width: 1.6; transition: fill .4s, stroke .4s, opacity .4s; }
+.u .v { fill: var(--u-ink); font: 600 17px var(--f-disp); text-anchor: middle; dominant-baseline: central; font-variant-numeric: tabular-nums; }
+.u .id { fill: var(--u-mut); font: 400 11.5px var(--f-body); text-anchor: middle; }
+.u.na circle { stroke: var(--u-miss); stroke-dasharray: 4 3; fill: rgba(244, 191, 98, .08); }
+.u.na .v { fill: var(--u-miss); font-size: 14px; }
+.u.imp circle { fill: var(--u-imp); stroke: var(--u-imp); stroke-dasharray: none; }
+.u.imp .v { fill: var(--u-imp-ink); }
+.u.pool circle { stroke: var(--u-imp); stroke-width: 2.6; }
+.u.don circle { stroke: var(--u-imp); stroke-width: 3; }
+.u.dim { opacity: .4; }
+.u.left circle { stroke: var(--u-miss); stroke-width: 2.6; }
+.arr { fill: none; stroke: var(--u-imp); stroke-width: 2; }
+.arr.anim { stroke-dasharray: 400; stroke-dashoffset: 400; animation: rysuj .9s ease forwards; }
+@keyframes rysuj { to { stroke-dashoffset: 0; } }
+.ahead { fill: var(--u-imp); }
+
+.panel { margin-top: 10px; min-height: 120px; font-size: 15px; overflow-x: auto; }
+.panel.fade { animation: pojaw .45s ease both; }
+@keyframes pojaw { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.panel .cap { font: 500 13px/1.3 var(--f-disp); letter-spacing: .06em; text-transform: uppercase; color: var(--band-mut); margin: 0 0 6px; }
+table.mini { border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 14.5px; }
+table.mini th, table.mini td { padding: 4px 10px; text-align: center; border-bottom: 1px solid var(--band-line); white-space: nowrap; }
+table.mini th { font: 600 13px var(--f-disp); letter-spacing: .03em; color: var(--band-mut); }
+table.mini td.im { color: var(--band-acc); font-weight: 600; }
+table.mini tr.sum td { border-top: 1.5px solid var(--band-mut); border-bottom: 0; font-weight: 600; }
+table.mini td.l, table.mini th.l { text-align: left; }
+.chipnote { display: inline-block; font: 600 13px/1 var(--f-disp); padding: 6px 10px; border-radius: 3px; background: var(--band-miss); color: #3a2506; margin-left: 8px; }
+
+/* --- losowania: rozkład średniej --- */
+.lab { border: 2px solid var(--ink); border-radius: 6px; padding: 20px 22px 22px; margin: 24px auto 0; max-width: 1040px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.k { font: 600 13px/1 var(--f-disp); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-70); margin-right: 4px; }
+.chip { font: 500 15px/1 var(--f-disp); border: 1.5px solid var(--grid); background: var(--paper); color: var(--ink); padding: 8px 12px; border-radius: 999px; cursor: pointer; }
+.chip:hover { border-color: var(--beamer); }
+.chip[aria-pressed="true"] { background: var(--uep); border-color: var(--uep); color: #fff; }
+.chip.ghost { border-style: dashed; }
+.chip.go { background: var(--uep); border-color: var(--uep); color: #fff; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 14px; color: var(--ink-70); margin: 14px 0 4px; }
+.legend span { display: inline-flex; align-items: center; gap: 7px; }
+.legend i { display: inline-block; width: 14px; height: 10px; border-radius: 2px; }
+.legend i.tick { width: 16px; height: 0; border-top: 2px solid var(--ink); border-radius: 0; }
+.hist { width: 100%; height: auto; display: block; }
+.hist .gl { stroke: var(--grid); stroke-width: 1; opacity: .6; }
+.hist .bl { stroke: var(--rule); stroke-width: 1.2; }
+.hist text { fill: var(--ink-70); font: 400 12.5px var(--f-body); }
+.hist .ttl { fill: var(--ink); font: 600 15px var(--f-disp); }
+.hist .bar { transition: height .25s, y .25s; }
+.hist .ex { stroke: var(--ink); stroke-width: 2; }
+.hist .ev { stroke: var(--ink); stroke-width: 1.2; stroke-dasharray: 3 3; }
+.hist .hit { fill: transparent; cursor: default; }
+.hist .hit:hover + .bar, .hist .bar.hov { filter: brightness(1.12); }
+.stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 12px; }
+.stats > div { border-top: 3px solid var(--s-bez); padding-top: 8px; font-size: 14.5px; min-width: 0; }
+.stats > div.kl { border-top-color: var(--s-kl); }
+.stats h5 { font: 600 16px/1.2 var(--f-disp); margin: 0 0 4px; }
+.stats table { border-collapse: collapse; font-variant-numeric: tabular-nums; width: 100%; }
+.stats td, .stats th { padding: 3px 6px; text-align: right; border-bottom: 1px solid var(--grid); }
+.stats th { font: 600 12.5px var(--f-disp); color: var(--ink-70); }
+.stats td:first-child, .stats th:first-child { text-align: left; }
+.last { font-size: 14px; color: var(--ink-70); margin-top: 10px; min-height: 1.5em; }
+#vtip { position: fixed; left: 0; top: 0; z-index: 61; background: var(--paper); color: var(--ink); border: 1px solid var(--grid); box-shadow: var(--shadow); border-radius: 4px; padding: 8px 11px; font: 13.5px/1.45 var(--f-body); pointer-events: none; opacity: 0; transition: opacity .1s; font-variant-numeric: tabular-nums; }
+#vtip.show { opacity: 1; }
+#vtip b { font-weight: 600; }
+
+/* --- narzędzie --- */
+.tool { border: 2px solid var(--ink); border-radius: 6px; padding: 20px 22px 22px; margin: 24px auto 0; max-width: 1040px;
+  --u-line: var(--grid); --u-soft: var(--paper-2); --u-ink: var(--ink); --u-mut: var(--ink-70);
+  --u-miss: var(--miss-line); --u-imp: var(--beamer); --u-imp-ink: #04281b; --u-zone: var(--paper-2); }
+.tin { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.3fr); gap: 24px; margin-top: 18px; }
+.tin > div { min-width: 0; }
+.tool h4 { font: 600 16px/1.2 var(--f-disp); margin: 0 0 8px; }
+.tool h4 small { font: 400 13px var(--f-body); color: var(--ink-70); margin-left: 6px; }
+table.ed { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+table.ed th { font: 600 12.5px var(--f-disp); letter-spacing: .05em; text-transform: uppercase; color: var(--ink-70); text-align: left; padding: 0 4px 4px; }
+table.ed td { padding: 2px 3px; }
+table.ed td.n { color: var(--ink-70); font-size: 13px; width: 2.2em; text-align: right; padding-right: 8px; }
+table.ed input { width: 100%; min-width: 0; font: 600 15px/1.2 var(--f-disp); padding: 5px 7px; border: 1.5px solid var(--grid); border-radius: 4px; background: var(--paper); color: var(--ink); text-align: center; }
+table.ed input:focus { border-color: var(--beamer); outline: none; }
+table.ed input.y:placeholder-shown { border-style: dashed; border-color: var(--miss-line); background: var(--miss-wash); }
+table.ed input.y::placeholder { color: var(--miss); font-weight: 600; opacity: 1; }
+table.ed button.del { border: 0; background: none; color: var(--ink-70); cursor: pointer; font-size: 16px; padding: 2px 6px; }
+table.ed button.del:hover { color: var(--miss); }
+.tres { margin-top: 10px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin: 14px 0 6px; }
+.kpis > div { border-top: 2px solid var(--ink); padding-top: 8px; min-width: 0; }
+.kpis .kv { font: 600 28px/1.1 var(--f-disp); font-variant-numeric: tabular-nums; }
+.kpis .kk { font-size: 13px; color: var(--ink-70); }
+.warnl { color: var(--miss); font-size: 14.5px; margin: 6px 0 0; }
+.tabs { display: flex; gap: 6px; margin: 20px 0 0; }
+.tabs button { font: 600 14px/1 var(--f-disp); letter-spacing: .04em; padding: 8px 14px; border: 1.5px solid var(--grid); border-bottom: 0; border-radius: 4px 4px 0 0; background: var(--paper-2); color: var(--ink-70); cursor: pointer; }
+.tabs button[aria-selected="true"] { background: var(--band); color: var(--band-ink); border-color: var(--band); }
+pre.code { margin: 0; background: var(--band); color: var(--band-ink); border-radius: 0 4px 4px 4px; padding: 14px 16px; font: 13.5px/1.55 var(--f-mono); overflow-x: auto; position: relative; }
+pre.code .c { color: var(--band-mut); }
+.copy { position: absolute; top: 8px; right: 8px; font: 600 12px/1 var(--f-disp); letter-spacing: .05em; text-transform: uppercase; padding: 6px 9px; border-radius: 3px; border: 1px solid var(--band-line); background: transparent; color: var(--band-ink); cursor: pointer; }
+
+/* --- wyniki: przykład 2 i symulacja --- */
+.res { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 36px; max-width: 1040px; margin: 24px auto 0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.res > div { min-width: 0; }
+.res h4 { font: 600 20px/1.2 var(--f-disp); margin: 0 0 4px; }
+.res .hs { font-size: 14px; color: var(--ink-70); margin: 0 0 10px; }
+.dots { width: 100%; height: auto; display: block; }
+.dots text { fill: var(--ink-70); font: 400 13px var(--f-body); }
+.dots .nm { fill: var(--ink); font: 400 14px var(--f-body); }
+.dots .val { fill: var(--ink); font: 600 13px var(--f-body); font-variant-numeric: tabular-nums; }
+.dots .gl { stroke: var(--grid); stroke-width: 1; opacity: .7; }
+.dots .ref { stroke: var(--ink); stroke-width: 1.4; stroke-dasharray: 4 3; }
+.dots .dot { fill: var(--beamer); stroke: var(--paper); stroke-width: 2; }
+.dots .dot.base { fill: var(--rule); }
+table.g { border-collapse: collapse; width: 100%; font-size: 14px; font-variant-numeric: tabular-nums; }
+table.g th { background: var(--tint); font-weight: 600; text-align: left; border: 1px solid var(--rule); padding: 6px 9px; font-size: 13px; line-height: 1.25; vertical-align: bottom; }
+table.g td { border: 1px solid var(--grid); padding: 6px 9px; vertical-align: middle; }
+table.g td.r, table.g th.r { text-align: right; }
+table.g tr.grp td { background: var(--wash); }
+.ib { display: flex; align-items: center; gap: 8px; }
+.ib i { display: block; height: 10px; border-radius: 0 3px 3px 0; background: var(--beamer); }
+.ib i.w { background: var(--rule); }
+.ib span { min-width: 3.2em; text-align: right; }
+.notka { font-size: 13px; color: var(--ink-70); margin: 8px 0 0; }
+
+/* --- pamiętaj, kod --- */
+.limits { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 40px; max-width: 1000px; margin: 8px auto 0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.limits > div { border-top: 1px solid var(--rule); padding: 12px 0 14px; min-width: 0; }
+.limits h4 { font: 600 18px/1.2 var(--f-disp); margin: 0 0 4px; }
+.limits p { margin: 0; font-size: 15px; color: var(--ink-70); }
+.codes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; max-width: 1040px; margin: 24px auto 0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.codes > div { min-width: 0; }
+.codes h4 { font: 600 18px/1.2 var(--f-disp); margin: 0 0 8px; }
+.codes pre.code { border-radius: 4px; }
+
+footer { border-top: 2px solid var(--ink); margin-top: 64px; padding-block: 28px 56px; font-size: 13px; color: var(--ink-70); }
+footer p { margin: 0 0 .7em; max-width: 90ch; }
+footer b { color: var(--ink); }
+
+@media (max-width: 960px) { .cases { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 860px) {
+  .hero-grid { grid-template-columns: 1fr; gap: 24px; }
+  .hero-art svg { margin: 0 auto; max-width: 340px; }
+  .keys, .roles, .limits, .codes, .tin, .res, .stats { grid-template-columns: 1fr; }
+  .roles > div + div { padding-left: 0; border-left: 0; border-top: 1px solid var(--grid); margin-top: 8px; }
+  .topr { align-items: flex-start; text-align: left; }
+}
+@media (max-width: 979px) {
+  .panel { font-size: 13px; min-height: 0; }
+  table.mini { font-size: 13px; }
+  table.mini th, table.mini td { padding: 3px 7px; }
+  .gtitle { font-size: 19px; }
+}
+@media (max-width: 560px) {
+  .cases { grid-template-columns: 1fr; }
+  .tool, .lab { padding: 16px 14px; }
+  .authors p { grid-template-columns: 1fr; gap: 0; }
+  .echo { font-size: 30px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .arr.anim { stroke-dashoffset: 0; }
+}
+
+/* --- model niejawny --- */
+.implicit { max-width: 1000px; margin: 52px auto 0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.ih { font: 600 12px/1 var(--f-disp); letter-spacing: .1em; text-transform: uppercase; color: var(--acc-text); margin: 0 0 12px; }
+.imp2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 36px; }
+.imp2 > div { border-top: 2px solid var(--ink); padding-top: 12px; min-width: 0; }
+.imp2 h4 { font: 600 20px/1.2 var(--f-disp); margin: 0 0 8px; }
+.imp2 p { font-size: 15px; margin: 0 0 .7em; }
+.imp2 svg { width: 100%; height: auto; display: block; margin: 6px 0; }
+.imp2 svg text { fill: var(--ink-70); font: 400 12.5px var(--f-body); }
+.imp2 svg .rn { fill: var(--ink); font-size: 13px; }
+.imp2 svg .gl { stroke: var(--grid); stroke-width: 1; }
+.imp2 svg .rd { fill: var(--beamer); stroke: var(--paper); stroke-width: 2; }
+.imp2 svg .im { fill: var(--paper); stroke: var(--beamer); stroke-width: 2; }
+.imp2 svg .tr { fill: var(--miss-line); stroke: var(--paper); stroke-width: 2; }
+.imp2 svg .trh { fill: var(--paper); stroke: var(--miss-line); stroke-width: 2.5; }
+.imp2 svg .ml { stroke: var(--beamer); stroke-width: 2; stroke-dasharray: 5 4; }
+.imp2 svg .mt { stroke: var(--miss-line); stroke-width: 2; stroke-dasharray: 5 4; }
+.imp2 svg .bias { stroke: var(--ink); stroke-width: 1.5; }
+.imp2 svg .trend { stroke: var(--rule); stroke-width: 1.6; stroke-dasharray: 6 4; fill: none; }
+.imp2 svg .arr { stroke: var(--miss-line); stroke-width: 1.8; stroke-dasharray: 4 3; fill: none; }
+.imp2 svg .em { fill: var(--ink); font-weight: 600; }
+.imp2 label { font-size: 14px; display: block; margin-top: 4px; }
+.imp2 input[type="range"] { width: 100%; accent-color: var(--beamer); margin: 6px 0 10px; }
+.imp-out { font-size: 14.5px !important; background: var(--tint); padding: 10px 12px; border-radius: 4px; }
+@media (max-width: 860px) { .imp2 { grid-template-columns: 1fr; } }
+/* --- tworzenie klas --- */
+.cases.cls .case { border-top-color: var(--uep); }
+.sim2 { max-width: 1000px; margin: 36px auto 0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.sim2 h4 { font: 600 20px/1.2 var(--f-disp); margin: 0 0 4px; }
+.sim2 .hs { font-size: 14px; color: var(--ink-70); margin: 0 0 10px; max-width: 760px; }
+.sim2 .codes { margin-top: 26px; padding: 0; }
+
+/* --- nawigacja strzałkami --- */
+.snav { float: right; display: flex; align-items: center; gap: 6px; margin: 0 0 6px 12px; pointer-events: auto; }
+.snav button { width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--band-line); background: var(--band-soft); color: var(--band-ink); font: 600 16px/1 var(--f-body); cursor: pointer; display: grid; place-items: center; padding: 0; }
+.snav button:hover:not(:disabled) { border-color: var(--band-acc); color: var(--band-acc); }
+.snav button:disabled { opacity: .35; cursor: default; }
+.snav span { font: 500 14px/1 var(--f-disp); color: var(--band-mut); font-variant-numeric: tabular-nums; min-width: 3.2em; text-align: center; }
+.kbd { display: inline-block; font: 600 11px/1 var(--f-body); border: 1px solid var(--grid); border-bottom-width: 2px; border-radius: 3px; padding: 3px 5px; margin: 0 2px; color: var(--ink-70); text-transform: none; letter-spacing: 0; }
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<style>
+.katex { font-size: 1.07em; }
+.formula .katex-display { margin: .2em 0; overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+.formula .katex-display > .katex { font-size: clamp(1em, 2.2vw, 1.35em); }
+.formula .p1, .formula .p2 { padding: 3px 6px; border-radius: 4px; }
+.formula .p1 { background: var(--wash); }
+.formula .p2 { background: var(--miss-wash); }
+.keys .big .katex { font-size: .8em; }
+.stepno .katex { font-size: 1.15em; letter-spacing: 0; text-transform: none; }
+</style>
+<style>
+/* --- wykresy części 4b: pasmo (zmienne --u-* z pasma) i białe tło --- */
+.nnp, .nnw { width: 100%; height: auto; display: block; overflow: visible; }
+.nnp .ax line, .nnw .ax line { stroke: var(--u-line, var(--grid)); stroke-width: 1.2; }
+.nnp .ax text { fill: var(--u-mut); font: 400 13px var(--f-body); }
+.nnp .gl { stroke: var(--u-line); opacity: .6; }
+.nnp .fit { stroke: var(--u-mut); stroke-width: 1.8; stroke-dasharray: 7 5; }
+.nnp .rline { stroke: var(--u-miss); stroke-width: 1; stroke-dasharray: 2 5; opacity: .55; }
+.nnp .rline.on { opacity: 1; stroke-width: 1.6; }
+.nnp .dist { stroke: var(--u-miss); stroke-width: 1.2; stroke-dasharray: 3 3; opacity: .75; }
+.nnp .nb { fill: none; stroke: var(--u-imp); stroke-width: 2.4; }
+.nnp .resp { fill: var(--u-ink); stroke: var(--band); stroke-width: 1.5; transition: opacity .4s; }
+.nnp .resp.dim { opacity: .45; }
+.nnp .rec { fill: var(--band); stroke: var(--u-miss); stroke-width: 2.5; stroke-dasharray: 3 2; }
+.nnp .tru { fill: none; stroke: var(--u-ink); stroke-width: 1.8; stroke-dasharray: 2 2; }
+.nnp .imp { fill: var(--u-miss); stroke: var(--band); stroke-width: 1.5; }
+.nnp .arr { fill: none; stroke: var(--u-imp); stroke-width: 1.8; }
+.nnw .ax text { fill: var(--ink-70); font: 400 13px var(--f-body); }
+.nnw .gl { stroke: var(--grid); opacity: .7; }
+.nnw .env { fill: var(--wash); stroke: var(--beamer); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.nnw .lk { stroke: var(--beamer); stroke-width: 1.2; opacity: .8; }
+.nnw .pt { fill: var(--rule); stroke: var(--paper); stroke-width: 1.2; }
+.nnw .pt.on { fill: var(--beamer); }
+.nnw .rc { fill: var(--paper); stroke: var(--miss-line); stroke-width: 3; }
+.nnw .ln { fill: none; stroke-width: 2.4; }
+.nnw .lp { stroke: var(--paper); stroke-width: 1.5; }
+.nnw .hint { fill: var(--ink-70); font: 500 16px var(--f-disp); }
+#dplot { cursor: crosshair; }
+.hero-art .hl { stroke: var(--grid); stroke-width: 1.4; }
+.hero-art .hl.h1 { stroke: var(--beamer); stroke-width: 2.4; }
+.hero-art .hp { fill: var(--rule); }
+.hero-art .hr { fill: var(--paper); stroke: var(--miss-line); stroke-width: 3; stroke-dasharray: 4 3; }
+.nnw .elab { font: 600 14px var(--f-disp); }
+.nnw .zero { stroke: var(--ink); stroke-width: 1.4; }
+.nnw .eb { stroke-width: 2; opacity: .7; }
+.nnw .cv { fill: none; stroke: var(--grid); stroke-width: 2; }
+.nnw .cv.on { stroke: var(--s-bez); stroke-width: 3.2; }
+.nnw .se { fill: none; stroke: var(--ink); stroke-width: 2; stroke-dasharray: 6 4; }
+.nnw .cvl { fill: var(--ink-70); font-weight: 500; }
+.nnw .cvl.on { fill: var(--s-bez); font-weight: 700; }
+.nnw .se-l { fill: var(--ink); }
+.nnw .zone-l { fill: var(--ink-70); font: 500 13px var(--f-disp); letter-spacing: .03em; }
+ul.plain { margin: 0; padding-left: 1.1em; font-size: 15px; }
+ul.plain li { margin: 0 0 .55em; }
+</style>
+</head>
+<body>
+<div class="progress" aria-hidden="true"><i id="prog"></i></div>
+<header class="hero wrap">
+  <div class="topbar">
+    <span class="pill"><b>Analiza danych niekompletnych</b><span>Materiały do zajęć · 2026/27</span></span>
+    <div class="topr"><span class="org">Uniwersytet Ekonomiczny w Poznaniu</span><span class="unoff">Katedra Statystyki</span></div>
+  </div>
+  <div class="hero-grid">
+    <div>
+      <p class="eyebrow">Imputacja danych · część 4b</p>
+      <h1>Imputacja metodą <span>najbliższego sąsiada</span></h1>
+      <p class="dek">Dawcą jest respondent najbardziej podobny do biorcy.</p>
+      <p class="lede">Imputacja metodą najbliższego sąsiada (ang. <i>nearest neighbour imputation</i>, NN) to hot-deck, w którym pulę dawców wyznacza odległość, a nie klasy. Dla każdej jednostki z brakiem szukamy respondentów o najbardziej podobnych wartościach zmiennych pomocniczych \(\mathbf{x}\) i przepisujemy wartość jednego z nich albo średnią z kilku. Wynik zależy od trzech decyzji: jak liczymy odległość, ilu sąsiadów bierzemy i których zmiennych używamy.</p>
+      <div class="authors">
+        <p><span class="k">Prowadzący</span><span>dr Maciej Beręsewicz, prof. UEP, Katedra Statystyki UEP</span></p>
+        <p><span class="k">Źródła</span><span>Chen, Shao (2000), <i>Nearest neighbor imputation for survey data</i>; Abadie, Imbens (2006, 2011); Lin, Ding, Han (2023)</span></p>
+      </div>
+      <div class="scrollhint"><i></i>Przewiń albo użyj strzałek <span class="kbd">←</span><span class="kbd">→</span></div>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+      <svg viewBox="0 0 360 300" id="heroart"></svg>
+    </div>
+  </div>
+</header>
+<main>
+<!-- ===================== CZĘŚĆ 1: idea ===================== -->
+<section class="act" id="cz1">
+  <div class="shead">
+    <span class="tag">Część 1 · Idea</span>
+    <h2>Dawca wybrany według odległości</h2>
+  </div>
+  <div class="col">
+    <p>Niech \(s_{r}\) oznacza próbę respondentów, a \(s_{nr}\) próbę nierespondentów. Dla <b>biorcy</b> \(i \in s_{nr}\) wybieramy <b>dawcę</b> najbliższego według przyjętej odległości \(d(\mathbf{x}_{i}, \mathbf{x}_{j})\) i przyjmujemy jego wartość:</p>
+  </div>
+  <div class="formula">
+    <div class="f">\[d(i) = \arg\min_{j \in s_{r}} d(\mathbf{x}_{i}, \mathbf{x}_{j}), \qquad y_{i}^{*} = y_{d(i)}\]</div>
+    <div class="leg">Zamiast jednego dawcy można wziąć \(k\) najbliższych: \(\mathcal{D}_k(i) \subset s_r\) to zbiór \(k\) dawców najbliższych biorcy \(i\).</div>
+  </div>
+  <div class="roles">
+    <div><span class="lbl na">Biorca</span><h4>Jednostka z brakiem</h4><p>Ma obserwowane zmienne pomocnicze \(\mathbf{x}\) (np. dochód, wiek, płeć), ale nie ma wartości \(Y\).</p></div>
+    <div><span class="lbl ok">Dawca</span><h4>Najbliższy respondent</h4><p>Respondent o najmniejszej odległości od biorcy. Jego wartość \(Y\) jest kopiowana bez przekształceń.</p></div>
+    <div><span class="lbl new">Odległość</span><h4>Co znaczy „podobny”</h4><p>Euklidesowa, miejska, Mahalanobisa albo <button type="button" class="term" data-tip="tip-gower">odległość Gowera</button>. Wybór odległości i skali zmiennych to decyzja o wagach zmiennych.</p></div>
+  </div>
+  <div class="keys">
+    <div><div class="big">k = 1</div><h4>Najbliższy sąsiad</h4><p>Wartość jednego, najbliższego dawcy. Metoda jest deterministyczna, o ile nie ma <button type="button" class="term" data-tip="tip-remis">remisów</button>.</p></div>
+    <div><div class="big">k &gt; 1</div><h4>Losowy dawca albo średnia</h4><p>Dawca losowany spośród \(k\) najbliższych (hot-deck) albo średnia z \(k\) wartości (już nie hot-deck: średnia może nie wystąpić w danych).</p></div>
+    <div><div class="big">model niejawny</div><h4>Gładka funkcja \(m(\mathbf{x})\)</h4><p>Zakładamy \(y_i = m(\mathbf{x}_i) + \varepsilon_i\): jednostki o podobnych \(\mathbf{x}\) mają podobne przeciętne \(Y\), bez nagłych skoków (Chen i Shao, 2000).</p></div>
+  </div>
+</section>
+
+<section class="scrolly" id="bandA" aria-label="Przykład 1: dochód i wydatki, cztery braki">
+  <div class="sc-in">
+    <div class="sticky">
+      <div class="stage">
+        <div class="ghead"><p class="gtitle">Przykład 1: dochód i wydatki (tys. zł), cztery braki</p><p class="gsub" id="a-sub"></p></div>
+        <svg class="nnp" id="plotA" role="img" aria-label="Wykres wydatków względem dochodu: respondenci jako punkty, biorcy jako puste okręgi na osi; strzałki od dawców do biorców"></svg>
+        <div class="panel" id="a-panel" aria-live="polite"></div>
+      </div>
+    </div>
+    <div class="steps">
+      <div class="step"><div class="card"><span class="stepno">Dane</span><p>Dwanaście gospodarstw odpowiedziało, czterech nie. Dochód \(x\) znamy dla wszystkich, wydatki \(y\) tylko dla respondentów.</p><p>Biorcy mają wyższe dochody niż większość respondentów: bogatsi rzadziej odpowiadają. Dlatego średnia z respondentów (3,96 tys. zł) zaniża prawdziwą średnią (4,36 tys. zł).</p></div></div>
+      <div class="step"><div class="card"><span class="stepno">Odległość</span><p>Dla biorcy z dochodem 6,8 tys. zł liczymy odległość \(|x_i - x_j|\) od każdego dawcy.</p><p>Najbliżsi są dawcy z dochodem 6,2 tys. zł (odległość 0,6), 7,4 tys. zł (0,6) i 5,7 tys. zł (1,1). Przy dwóch pierwszych mamy remis: o wyborze decyduje reguła, np. kolejność w pliku.</p></div></div>
+      <div class="step"><div class="card"><span class="stepno">k = 1</span><p>Każdy biorca dostaje wartość najbliższego dawcy.</p><p>Biorca z dochodem 11,2 tys. zł jest poza zakresem dawców. Najbliższy ma 8,6 tys. zł, więc biorca dostaje 6,12 zamiast prawdziwych 6,94: <b>NN nie ekstrapoluje</b>.</p></div></div>
+      <div class="step"><div class="card"><span class="stepno">k = 3 · dawca losowy</span><p>Bierzemy trzech najbliższych dawców każdego biorcy i jednego z nich losujemy. Tak działa <code>impute_knn(k = 3)</code>.</p><p>Dalszy sąsiad jest mniej podobny, więc imputacja jest średnio mniej trafna niż przy \(k = 1\). W zamian wynik nie zależy od jednego dawcy.</p></div></div>
+      <div class="step"><div class="card"><span class="stepno">k = 3 · średnia</span><p>Zamiast losować, uśredniamy wartości trzech sąsiadów. Średnia ma mniejszą wariancję niż pojedynczy dawca.</p><p>Na brzegu danych trzej sąsiedzi leżą po jednej stronie biorcy. Średnia ich wartości zaniża wynik dla dwóch najbogatszych biorców (5,51 zamiast 6,64 i 6,94). Do tego wartości imputowane są spłaszczone: rozkład \(Y\) się zwęża.</p></div></div>
+      <div class="step"><div class="card"><span class="stepno">Korekta obciążenia</span><p>Na respondentach szacujemy model \(\hat{m}(x)\) (tu: prosta). Biorca dostaje wartość z modelu plus średnią reszt trzech najbliższych dawców:</p><p>\(y_i^{*} = \hat{m}(x_i) + \frac{1}{k}\sum_{j \in \mathcal{D}_k(i)} \{y_j - \hat{m}(x_j)\}\).</p><p>Korekta usuwa różnicę wynikającą z tego, że sąsiedzi nie mają dokładnie tego samego \(x\). Ale poza zakresem danych przenosi model: dla dochodu 11,2 tys. zł prosta daje 7,65 zamiast 6,94.</p></div></div>
+      <div class="step"><div class="card"><span class="stepno">Porównanie</span><p>Te same dane, cztery warianty. Każdy zmniejsza obciążenie średniej z respondentów, bo korzysta z dochodu, który wiąże się i z wydatkami, i z brakami.</p><p>Średnia z \(k\) sąsiadów daje najmniej trafne wartości na brzegu danych. Korekta obciążenia jest najbliżej prawdy w środku danych, ale na brzegu zależy od modelu.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== CZĘŚĆ 2: warianty ===================== -->
+<section class="act" id="cz2">
+  <div class="shead">
+    <span class="tag">Część 2 · Warianty</span>
+    <h2>Cztery sposoby wykorzystania sąsiadów</h2>
+  </div>
+  <div class="cases">
+    <div class="case det"><span class="kind de">zależy od remisów</span><h4>Najbliższy sąsiad (\(k = 1\))</h4><p>Wartość najbliższego dawcy. Przy remisie <code>impute_knn()</code> bierze pierwszego dawcę w kolejności danych, więc wszyscy biorcy o tych samych cechach dostają wartość tej samej osoby.</p><p class="fn">impute_knn(Y ~ x, k = 1)</p></div>
+    <div class="case"><span class="kind st">losowy</span><h4>Dawca losowy spośród \(k\)</h4><p>Dawca losowany z \(k\) najbliższych, każdy z prawdopodobieństwem \(1/k\). Zachowuje rozkład \(Y\), wstawia tylko wartości, które wystąpiły.</p><p class="fn">impute_knn(Y ~ x, k = 5)</p></div>
+    <div class="case det"><span class="kind de">deterministyczny</span><h4>Średnia lub dominanta z \(k\)</h4><p>Średnia (zmienne liczbowe) albo dominanta (jakościowe) wartości \(k\) sąsiadów. Mniejsza wariancja, ale zaniżone rozproszenie zmiennej. <code>VIM::kNN()</code> domyślnie bierze medianę.</p><p class="fn">kNN(..., numFun = mean)</p></div>
+    <div class="case"><span class="kind st">model + sąsiedzi</span><h4>Korekta obciążenia</h4><p>Wartość z modelu regresji plus średnia reszt \(k\) najbliższych dawców (Abadie i Imbens, 2011). Usuwa obciążenie wynikające z niedopasowania dawcy i biorcy.</p><p class="fn">mu + mean(reszty sąsiadów)</p></div>
+  </div>
+</section>
+
+<!-- ===================== CZĘŚĆ 3: odległość ===================== -->
+<section class="act" id="cz3">
+  <div class="shead">
+    <span class="tag">Część 3 · Odległość</span>
+    <h2>Kto jest „najbliższy”, zależy od skali</h2>
+  </div>
+  <div class="col">
+    <p>Dochód mierzony w złotych ma rozrzut tysięcy, wiek w latach dziesiątek. W odległości euklidesowej na surowych danych o wyborze dawcy decyduje więc prawie wyłącznie dochód. Dlatego zmienne trzeba sprowadzić do porównywalnej skali: standaryzacja dzieli przez odchylenie standardowe, odległość Gowera przez rozstęp.</p>
+  </div>
+  <div class="formula">
+    <div class="f">\[d^{\mathrm{Gower}}_{ij} = \frac{1}{p}\sum_{l=1}^{p} d_{ijl}, \qquad d_{ijl} = \begin{cases} \dfrac{|x_{il} - x_{jl}|}{\max_l - \min_l} & \text{zmienna liczbowa} \\[4pt] \mathbb{1}(x_{il} \neq x_{jl}) & \text{zmienna jakościowa} \end{cases}\]</div>
+    <div class="leg">Zmienne porządkowe: odległość między rangami przeskalowanymi do \([0, 1]\). Braki w \(\mathbf{x}\) pomija się w sumie i w liczbie zmiennych (Gower, 1971).</div>
+  </div>
+  <div class="col" style="margin-top:24px">
+    <p>Kliknij na wykresie, żeby umieścić biorcę. Zmieniaj odległość i liczbę sąsiadów. Obwiednia pokazuje obszar, w którym leżą wszyscy wybrani sąsiedzi: przy surowych danych to wąski pionowy pas, po standaryzacji okrąg, przy Gowerze romb.</p>
+  </div>
+  <div class="wrap">
+    <div class="tool" id="dtool">
+      <div class="row" role="group" aria-label="Odległość">
+        <span class="k">Odległość</span>
+        <button class="chip" type="button" data-m="raw" aria-pressed="true">Euklidesowa, dane surowe</button>
+        <button class="chip" type="button" data-m="std" aria-pressed="false">Euklidesowa po standaryzacji</button>
+        <button class="chip" type="button" data-m="gow" aria-pressed="false">Gowera (rozstęp)</button>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <label class="k" for="dk">Sąsiedzi</label>
+        <input type="range" id="dk" min="1" max="15" step="1" value="5" style="accent-color:var(--beamer);width:220px">
+        <b id="dkv">k = 5</b>
+        <button class="chip ghost" type="button" id="dreseed">Losuj dawcę ponownie</button>
+      </div>
+      <div class="tin" style="grid-template-columns:minmax(0,1.35fr) minmax(0,1fr)">
+        <div>
+          <svg class="nnw" id="dplot" role="img" aria-label="Dawcy w układzie dochód (oś pozioma) i wiek (oś pionowa), biorca i jego najbliżsi sąsiedzi"></svg>
+        </div>
+        <div>
+          <h4>Najbliżsi sąsiedzi biorcy</h4>
+          <div id="dres"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col" style="margin-top:28px">
+    <p class="note"><b>Wniosek</b><span>Bez skalowania sąsiedzi mają prawie ten sam dochód, ale dowolny wiek. Po standaryzacji lub z odległością Gowera liczą się obie zmienne. Standaryzacja i Gower różnią się wagami: rozstęp jest wrażliwy na wartości odstające, więc jeden bardzo wysoki dochód zmniejsza wagę dochodu w odległości Gowera.</span></p>
+  </div>
+  <div class="col" style="margin-top:28px">
+    <p><b>Zmienne porządkowe i nominalne.</b> Trzy osoby: (K, wyższe, 25 lat), (M, średnie, 35 lat), (K, podstawowe, 45 lat). Gdy wykształcenie jest zmienną porządkową (rangi 1; 0,5; 0), wszystkie trzy pary są tak samo odległe (0,667) i najbliższego sąsiada wyznacza remis. Gdy jest nominalną, dla osoby 1 najbliższa jest osoba 3 (0,667 wobec 0,833). <code>VIM::gowerD()</code> uwzględnia porządek, pakiety <code>gower</code> w R i Pythonie traktują wykształcenie jako nominalne.</p>
+  </div>
+</section>
+
+<!-- ===================== CZĘŚĆ 4: liczba zmiennych ===================== -->
+<section class="act" id="cz4">
+  <div class="shead">
+    <span class="tag">Część 4 · Liczba zmiennych</span>
+    <h2>Im więcej zmiennych ciągłych, tym dalej najbliższy sąsiad</h2>
+  </div>
+  <div class="col">
+    <p>Przy stałej liczbie sąsiadów i \(p\) ciągłych zmiennych obciążenie estymatora opartego na dopasowaniu jest rzędu \(n^{-1/p}\), a jego błąd standardowy rzędu \(n^{-1/2}\) (Abadie i Imbens, 2006). Dla \(p = 1\) obciążenie jest pomijalne, dla \(p = 2\) tego samego rzędu co błąd standardowy, a dla \(p \geq 3\) przeważa. Powód jest geometryczny: w wielu wymiarach nawet duża próba nie wypełnia przestrzeni i najbliższy dawca leży daleko.</p>
+    <p>Zmienne dyskretne o skończonej liczbie kategorii (np. płeć) nie zwiększają \(p\): w dużej próbie zawsze znajdziemy dawcę z tą samą kategorią.</p>
+  </div>
+  <div class="wrap">
+    <div class="lab" id="ailab">
+      <div class="row" role="group" aria-label="Liczba zmiennych">
+        <span class="k">Zmienne ciągłe</span>
+        <button class="chip" type="button" data-p="1" aria-pressed="false">p = 1</button>
+        <button class="chip" type="button" data-p="2" aria-pressed="false">p = 2</button>
+        <button class="chip" type="button" data-p="3" aria-pressed="true">p = 3</button>
+        <button class="chip" type="button" data-p="5" aria-pressed="false">p = 5</button>
+        <button class="chip" type="button" data-p="10" aria-pressed="false">p = 10</button>
+      </div>
+      <div class="res" style="margin-top:14px;padding:0">
+        <div>
+          <h4>Tempo spadku wraz z \(n\)</h4>
+          <p class="hs">Obciążenie \(\propto n^{-1/p}\) (linie ciągłe) i błąd standardowy \(\propto n^{-1/2}\) (przerywana, pokrywa się z \(p = 2\)). Obie wielkości równe 1 przy \(n = 100\); skala logarytmiczna.</p>
+          <svg class="nnw" id="aiplot1" role="img" aria-label="Tempo spadku obciążenia i błędu standardowego wraz z liczebnością próby"></svg>
+        </div>
+        <div>
+          <h4>Obciążenie w stosunku do błędu standardowego</h4>
+          <p class="hs">\(\mathrm{Bias} / \mathrm{SE} \propto n^{1/2 - 1/p}\): maleje dla \(p = 1\), stoi w miejscu dla \(p = 2\), rośnie dla \(p \geq 3\).</p>
+          <svg class="nnw" id="aiplot2" role="img" aria-label="Stosunek obciążenia do błędu standardowego wraz z liczebnością próby"></svg>
+        </div>
+      </div>
+      <p class="last" id="ailast"></p>
+      <p style="font-size:13px;color:var(--ink-70);margin:6px 0 0">Wykres koncepcyjny: pokazuje tylko tempo zmian (Abadie i Imbens, 2006, tw. 1). Stałe, które zależą od rozkładu \(\mathbf{x}\), funkcji \(m(\mathbf{x})\) i mechanizmu braków, pominięto, więc nie da się z niego odczytać wielkości obciążenia w konkretnej próbie.</p>
+    </div>
+  </div>
+  <div class="col" style="margin-top:24px">
+    <p class="note"><b>Co z tego wynika</b><span>Przy \(p \geq 3\) większa próba zmniejsza błąd standardowy szybciej niż obciążenie. Przedział ufności zbudowany wokół takiego estymatora coraz rzadziej zawiera prawdziwą wartość: im więcej danych, tym bardziej pewny siebie i tym bardziej obciążony wynik. Dlatego potrzebna jest korekta obciążenia albo dopasowanie po jednej zmiennej, np. wartości teoretycznej (predictive mean matching).</span></p>
+  </div>
+  <div class="wrap">
+    <div class="lab" id="clab">
+      <div class="row">
+        <span class="k">Policz</span>
+        <button class="chip go" type="button" id="cgo">Losuj punkty i policz</button>
+        <span style="font-size:14px;color:var(--ink-70)">Dawcy i biorcy losowani równomiernie w kostce \([0, 1]^p\); 200 biorców.</span>
+      </div>
+      <div class="legend" id="clegend"></div>
+      <svg class="nnw" id="cplot" role="img" aria-label="Średnia odległość Gowera do najbliższego dawcy w zależności od liczby dawców, osobno dla różnej liczby zmiennych"></svg>
+      <p class="last" id="clast"></p>
+    </div>
+  </div>
+  <div class="col" style="margin-top:24px">
+    <p class="note"><b>Wniosek</b><span>Przy jednej zmiennej dziesięciokrotnie większa próba zmniejsza odległość do najbliższego dawcy mniej więcej dziesięciokrotnie. Przy dziesięciu zmiennych prawie jej nie zmienia. Dlatego do odległości wybieramy zmienne związane z \(Y\) i z brakami, a nie wszystkie dostępne. Zmienne niezwiązane z \(Y\) tylko oddalają właściwych dawców.</span></p>
+  </div>
+  <div class="col" style="margin-top:40px">
+    <p><b>Co to oznacza dla obciążenia?</b> Daleki dawca ma inne \(\mathbf{x}\) niż biorca, a więc i inne przeciętne \(Y\). Gdy biorcy leżą tam, gdzie dawców jest mało (MAR), dawcy są systematycznie przesunięci w jedną stronę i średnia po imputacji jest obciążona. Symulacja poniżej: \(x_1, \dots, x_p \sim U(0, 1)\), \(y = z + \varepsilon\), \(\operatorname{logit} P(R = 1) = 0{,}5 - 2z\), gdzie \(z\) to standaryzowana suma zmiennych istotnych. Odpowiada ok. 57% jednostek. W każdej próbie imputujemy najbliższym sąsiadem (\(k = 1\), odległość Gowera) i z korektą obciążenia (regresja liniowa na wszystkich \(p\) zmiennych).</p>
+  </div>
+  <div class="wrap">
+    <div class="lab" id="blab">
+      <div class="row" role="group" aria-label="Scenariusz">
+        <span class="k">Zmienne</span>
+        <button class="chip" type="button" data-s="all" aria-pressed="true">wszystkie istotne</button>
+        <button class="chip" type="button" data-s="two" aria-pressed="false">2 istotne, reszta zbędna</button>
+      </div>
+      <div class="row" role="group" aria-label="Wielkość próby" style="margin-top:10px">
+        <span class="k">Próba</span>
+        <button class="chip" type="button" data-n="250" aria-pressed="false">n = 250</button>
+        <button class="chip" type="button" data-n="500" aria-pressed="false">n = 500</button>
+        <button class="chip" type="button" data-n="1000" aria-pressed="true">n = 1000</button>
+        <button class="chip go" type="button" id="bgo">Policz (30 prób)</button>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--rule)"></i>Średnia z respondentów</span>
+        <span><i style="background:var(--s-bez)"></i>Najbliższy sąsiad (k = 1)</span>
+        <span><i style="background:var(--s-kl)"></i>Z korektą obciążenia</span>
+        <span><i class="tick"></i>±2 błędy Monte Carlo</span>
+      </div>
+      <svg class="nnw" id="bplot" role="img" aria-label="Obciążenie średniej po imputacji w zależności od liczby zmiennych użytych do odległości"></svg>
+      <p class="last" id="blast"></p>
+    </div>
+  </div>
+  <div class="col" style="margin-top:24px">
+    <p class="note"><b>Wniosek</b><span>Średnia z respondentów ma to samo obciążenie bez względu na \(p\). Najbliższy sąsiad usuwa je prawie całe przy jednej lub dwóch zmiennych, ale z każdą kolejną zmienną część obciążenia wraca, bo dawcy są coraz dalej. Większa próba pomaga tym słabiej, im więcej zmiennych. Korekta obciążenia usuwa ten efekt, o ile model regresji jest poprawny. Gdy dodatkowe zmienne są zbędne, obciążenie rośnie tak samo: zbędne zmienne też oddalają dawców.</span></p>
+  </div>
+</section>
+
+<!-- ===================== CZĘŚĆ 5: liczba sąsiadów i symulacja ===================== -->
+<section class="act" id="cz5">
+  <div class="shead">
+    <span class="tag">Część 5 · Liczba sąsiadów i symulacja</span>
+    <h2>Więcej sąsiadów: mniejsza wariancja, ale dalsi dawcy</h2>
+  </div>
+  <div class="col">
+    <p>Lin, Ding i Han (2023) pokazali, że liczba sąsiadów \(k\) może rosnąć wraz z próbą (\(k \to \infty\), \(k \log n / n \to 0\)). Sama średnia z \(k\) sąsiadów nie wystarcza: dla \(p > 1\) obciążenie nadal nie jest asymptotycznie pomijalne. Estymator z korektą obciążenia jest podwójnie odporny i przy gładkich gęstościach efektywny. Na podstawie symulacji autorzy zalecają \(k = \alpha n^{2/(2+p)}\) z \(\alpha = 1\), gdzie \(p\) to liczba zmiennych ciągłych.</p>
+  </div>
+  <div class="wrap">
+    <div class="tool" id="ktool">
+      <div class="row">
+        <label class="k" for="kn">Próba \(n\)</label>
+        <input type="range" id="kn" min="2" max="5" step="0.1" value="3" style="accent-color:var(--beamer);width:220px">
+        <b id="knv"></b>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <label class="k" for="kp">Zmienne ciągłe \(p\)</label>
+        <input type="range" id="kp" min="1" max="10" step="1" value="2" style="accent-color:var(--beamer);width:220px">
+        <b id="kpv"></b>
+      </div>
+      <p id="kout" style="font-size:17px;margin:14px 0 0"></p>
+    </div>
+  </div>
+  <div class="res">
+    <div>
+      <h4>Symulacja: 2000 prób, trzy modele</h4>
+      <p class="hs">\(N\) = 50 000, \(n\) = 1000; odpowiedź zależy od \(x_1\) i \(x_2\). Dla \(y_1\) i \(y_2\) dawców wybieramy po \(x_1, x_2\) (\(p = 2\), \(k = 31\)), dla \(y_3\) po \(x_1, \dots, x_6\) (\(p = 6\), \(k = 5\)). Odległość Gowera.</p>
+      <table class="g" id="simtab">
+        <thead><tr><th>Estymator</th><th>Obciążenie × 100<br><small>\(y_1\) · \(y_2\) · \(y_3\)</small></th><th>RMSE × 100<br><small>\(y_1\) · \(y_2\) · \(y_3\)</small></th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <p class="notka">Błąd Monte Carlo obciążenia × 100 to ok. 0,09 dla \(y_1\) i \(y_2\) oraz ok. 0,16 dla \(y_3\). Różnice obciążeń mniejsze niż dwa takie błędy mogą wynikać z losowości symulacji. Układ symulacji za: Yang, Kim (2020).</p>
+    </div>
+    <div>
+      <h4>Co widać w wynikach</h4>
+      <ul class="plain">
+        <li>Każdy wariant NN usuwa niemal całe obciążenie średniej z respondentów (z ok. 3,9 do poniżej 0,4).</li>
+        <li>Średnia z \(k\) sąsiadów zmniejsza wariancję i RMSE, ale dodaje obciążenie z uśredniania po dalszych sąsiadach (0,23 dla \(y_1\)). Korekta je usuwa (0,02).</li>
+        <li>Przy sześciu zmiennych (\(y_3\)) korekta daje najmniejsze obciążenie i RMSE. Obciążenie <code>nn</code> dla \(y_3\) (0,24) mieści się jednak w granicach błędu Monte Carlo: teoria opisuje tempo, a nie wielkość obciążenia w konkretnej próbie.</li>
+        <li>Większe RMSE dla \(y_3\) wynika głównie z większej wariancji \(y_3\) (sześć składników).</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== CZĘŚĆ 6: zmienne jakościowe ===================== -->
+<section class="act" id="cz6">
+  <div class="shead">
+    <span class="tag">Część 6 · Zmienne jakościowe</span>
+    <h2>Gdy wszystkie zmienne są jakościowe, NN to hot-deck w klasach</h2>
+  </div>
+  <div class="cases cls">
+    <div class="case"><span class="kind st">dokładne dopasowanie</span><h4>Odległość 0 w klasie</h4><p>Dawcy z tej samej klasy (te same kategorie wszystkich zmiennych) mają odległość 0. Losowanie spośród nich to losowy hot-deck w klasach, a ich średnia to imputacja średnią w klasach (Abadie i Imbens, 2016).</p></div>
+    <div class="case"><span class="kind de">wzory nie działają</span><h4>\(p = 0\)</h4><p>Wzory na obciążenie i na liczbę sąsiadów dotyczą zmiennych ciągłych. Przy dokładnym dopasowaniu nie ma obciążenia z niedopasowania, więc korekta obciążenia jest niepotrzebna.</p></div>
+    <div class="case"><span class="kind de">pusta klasa</span><h4>Najbliższa klasa</h4><p>Gdy w klasie biorcy nie ma dawców, NN bierze dawcę z klasy różniącej się na najmniejszej liczbie zmiennych. Dopasowanie przestaje być dokładne i obciążenie wraca, jak przy łączeniu klas w hot-decku.</p></div>
+    <div class="case"><span class="kind st">zmienne mieszane</span><h4>Klasy i odległość</h4><p>Dokładnie dopasowujemy po zmiennych jakościowych, a najbliższego sąsiada szukamy po zmiennych ciągłych; \(p\) to liczba zmiennych ciągłych. Wiek w latach w małej próbie zachowuje się jak zmienna ciągła.</p></div>
+  </div>
+  <div class="col" style="margin-top:28px">
+    <p>Problem wielu zmiennych nie znika, tylko zmienia postać: liczba klas rośnie wykładniczo z liczbą zmiennych (8 zmiennych po 5 kategorii to 390 625 klas). Liczy się więc liczba dawców w klasach, a nie liczba zmiennych.</p>
+  </div>
+</section>
+
+<!-- ===================== CZĘŚĆ 7: pamiętaj ===================== -->
+<section class="act" id="cz7">
+  <div class="shead">
+    <span class="tag">Część 7 · Pamiętaj</span>
+    <h2>O czym łatwo zapomnieć</h2>
+  </div>
+  <div class="limits">
+    <div><h4>Remisy i kolejność w pliku</h4><p>Przy zmiennych dyskretnych (płeć, wiek w latach) wielu dawców ma tę samą odległość. <code>impute_knn(k = 1)</code> wybiera wtedy pierwszego w kolejności danych, więc wynik zależy od sortowania pliku. Lepiej losować spośród remisów.</p></div>
+    <div><h4>Skalowanie to wybór wag</h4><p>Bez skalowania decyduje zmienna o największym rozproszeniu. Standaryzacja i Gower ważą zmienne inaczej; rozstęp jest wrażliwy na wartości odstające.</p></div>
+    <div><h4>Zbędne zmienne szkodzą</h4><p>Zmienna niezwiązana z \(Y\) nie pomaga, a oddala dawców podobnych pod względem ważnych zmiennych. Do odległości bierzemy zmienne związane z \(Y\) i z brakami.</p></div>
+    <div><h4>Nie ma ekstrapolacji</h4><p>Biorca poza zakresem dawców dostaje wartość z brzegu danych. Korekta obciążenia ekstrapoluje model, więc tam zależy od jego postaci.</p></div>
+    <div><h4>Średnia z \(k\) spłaszcza rozkład</h4><p>Średnia z sąsiadów zmniejsza wariancję estymatora średniej, ale zaniża rozproszenie zmiennej, jak imputacja średnią. Do analiz rozkładu lepszy jest dawca losowy.</p></div>
+    <div><h4>Imputacja jednokrotna zaniża niepewność</h4><p>Wzory dla pełnych danych traktują wartości imputowane jak obserwowane. Wariancję po imputacji NN szacuje się np. metodą jackknife (Chen i Shao, 2001) albo z modelu (Kim i in., 2011).</p></div>
+  </div>
+</section>
+
+<!-- ===================== CZĘŚĆ 8: kod ===================== -->
+<section class="act" id="cz8">
+  <div class="shead">
+    <span class="tag">Część 8 · R i Python</span>
+    <h2>To samo w kodzie</h2>
+  </div>
+  <div class="col">
+    <p>Pełne skrypty i ćwiczenia są w repozytorium: <code>codes/qmd/4b-imputacja-nn.qmd</code>, arkusze <code>codes/R/4b-cwiczenia-nn.R</code> i <code>codes/python/4b-cwiczenia-nn.py</code>, dane <code>data/data6-wydatki.csv</code>.</p>
+  </div>
+  <div class="codes">
+    <div><h4>R: <code>simputation</code> i <code>VIM</code></h4>
+<pre class="code">library(simputation)
+library(VIM)
+
+<span class="c">## najbliższy sąsiad (k = 1) według dochodu</span>
+imp &lt;- impute_knn(dane, wydatki ~ dochod, k = 1)
+<span class="c">## dawca losowany spośród 5 najbliższych</span>
+imp &lt;- impute_knn(dane, wydatki ~ dochod + wiek, k = 5)
+<span class="c">## średnia z 5 najbliższych</span>
+imp &lt;- kNN(dane, variable = "wydatki",
+           dist_var = c("dochod", "wiek"),
+           k = 5, numFun = mean)
+
+<span class="c">## korekta obciążenia</span>
+model &lt;- lm(wydatki ~ dochod + wiek, data = dane)
+dane$reszta &lt;- dane$wydatki - predict(model, dane)
+imp_r &lt;- kNN(dane, variable = "reszta",
+             dist_var = c("dochod", "wiek"),
+             k = 5, numFun = mean)
+y_kor &lt;- predict(model, dane) + imp_r$reszta</pre></div>
+    <div><h4>Python: <code>scikit-learn</code></h4>
+<pre class="code">from sklearn.preprocessing import MinMaxScaler
+from sklearn.neighbors import NearestNeighbors
+
+braki = dane['wydatki'].isna().to_numpy()
+y_dawcow = dane.loc[~braki, 'wydatki'].to_numpy()
+
+<span class="c"># skala [0, 1] + odległość miejska</span>
+<span class="c"># = kolejność sąsiadów jak w odległości Gowera</span>
+X = MinMaxScaler().fit_transform(dane[['dochod', 'wiek']])
+nn = NearestNeighbors(n_neighbors=5, metric='manhattan')
+nn.fit(X[~braki])
+idx = nn.kneighbors(X[braki], return_distance=False)
+
+y = dane['wydatki'].to_numpy().copy()
+y[braki] = y_dawcow[idx[:, 0]]          <span class="c"># k = 1</span>
+y[braki] = y_dawcow[idx].mean(axis=1)   <span class="c"># średnia z 5</span>
+rng = np.random.default_rng(2025)       <span class="c"># dawca losowy</span>
+y[braki] = [rng.choice(y_dawcow[i])
+            for i in idx]</pre></div>
+  </div>
+</section>
+</main>
+
+<footer class="wrap">
+  <p><b>Źródła.</b> J. Chen, J. Shao (2000), Nearest neighbor imputation for survey data, <i>Journal of Official Statistics</i>, 16(2), 113–131. J. Chen, J. Shao (2001), Jackknife variance estimation for nearest-neighbor imputation, <i>Journal of the American Statistical Association</i>, 96(453), 260–269, <a href="https://doi.org/10.1198/016214501750332839">doi:10.1198/016214501750332839</a>. A. Abadie, G. W. Imbens (2006), Large sample properties of matching estimators for average treatment effects, <i>Econometrica</i>, 74(1), 235–267, <a href="https://doi.org/10.1111/j.1468-0262.2006.00655.x">doi:10.1111/j.1468-0262.2006.00655.x</a>. A. Abadie, G. W. Imbens (2011), Bias-corrected matching estimators for average treatment effects, <i>Journal of Business &amp; Economic Statistics</i>, 29(1), 1–11, <a href="https://doi.org/10.1198/jbes.2009.07333">doi:10.1198/jbes.2009.07333</a>. A. Abadie, G. W. Imbens (2016), Matching on the estimated propensity score, <i>Econometrica</i>, 84(2), 781–807, <a href="https://doi.org/10.3982/ECTA11293">doi:10.3982/ECTA11293</a>. Z. Lin, P. Ding, F. Han (2023), Estimation based on nearest neighbor matching: From density ratio to average treatment effect, <i>Econometrica</i>, 91(6), 2187–2217, <a href="https://doi.org/10.3982/ECTA20598">doi:10.3982/ECTA20598</a>. J. K. Kim, W. A. Fuller, W. R. Bell (2011), Variance estimation for nearest neighbor imputation for US Census long form data, <i>The Annals of Applied Statistics</i>, 5(2A), 824–842, <a href="https://doi.org/10.1214/10-AOAS419">doi:10.1214/10-AOAS419</a>. S. Yang, J. K. Kim (2020), Asymptotic theory and inference of predictive mean matching imputation using a superpopulation model framework, <i>Scandinavian Journal of Statistics</i>, 47(3), 839–861, <a href="https://doi.org/10.1111/sjos.12429">doi:10.1111/sjos.12429</a> (układ symulacji). J. C. Gower (1971), A general coefficient of similarity and some of its properties, <i>Biometrics</i>, 27(4), 857–871, <a href="https://doi.org/10.2307/2528823">doi:10.2307/2528823</a>.</p>
+  <p><b>Zajęcia.</b> Analiza danych niekompletnych, Uniwersytet Ekonomiczny w Poznaniu, Katedra Statystyki. Prowadzący: dr Maciej Beręsewicz, prof. UEP.</p>
+  <p><b>O stronie.</b> Opracowanie: Maciej Beręsewicz. Strona przygotowana z pomocą Claude (Anthropic). Forma interaktywnego podsumowania jest wzorowana na stronie <a href="https://migration.guillaumeblanc.com">„Escaping Malthus”</a>, przygotowanej przez Guillaume'a Blanca (Simon Fraser University) i Romaina Wacziarga (UCLA i NBER) jako podsumowanie ich artykułu „Malthusian Migrations”.</p>
+</footer>
+
+<div hidden>
+  <div id="tip-gower"><span class="tt">Odległość Gowera</span><p>Średnia z odległości policzonych osobno dla każdej zmiennej. Dla zmiennej liczbowej: różnica podzielona przez rozstęp, dla jakościowej: 0, gdy kategorie są takie same, i 1, gdy różne.</p><p>Działa dla zmiennych mieszanych i przy brakach w <i>x</i>. Używa jej <code>impute_knn()</code> z pakietu <code>simputation</code>.</p></div>
+  <div id="tip-remis"><span class="tt">Remis</span><p>Kilku dawców ma tę samą, minimalną odległość od biorcy. Przy zmiennych dyskretnych (płeć, wykształcenie, wiek w latach) to sytuacja typowa.</p><p>Dawcę należy wtedy wylosować spośród nich. Reguła „pierwszy w pliku” sprawia, że wynik zależy od kolejności wierszy.</p></div>
+</div>
+<div id="tip" role="tooltip"></div>
+<div id="vtip" role="tooltip"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* skład wzorów: KaTeX (auto-render) dla treści statycznej i dynamicznej */
+  function tex(el) {
+    /* KaTeX ładuje się z CDN. Przy podglądzie przez htmlpreview.github.io skrypty zewnętrzne
+       wczytują się asynchronicznie i w dowolnej kolejności, więc nie korzystamy z auto-render:
+       czekamy na sam KaTeX i sami wyszukujemy wzory \( … \) oraz \[ … \]. */
+    if (!window.katex) {
+      /* htmlpreview nie wykonuje <script src> z CDN, więc w razie potrzeby dołączamy KaTeX sami */
+      if (!window.__katexLoad) {
+        window.__katexLoad = true;
+        var sc = document.createElement("script");
+        sc.src = "https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js";
+        document.head.appendChild(sc);
+      }
+      el.__texTry = (el.__texTry || 0) + 1;
+      if (el.__texTry <= 200) setTimeout(function () { tex(el); }, 100);
+      return;
+    }
+    el.__texTry = 0;
+    var SKIP = { SCRIPT: 1, STYLE: 1, TEXTAREA: 1, PRE: 1, CODE: 1, OPTION: 1, NOSCRIPT: 1 };
+    var RX = /\\\[([\s\S]+?)\\\]|\\\(([\s\S]+?)\\\)/g;
+    var opts = function (disp) { return { displayMode: disp, throwOnError: false, strict: "ignore", trust: function (c) { return c.command === "\\htmlClass"; } }; };
+    (function walk(node) {
+      Array.prototype.slice.call(node.childNodes).forEach(function (ch) {
+        if (ch.nodeType === 3) {
+          var s = ch.nodeValue; RX.lastIndex = 0;
+          if (s.indexOf("\\(") < 0 && s.indexOf("\\[") < 0) return;
+          var frag = document.createDocumentFragment(), last = 0, m;
+          while ((m = RX.exec(s))) {
+            if (m.index > last) frag.appendChild(document.createTextNode(s.slice(last, m.index)));
+            var span = document.createElement("span"), disp = m[1] !== undefined;
+            try { katex.render(disp ? m[1] : m[2], span, opts(disp)); } catch (e) { span.textContent = m[0]; }
+            frag.appendChild(span); last = RX.lastIndex;
+          }
+          if (last === 0) return;
+          if (last < s.length) frag.appendChild(document.createTextNode(s.slice(last)));
+          ch.parentNode.replaceChild(frag, ch);
+        } else if (ch.nodeType === 1 && !SKIP[ch.tagName] && !(ch.classList && ch.classList.contains("katex"))) {
+          walk(ch);
+        }
+      });
+    })(el);
+  }
+  var $ = function (id) { return document.getElementById(id); };
+  var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function fmt(v, d) {
+    if (v === null || v === undefined || isNaN(v)) return "NA";
+    var p = Math.pow(10, d === undefined ? 4 : d);
+    return (Math.round(v * p) / p).toLocaleString("pl-PL", { maximumFractionDigits: d === undefined ? 4 : d, useGrouping: false }).replace("-", "−");
+  }
+  function fmtf(v, d) { return v.toLocaleString("pl-PL", { minimumFractionDigits: d, maximumFractionDigits: d }).replace("-", "−"); }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  var NS = "http://www.w3.org/2000/svg";
+  function el(tag, at, parent, txt) { var e = document.createElementNS(NS, tag); for (var k in at) e.setAttribute(k, at[k]); if (txt !== undefined) e.textContent = txt; if (parent) parent.appendChild(e); return e; }
+
+  /* ---------- przewijanie ---------- */
+  var desk = window.matchMedia("(min-width: 980px)"), updaters = [];
+  function scroller(id, cb) {
+    var box = $(id), steps = box.querySelectorAll(".step"), cur = -1;
+    function go(i) {
+      if (i === cur) return;
+      var prev = cur; cur = i;
+      steps.forEach(function (s, k) { s.classList.toggle("on", k === i); });
+      cb(i, prev);
+    }
+    go(0);
+    updaters.push(function () {
+      var r = box.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > innerHeight) return;
+      var line = innerHeight * (desk.matches ? .5 : .8), k = 0;
+      steps.forEach(function (s, j) { if (s.getBoundingClientRect().top < line) k = j; });
+      go(k);
+    });
+  }
+  var ticking = false;
+  function runUpdaters() {
+    ticking = false;
+    updaters.forEach(function (f) { f(); });
+    var mx = document.documentElement.scrollHeight - innerHeight;
+    $("prog").style.width = (mx > 0 ? Math.min(100, scrollY / mx * 100) : 0) + "%";
+  }
+  window.addEventListener("scroll", function () { if (!ticking) { ticking = true; requestAnimationFrame(runUpdaters); } }, { passive: true });
+  window.addEventListener("resize", runUpdaters);
+  function setPanel(p, html) {
+    p.innerHTML = html;
+    if (!reduced) { p.classList.remove("fade"); void p.offsetWidth; p.classList.add("fade"); }
+  }
+
+    /* ---------- generator z ziarnem (mulberry32) ---------- */
+  function rng(seed) {
+    var a = seed >>> 0;
+    return function () {
+      a = (a + 0x6D2B79F5) >>> 0;
+      var t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function rnorm(r) { var u = 1 - r(), v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+  function mean(a) { return a.reduce(function (s, v) { return s + v; }, 0) / a.length; }
+  /* indeksy k najbliższych; remisy rozstrzyga kolejność w danych (jak impute_knn) */
+  function knn(dists, k) {
+    var idx = dists.map(function (d, j) { return [Math.round(d * 1e9) / 1e9, j]; });
+    idx.sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; });
+    return idx.slice(0, k).map(function (q) { return q[1]; });
+  }
+
+  /* ---------- ilustracja w nagłówku ---------- */
+  (function () {
+    var svg = $("heroart"), r = rng(7), P = [];
+    for (var i = 0; i < 26; i++) P.push([30 + r() * 300, 30 + r() * 240]);
+    var rec = [[150, 140], [262, 92], [96, 236]];
+    rec.forEach(function (q) {
+      var d = P.map(function (p) { return Math.hypot(p[0] - q[0], p[1] - q[1]); });
+      knn(d, 3).forEach(function (j, t) {
+        el("line", { x1: q[0], y1: q[1], x2: P[j][0], y2: P[j][1], "class": "hl" + (t === 0 ? " h1" : "") }, svg);
+      });
+    });
+    P.forEach(function (p) { el("circle", { cx: p[0], cy: p[1], r: 5, "class": "hp" }, svg); });
+    rec.forEach(function (q) { el("circle", { cx: q[0], cy: q[1], r: 9, "class": "hr" }, svg); });
+  })();
+
+  /* ---------- pasmo A: dochód i wydatki ---------- */
+  var XR = [1.8, 2.4, 2.9, 3.3, 3.8, 4.2, 4.6, 5.1, 5.7, 6.2, 7.4, 8.6];
+  var YR = [2.34, 2.40, 3.17, 3.08, 3.59, 3.48, 4.17, 4.31, 4.44, 5.16, 5.26, 6.12];
+  var XM = [3.6, 6.8, 9.6, 11.2], YM = [3.27, 5.32, 6.64, 6.94];
+  var DRAW = [2, 1, 2, 0];               /* przykładowe losowanie: ranga dawcy spośród 3 najbliższych */
+  function nbrs(x, k) { return knn(XR.map(function (v) { return Math.abs(v - x); }), k); }
+  var OLS = (function () {
+    var mx = mean(XR), my = mean(YR), sxy = 0, sxx = 0;
+    XR.forEach(function (x, j) { sxy += (x - mx) * (YR[j] - my); sxx += (x - mx) * (x - mx); });
+    var b = sxy / sxx; return { a: my - b * mx, b: b };
+  })();
+  function mhat(x) { return OLS.a + OLS.b * x; }
+  var IMP = {
+    k1: XM.map(function (x) { return YR[nbrs(x, 1)[0]]; }),
+    los: XM.map(function (x, i) { return YR[nbrs(x, 3)[DRAW[i]]]; }),
+    sr: XM.map(function (x) { return mean(nbrs(x, 3).map(function (j) { return YR[j]; })); }),
+    bc: XM.map(function (x) { return mhat(x) + mean(nbrs(x, 3).map(function (j) { return YR[j] - mhat(XR[j]); })); })
+  };
+  function totMean(imp) { return (YR.reduce(function (s, v) { return s + v; }, 0) + imp.reduce(function (s, v) { return s + v; }, 0)) / (XR.length + XM.length); }
+
+  function drawA(svg, o) {
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    var W = 600, H = 330, L = 52, R = 584, T = 14, B = 286;
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    var sx = function (x) { return L + (x - 1) / 11 * (R - L); }, sy = function (y) { return B - (y - 1.5) / 6 * (B - T); };
+    var ax = el("g", { "class": "ax" }, svg);
+    [2, 4, 6, 8, 10, 12].forEach(function (t) { el("line", { x1: sx(t), x2: sx(t), y1: B, y2: B + 5 }, ax); el("text", { x: sx(t), y: B + 20, "text-anchor": "middle" }, ax, fmt(t)); });
+    [2, 3, 4, 5, 6, 7].forEach(function (t) { el("line", { x1: L - 5, x2: R, y1: sy(t), y2: sy(t), "class": "gl" }, ax); el("text", { x: L - 9, y: sy(t) + 4, "text-anchor": "end" }, ax, fmt(t)); });
+    el("line", { x1: L, x2: R, y1: B, y2: B }, ax);
+    el("text", { x: R, y: B + 38, "text-anchor": "end" }, ax, "dochód x (tys. zł)");
+    el("text", { x: L - 40, y: T - 2 }, ax, "wydatki y");
+    if (o.fit) el("line", { x1: sx(1), x2: sx(12), y1: sy(mhat(1)), y2: sy(mhat(12)), "class": "fit" }, svg);
+    /* biorcy na osi */
+    XM.forEach(function (x, i) {
+      el("line", { x1: sx(x), x2: sx(x), y1: B, y2: T + 10, "class": "rline" + (o.focus === i ? " on" : "") }, svg);
+    });
+    if (o.dist !== undefined) {
+      var x0 = XM[o.dist];
+      XR.forEach(function (x, j) {
+        var yy = sy(YR[j]);
+        el("line", { x1: sx(x0), x2: sx(x), y1: yy, y2: yy, "class": "dist" }, svg);
+      });
+    }
+    if (o.k) XM.forEach(function (x, i) {
+      if (o.only !== undefined && o.only !== i) return;
+      nbrs(x, o.k).forEach(function (j) { el("circle", { cx: sx(XR[j]), cy: sy(YR[j]), r: 11, "class": "nb" }, svg); });
+    });
+    XR.forEach(function (x, j) { el("circle", { cx: sx(x), cy: sy(YR[j]), r: 6, "class": "resp" + (o.dim ? " dim" : "") }, svg); });
+    XM.forEach(function (x, i) {
+      el("circle", { cx: sx(x), cy: B, r: 7, "class": "rec" }, svg);
+      if (o.truth) el("circle", { cx: sx(x), cy: sy(YM[i]), r: 7, "class": "tru" }, svg);
+      if (o.imp) {
+        var v = o.imp[i];
+        if (o.src) {
+          var srcs = o.src(i);
+          srcs.forEach(function (j) { el("path", { d: "M" + sx(XR[j]) + "," + sy(YR[j]) + " Q" + ((sx(XR[j]) + sx(x)) / 2) + "," + (Math.min(sy(YR[j]), sy(v)) - 26) + " " + sx(x) + "," + sy(v), "class": "arr" }, svg); });
+        }
+        el("circle", { cx: sx(x), cy: sy(v), r: 7, "class": "imp" }, svg);
+      }
+    });
+  }
+  (function () {
+    var svg = $("plotA"), P = $("a-panel");
+    var SUB = ["Dochód obserwowany dla wszystkich, wydatki z brakami", "Odległości od biorcy z dochodem 6,8 tys. zł",
+               "Najbliższy sąsiad (k = 1)", "Dawca losowany spośród 3 najbliższych", "Średnia z 3 najbliższych",
+               "Korekta obciążenia: prosta + średnia reszt 3 sąsiadów", "Porównanie wariantów"];
+    function row(lab, v, cls) {
+      return '<tr><td class="l">' + lab + "</td>" + v.map(function (q) { return '<td class="' + (cls || "im") + '">' + fmtf(q, 2) + "</td>"; }).join("") + "<td><b>" + fmtf(totMean(v), 2) + "</b></td></tr>";
+    }
+    function head() { return '<table class="mini"><tr><th class="l">dochód biorcy</th>' + XM.map(function (x) { return "<th>" + fmtf(x, 1) + "</th>"; }).join("") + "<th>średnia y</th></tr>"; }
+    scroller("bandA", function (s) {
+      $("a-sub").textContent = SUB[s];
+      var h = "";
+      if (s === 0) {
+        drawA(svg, {});
+        h = '<table class="mini"><tr><th>średnia z respondentów</th><th>prawdziwa średnia</th><th>respondenci</th><th>braki</th></tr><tr><td><b>' + fmtf(mean(YR), 2) + "</b></td><td>" + fmtf(totMean(YM), 2) + "</td><td>12</td><td>4</td></tr></table>";
+      }
+      if (s === 1) {
+        drawA(svg, { dist: 1, focus: 1, k: 3, only: 1 });
+        var d = XR.map(function (x) { return Math.abs(x - 6.8); }), nb = nbrs(6.8, 3);
+        h = '<p class="cap">Trzej najbliżsi dawcy biorcy z dochodem 6,8</p><table class="mini"><tr><th class="l">dochód dawcy</th>' + nb.map(function (j) { return "<th>" + fmtf(XR[j], 1) + "</th>"; }).join("") + '</tr><tr><td class="l">odległość</td>' + nb.map(function (j) { return "<td>" + fmtf(d[j], 1) + "</td>"; }).join("") + '</tr><tr><td class="l">wydatki</td>' + nb.map(function (j) { return '<td class="im">' + fmtf(YR[j], 2) + "</td>"; }).join("") + "</tr></table>";
+      }
+      if (s === 2) { drawA(svg, { imp: IMP.k1, src: function (i) { return nbrs(XM[i], 1); } }); h = head() + row("k = 1", IMP.k1) + "</table>"; }
+      if (s === 3) { drawA(svg, { k: 3, imp: IMP.los, src: function (i) { return [nbrs(XM[i], 3)[DRAW[i]]]; } }); h = head() + row("dawca losowy", IMP.los) + '</table><span class="chipnote">przykładowe losowanie</span>'; }
+      if (s === 4) { drawA(svg, { k: 3, imp: IMP.sr, src: function (i) { return nbrs(XM[i], 3); } }); h = head() + row("średnia z 3", IMP.sr) + "</table>"; }
+      if (s === 5) { drawA(svg, { k: 3, fit: true, imp: IMP.bc }); h = head() + row("korekta", IMP.bc) + "</table>"; }
+      if (s === 6) {
+        drawA(svg, { imp: IMP.bc, truth: true, dim: true, fit: true });
+        h = head() + row("k = 1", IMP.k1) + row("dawca losowy", IMP.los) + row("średnia z 3", IMP.sr) + row("korekta", IMP.bc) +
+          '<tr class="sum"><td class="l">prawda</td>' + YM.map(function (q) { return "<td>" + fmtf(q, 2) + "</td>"; }).join("") + "<td>" + fmtf(totMean(YM), 2) + "</td></tr></table>";
+      }
+      setPanel(P, h);
+    });
+  })();
+
+  /* ---------- część 3: odległość ---------- */
+  (function () {
+    var r = rng(2027), D = [];
+    for (var i = 0; i < 70; i++) {
+      var wiek = 18 + Math.floor(r() * 63);
+      var doch = Math.round(Math.exp(7.9 + 0.015 * (wiek - 18) - 0.0002 * Math.pow(wiek - 18, 2) + 0.35 * rnorm(r)) / 10) * 10;
+      var wyd = Math.round((3 * Math.pow(doch, 0.8) + 30 * (wiek - 18) + 400 * rnorm(r)) / 10) * 10;
+      D.push({ d: doch, w: wiek, y: wyd });
+    }
+    D.push({ d: 19800, w: 52, y: 11900 });   /* jeden bardzo wysoki dochód */
+    var mode = "raw", k = 5, rec = { d: 6200, w: 67 }, seed = 1;
+    function stats(key) {
+      var v = D.map(function (q) { return q[key]; }), m = mean(v);
+      var sd = Math.sqrt(v.reduce(function (s, x) { return s + (x - m) * (x - m); }, 0) / (v.length - 1));
+      var lo = Math.min.apply(null, v.concat([rec[key]])), hi = Math.max.apply(null, v.concat([rec[key]]));
+      return { sd: sd, rg: hi - lo };
+    }
+    function dist(q) {
+      var sd = stats("d"), sw = stats("w");
+      if (mode === "raw") return Math.hypot(q.d - rec.d, q.w - rec.w);
+      if (mode === "std") return Math.hypot((q.d - rec.d) / sd.sd, (q.w - rec.w) / sw.sd);
+      return (Math.abs(q.d - rec.d) / sd.rg + Math.abs(q.w - rec.w) / sw.rg) / 2;
+    }
+    var svg = $("dplot"), W = 560, H = 380, L = 56, R = 544, T = 12, B = 330;
+    var dmax = 21000, sx = function (v) { return L + v / dmax * (R - L); }, sy = function (v) { return B - (v - 15) / 70 * (B - T); };
+    var ix = function (px) { return (px - L) / (R - L) * dmax; }, iy = function (py) { return 15 + (B - py) / (B - T) * 70; };
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    function draw() {
+      while (svg.firstChild) svg.removeChild(svg.firstChild);
+      var ax = el("g", { "class": "ax" }, svg);
+      [0, 5000, 10000, 15000, 20000].forEach(function (t) { el("line", { x1: sx(t), x2: sx(t), y1: T, y2: B, "class": "gl" }, ax); el("text", { x: sx(t), y: B + 18, "text-anchor": "middle" }, ax, (t / 1000) + " tys."); });
+      [20, 40, 60, 80].forEach(function (t) { el("line", { x1: L, x2: R, y1: sy(t), y2: sy(t), "class": "gl" }, ax); el("text", { x: L - 8, y: sy(t) + 4, "text-anchor": "end" }, ax, t); });
+      el("text", { x: R, y: B + 40, "text-anchor": "end" }, ax, "dochód (zł)");
+      el("text", { x: L - 46, y: T + 2 }, ax, "wiek");
+      var dd = D.map(dist), nb = knn(dd, k), rad = dd[nb[nb.length - 1]];
+      /* obwiednia: punkty w odległości rad od biorcy */
+      var sd = stats("d"), sw = stats("w"), pts = [];
+      for (var a = 0; a <= 360; a += 3) {
+        var c = Math.cos(a * Math.PI / 180), s = Math.sin(a * Math.PI / 180), dx, dy;
+        if (mode === "raw") { dx = rad * c; dy = rad * s; }
+        else if (mode === "std") { dx = rad * c * sd.sd; dy = rad * s * sw.sd; }
+        else { var n1 = Math.abs(c) + Math.abs(s); dx = 2 * rad * c / n1 * sd.rg; dy = 2 * rad * s / n1 * sw.rg; }
+        var px = Math.max(L, Math.min(R, sx(rec.d + dx))), py = Math.max(T, Math.min(B, sy(rec.w + dy)));
+        pts.push(px.toFixed(1) + "," + py.toFixed(1));
+      }
+      el("polygon", { points: pts.join(" "), "class": "env" }, svg);
+      nb.forEach(function (j) { el("line", { x1: sx(rec.d), y1: sy(rec.w), x2: sx(D[j].d), y2: sy(D[j].w), "class": "lk" }, svg); });
+      D.forEach(function (q, j) { var c = el("circle", { cx: sx(q.d), cy: sy(q.w), r: 4.5, "class": nb.indexOf(j) >= 0 ? "pt on" : "pt" }, svg); el("title", {}, c, q.d + " zł, " + q.w + " lat, wydatki " + q.y); });
+      el("circle", { cx: sx(rec.d), cy: sy(rec.w), r: 8, "class": "rc" }, svg);
+      var rr = rng(seed)(), los = nb[Math.floor(rr * k)];
+      var h = '<p style="font-size:14px;color:var(--ink-70);margin:0 0 8px">Biorca: dochód <b>' + rec.d + " zł</b>, wiek <b>" + rec.w + " lat</b></p>";
+      h += '<table class="g"><thead><tr><th>#</th><th class="r">dochód</th><th class="r">wiek</th><th class="r">wydatki</th></tr></thead><tbody>' +
+        nb.map(function (j, t) { return "<tr" + (j === los ? ' class="grp"' : "") + "><td>" + (t + 1) + '</td><td class="r">' + D[j].d + '</td><td class="r">' + D[j].w + '</td><td class="r">' + D[j].y + "</td></tr>"; }).join("") + "</tbody></table>";
+      var wr = nb.map(function (j) { return Math.abs(D[j].w - rec.w); });
+      h += '<p style="font-size:14.5px;margin:10px 0 0">Imputacja: najbliższy <b>' + D[nb[0]].y + "</b>, średnia z " + k + " <b>" + Math.round(mean(nb.map(function (j) { return D[j].y; }))) + "</b>, dawca losowy (zaznaczony) <b>" + D[los].y + "</b>. Średnia różnica wieku sąsiadów od biorcy: <b>" + fmtf(mean(wr), 1) + " lat</b>.</p>";
+      $("dres").innerHTML = h;
+      $("dkv").textContent = "k = " + k;
+    }
+    document.querySelectorAll("#dtool [data-m]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        mode = b.dataset.m;
+        document.querySelectorAll("#dtool [data-m]").forEach(function (c) { c.setAttribute("aria-pressed", String(c === b)); });
+        draw();
+      });
+    });
+    $("dk").addEventListener("input", function () { k = +this.value; draw(); });
+    $("dreseed").addEventListener("click", function () { seed++; draw(); });
+    svg.addEventListener("click", function (e) {
+      var pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+      var p = pt.matrixTransform(svg.getScreenCTM().inverse());
+      if (p.x < L || p.x > R || p.y < T || p.y > B) return;
+      rec = { d: Math.round(ix(p.x) / 10) * 10, w: Math.round(iy(p.y)) };
+      draw();
+    });
+    draw();
+  })();
+
+
+  /* ---------- część 4: wynik Abadiego i Imbensa (koncepcyjnie) ---------- */
+  (function () {
+    var PS = [1, 2, 3, 5, 10], sel = 3, W = 420, H = 300, L = 52, R = 370, T = 18, B = 250;
+    var lx = function (n) { return L + (Math.log10(n) - 2) / 4 * (R - L); };
+    function panel(svg, f, lo, hi, ticks, ref) {
+      svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+      while (svg.firstChild) svg.removeChild(svg.firstChild);
+      var ly = function (v) { return B - (Math.log10(v) - lo) / (hi - lo) * (B - T); };
+      var ax = el("g", { "class": "ax" }, svg);
+      ticks.forEach(function (t) { el("line", { x1: L, x2: R, y1: ly(t), y2: ly(t), "class": t === 1 ? "zero" : "gl" }, ax); el("text", { x: L - 7, y: ly(t) + 4, "text-anchor": "end" }, ax, t.toLocaleString("pl-PL", { maximumFractionDigits: 4 })); });
+      [100, 1000, 10000, 100000, 1000000].forEach(function (n) { el("text", { x: lx(n), y: B + 18, "text-anchor": "middle" }, ax, n >= 1e6 ? "10⁶" : n.toLocaleString("pl-PL")); });
+      el("text", { x: R, y: B + 38, "text-anchor": "end" }, ax, "liczebność próby n");
+      PS.slice().sort(function (a, b) { return (a === sel) - (b === sel); }).forEach(function (p) {
+        var d = "", e;
+        for (e = 2; e <= 6.001; e += 0.05) { var n = Math.pow(10, e), v = Math.min(Math.max(f(n, p), Math.pow(10, lo)), Math.pow(10, hi)); d += (e === 2 ? "M" : "L") + lx(n).toFixed(1) + "," + ly(v).toFixed(1); }
+        el("path", { d: d, "class": "cv" + (p === sel ? " on" : "") }, svg);
+        var vEnd = Math.min(Math.max(f(1e6, p), Math.pow(10, lo)), Math.pow(10, hi));
+        el("text", { x: lx(1e6) + 6, y: ly(vEnd) + 4 + (ref && p === 2 ? 12 : 0) - (ly(vEnd) > B - 8 ? 12 : 0), "class": "elab cvl" + (p === sel ? " on" : "") }, svg, "p = " + p);
+      });
+      if (ref) {
+        var d2 = ""; for (var e2 = 2; e2 <= 6.001; e2 += 0.05) d2 += (e2 === 2 ? "M" : "L") + lx(Math.pow(10, e2)).toFixed(1) + "," + ly(Math.pow(Math.pow(10, e2) / 100, -0.5)).toFixed(1);
+        el("path", { d: d2, "class": "se" }, svg);
+        el("text", { x: lx(1e6) + 6, y: ly(0.01) - 6, "class": "elab se-l" }, svg, "SE");
+      }
+      return ly;
+    }
+    function draw() {
+      panel($("aiplot1"), function (n, p) { return Math.pow(n / 100, -1 / p); }, -4, 0.1, [1, 0.1, 0.01, 0.001, 0.0001], true);
+      var ly = panel($("aiplot2"), function (n, p) { return Math.pow(n / 100, 0.5 - 1 / p); }, -2, 1.75, [0.01, 0.1, 1, 10], false);
+      var s2 = $("aiplot2");
+      el("text", { x: L + 8, y: ly(30), "class": "zone-l" }, s2, "obciążenie dominuje");
+      el("text", { x: lx(3000), y: ly(1) + 18, "class": "zone-l" }, s2, "tego samego rzędu");
+      el("text", { x: L + 8, y: ly(0.02), "class": "zone-l" }, s2, "obciążenie pomijalne");
+      var b = Math.pow(100, 1 / sel), s = 10, r = Math.pow(100, 0.5 - 1 / sel);
+      $("ailast").innerHTML = "Przy \\(p = " + sel + "\\): gdy próba rośnie 100-krotnie, obciążenie maleje " + fmtf(b, b < 10 ? 1 : 0) + "-krotnie, a błąd standardowy 10-krotnie. " +
+        (sel === 1 ? "Obciążenie znika szybciej niż błąd standardowy." : sel === 2 ? "Obie wielkości maleją w tym samym tempie: obciążenie nie znika na tle błędu standardowego." : "Stosunek obciążenia do błędu standardowego rośnie " + fmtf(r, 1) + "-krotnie.");
+      tex($("ailast"));
+    }
+    document.querySelectorAll("#ailab [data-p]").forEach(function (b) {
+      b.addEventListener("click", function () { sel = +b.dataset.p; document.querySelectorAll("#ailab [data-p]").forEach(function (c) { c.setAttribute("aria-pressed", String(c === b)); }); draw(); });
+    });
+    draw();
+  })();
+
+  /* ---------- część 4: liczba zmiennych ---------- */
+  (function () {
+    var PS = [1, 2, 5, 10], NS = [100, 300, 1000, 3000, 10000];
+    var COL = { 1: "var(--s-kl)", 2: "var(--uep)", 5: "var(--s-bez)", 10: "var(--miss)" };
+    $("clegend").innerHTML = PS.map(function (p) { return '<span><i style="background:' + COL[p] + '"></i>p = ' + p + "</span>"; }).join("");
+    var svg = $("cplot"), W = 640, H = 340, L = 60, R = 570, T = 30, B = 290, run = 0;
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    var lx = function (n) { return L + (Math.log10(n) - 2) / 2 * (R - L); };
+    function compute() {
+      var r = rng(100 + run++), res = {};
+      PS.forEach(function (p) {
+        res[p] = NS.map(function (n) {
+          var don = new Float64Array(n * p);
+          for (var i = 0; i < n * p; i++) don[i] = r();
+          var tot = 0, m = 200;
+          for (var t = 0; t < m; t++) {
+            var q = []; for (var l = 0; l < p; l++) q.push(r());
+            var best = Infinity;
+            for (var j = 0; j < n; j++) {
+              var s = 0, o = j * p;
+              for (var l2 = 0; l2 < p; l2++) { s += Math.abs(don[o + l2] - q[l2]); if (s >= best) break; }
+              if (s < best) best = s;
+            }
+            tot += best / p;
+          }
+          return tot / m;
+        });
+      });
+      return res;
+    }
+    function draw(res) {
+      while (svg.firstChild) svg.removeChild(svg.firstChild);
+      var ymax = 0.20, sy = function (v) { return B - v / ymax * (B - T); };
+      var ax = el("g", { "class": "ax" }, svg);
+      [0, 0.05, 0.10, 0.15, 0.20].forEach(function (t) { el("line", { x1: L, x2: R, y1: sy(t), y2: sy(t), "class": "gl" }, ax); el("text", { x: L - 8, y: sy(t) + 4, "text-anchor": "end" }, ax, fmtf(t, 2)); });
+      NS.forEach(function (n) { el("text", { x: lx(n), y: B + 20, "text-anchor": "middle" }, ax, n.toLocaleString("pl-PL")); });
+      el("text", { x: R, y: B + 42, "text-anchor": "end" }, ax, "liczba dawców n (skala logarytmiczna)");
+      el("text", { x: L - 52, y: T - 12 }, ax, "odległość do najbliższego dawcy (Gower)");
+      if (!res) { el("text", { x: (L + R) / 2, y: (T + B) / 2, "text-anchor": "middle", "class": "hint" }, svg, "Kliknij „Losuj punkty i policz”"); return; }
+      PS.forEach(function (p) {
+        var d = res[p].map(function (v, i) { return (i ? "L" : "M") + lx(NS[i]).toFixed(1) + "," + sy(Math.min(v, ymax)).toFixed(1); }).join(" ");
+        el("path", { d: d, "class": "ln", style: "stroke:" + COL[p] }, svg);
+        el("text", { x: lx(NS[NS.length - 1]) + 10, y: sy(Math.min(res[p][NS.length - 1], ymax)) + (p === 1 ? 2 : p === 2 ? -6 : 4), "class": "elab", style: "fill:" + COL[p] }, svg, "p = " + p);
+        res[p].forEach(function (v, i) { var c = el("circle", { cx: lx(NS[i]), cy: sy(Math.min(v, ymax)), r: 4.5, style: "fill:" + COL[p], "class": "lp" }, svg); el("title", {}, c, "p = " + p + ", n = " + NS[i] + ": " + fmtf(v, 3)); });
+      });
+      var a = res[1], b = res[10];
+      $("clast").innerHTML = "Wzrost liczby dawców ze 100 do 10 000 zmniejsza średnią odległość do najbliższego dawcy " + fmtf(a[0] / a[4], 0) + "-krotnie przy \\(p = 1\\), ale tylko " + fmtf(b[0] / b[4], 1) + "-krotnie przy \\(p = 10\\).";
+      tex($("clast"));
+    }
+    draw(null);
+    $("cgo").addEventListener("click", function () {
+      var b = this; b.disabled = true; b.textContent = "Liczę…";
+      setTimeout(function () { draw(compute()); b.disabled = false; b.textContent = "Losuj ponownie"; }, 30);
+    });
+  })();
+
+
+  /* ---------- część 4: obciążenie a liczba zmiennych (symulacja w przeglądarce) ---------- */
+  (function () {
+    var PS = [1, 2, 3, 4, 5, 6, 8, 10], R = 30, scen = "all", n = 1000, run = 0;
+    var svg = $("bplot"), W = 640, H = 350, L = 64, Rr = 600, T = 36, B = 300;
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    var sx = function (p) { return L + (p - 1) / 9 * (Rr - L); };
+    var lo = -0.65, hi = 0.1, sy = function (v) { return T + (hi - v) / (hi - lo) * (B - T); };
+    /* rozwiązanie układu A b = c (eliminacja Gaussa) */
+    function solve(A, c) {
+      var m = c.length;
+      for (var i = 0; i < m; i++) {
+        var piv = i; for (var r = i + 1; r < m; r++) if (Math.abs(A[r][i]) > Math.abs(A[piv][i])) piv = r;
+        var t = A[i]; A[i] = A[piv]; A[piv] = t; var u = c[i]; c[i] = c[piv]; c[piv] = u;
+        for (var r2 = i + 1; r2 < m; r2++) { var f = A[r2][i] / A[i][i]; for (var k = i; k < m; k++) A[r2][k] -= f * A[i][k]; c[r2] -= f * c[i]; }
+      }
+      var b = new Array(m);
+      for (var i2 = m - 1; i2 >= 0; i2--) { var s = c[i2]; for (var k2 = i2 + 1; k2 < m; k2++) s -= A[i2][k2] * b[k2]; b[i2] = s / A[i2][i2]; }
+      return b;
+    }
+    function oneRep(r, p) {
+      var q = scen === "all" ? p : Math.min(p, 2), X = new Float64Array(n * p), y = new Float64Array(n), resp = [];
+      for (var i = 0; i < n; i++) {
+        var s = 0; for (var l = 0; l < p; l++) { var v = r(); X[i * p + l] = v; if (l < q) s += v; }
+        var z = (s - q / 2) / Math.sqrt(q / 12);
+        y[i] = z + rnorm(r);
+        resp.push(r() < 1 / (1 + Math.exp(-(0.5 - 2 * z))));
+      }
+      var D = [], M = [];
+      for (var i3 = 0; i3 < n; i3++) (resp[i3] ? D : M).push(i3);
+      /* regresja liniowa na respondentach */
+      var m = p + 1, A = [], c = new Array(m).fill(0);
+      for (var a = 0; a < m; a++) A.push(new Array(m).fill(0));
+      D.forEach(function (j) {
+        var row = [1]; for (var l2 = 0; l2 < p; l2++) row.push(X[j * p + l2]);
+        for (var a2 = 0; a2 < m; a2++) { c[a2] += row[a2] * y[j]; for (var b2 = 0; b2 < m; b2++) A[a2][b2] += row[a2] * row[b2]; }
+      });
+      var beta = solve(A, c);
+      var mu = function (j) { var s2 = beta[0]; for (var l3 = 0; l3 < p; l3++) s2 += beta[l3 + 1] * X[j * p + l3]; return s2; };
+      var tot = 0, sumR = 0; for (var i4 = 0; i4 < n; i4++) tot += y[i4];
+      D.forEach(function (j) { sumR += y[j]; });
+      var sNN = sumR, sBC = sumR;
+      M.forEach(function (i5) {
+        var best = Infinity, bj = -1, o = i5 * p;
+        for (var t = 0; t < D.length; t++) {
+          var j = D[t], oj = j * p, d = 0;
+          for (var l4 = 0; l4 < p; l4++) { d += Math.abs(X[oj + l4] - X[o + l4]); if (d >= best) break; }
+          if (d < best) { best = d; bj = j; }
+        }
+        sNN += y[bj]; sBC += mu(i5) + y[bj] - mu(bj);
+      });
+      var tm = tot / n;
+      return [sumR / D.length - tm, sNN / n - tm, sBC / n - tm];
+    }
+    function axes() {
+      while (svg.firstChild) svg.removeChild(svg.firstChild);
+      var ax = el("g", { "class": "ax" }, svg);
+      [0.1, 0, -0.1, -0.2, -0.3, -0.4, -0.5, -0.6].forEach(function (t) { el("line", { x1: L, x2: Rr, y1: sy(t), y2: sy(t), "class": t === 0 ? "zero" : "gl" }, ax); el("text", { x: L - 8, y: sy(t) + 4, "text-anchor": "end" }, ax, fmtf(t, 1)); });
+      PS.forEach(function (p) { el("text", { x: sx(p), y: B + 20, "text-anchor": "middle" }, ax, p); });
+      el("text", { x: Rr, y: B + 42, "text-anchor": "end" }, ax, "liczba zmiennych p w odległości");
+      el("text", { x: L - 56, y: T - 20 }, ax, "obciążenie średniej");
+    }
+    function draw(res) {
+      axes();
+      if (!res) { el("text", { x: (L + Rr) / 2, y: (T + B) / 2 + 30, "text-anchor": "middle", "class": "hint" }, svg, "Kliknij „Policz”"); return; }
+      var COL = ["var(--rule)", "var(--s-bez)", "var(--s-kl)"], NAME = ["średnia z respondentów", "najbliższy sąsiad", "korekta obciążenia"];
+      [0, 1, 2].forEach(function (s) {
+        var pts = res.filter(Boolean);
+        el("path", { d: pts.map(function (q, i) { return (i ? "L" : "M") + sx(q.p).toFixed(1) + "," + sy(q.m[s]).toFixed(1); }).join(" "), "class": "ln", style: "stroke:" + COL[s] }, svg);
+        pts.forEach(function (q) {
+          var x = sx(q.p) + (s - 1) * 4;
+          el("line", { x1: x, x2: x, y1: sy(q.m[s] - 2 * q.se[s]), y2: sy(q.m[s] + 2 * q.se[s]), "class": "eb", style: "stroke:" + COL[s] }, svg);
+          var c = el("circle", { cx: x, cy: sy(q.m[s]), r: 4.5, "class": "lp", style: "fill:" + COL[s] }, svg);
+          el("title", {}, c, NAME[s] + ", p = " + q.p + ": " + fmtf(q.m[s], 3) + " (błąd MC " + fmtf(q.se[s], 3) + ")");
+        });
+      });
+    }
+    function compute() {
+      var btn = $("bgo"), r = rng(500 + run++), res = [], i = 0;
+      btn.disabled = true;
+      (function next() {
+        if (i >= PS.length) {
+          btn.disabled = false; btn.textContent = "Policz ponownie";
+          var a = res[0], z = res[PS.length - 1];
+          $("blast").innerHTML = "Przy \\(p = 1\\) najbliższy sąsiad ma obciążenie " + fmtf(a.m[1], 3) + ", przy \\(p = 10\\) już " + fmtf(z.m[1], 3) +
+            ", czyli " + fmtf(100 * z.m[1] / z.m[0], 0) + "% obciążenia średniej z respondentów (" + fmtf(z.m[0], 3) + "). Korekta obciążenia przy \\(p = 10\\): " + fmtf(z.m[2], 3) + ".";
+          tex($("blast")); return;
+        }
+        var p = PS[i], acc = [[], [], []];
+        for (var k = 0; k < R; k++) { var o = oneRep(r, p); acc[0].push(o[0]); acc[1].push(o[1]); acc[2].push(o[2]); }
+        res[i] = { p: p, m: acc.map(mean), se: acc.map(function (v) { var mm = mean(v); return Math.sqrt(v.reduce(function (s, x) { return s + (x - mm) * (x - mm); }, 0) / (v.length - 1) / v.length); }) };
+        btn.textContent = "Liczę… p = " + p;
+        draw(res); i++; setTimeout(next, 10);
+      })();
+    }
+    document.querySelectorAll("#blab [data-s]").forEach(function (b) { b.addEventListener("click", function () { scen = b.dataset.s; document.querySelectorAll("#blab [data-s]").forEach(function (c) { c.setAttribute("aria-pressed", String(c === b)); }); }); });
+    document.querySelectorAll("#blab [data-n]").forEach(function (b) { b.addEventListener("click", function () { n = +b.dataset.n; document.querySelectorAll("#blab [data-n]").forEach(function (c) { c.setAttribute("aria-pressed", String(c === b)); }); }); });
+    $("bgo").addEventListener("click", compute);
+    draw(null);
+  })();
+
+  /* ---------- część 5: liczba sąsiadów i symulacja ---------- */
+  (function () {
+    function upd() {
+      var n = Math.round(Math.pow(10, +$("kn").value)), p = +$("kp").value, k = Math.floor(Math.pow(n, 2 / (2 + p)));
+      $("knv").textContent = "n = " + n.toLocaleString("pl-PL"); $("kpv").textContent = "p = " + p;
+      $("kout").innerHTML = "Zalecana liczba sąsiadów: \\(k = \\lfloor n^{2/(2+p)} \\rfloor = \\) <b>" + k + "</b>. Przy " + n.toLocaleString("pl-PL") + " jednostkach i " + p + (p === 1 ? " zmiennej" : " zmiennych") + " ciągłych.";
+      tex($("kout"));
+    }
+    $("kn").addEventListener("input", upd); $("kp").addEventListener("input", upd); upd();
+    var S = [["naive", "średnia z respondentów", [3.90, 3.83, 3.77], [5.55, 5.53, 8.39]],
+             ["nn", "najbliższy sąsiad (k = 1)", [0.10, 0.07, 0.24], [4.28, 4.29, 7.12]],
+             ["nn_avg", "średnia z k sąsiadów", [0.23, 0.05, 0.39], [3.94, 3.95, 6.93]],
+             ["nn_bc", "korekta obciążenia", [0.02, 0.01, 0.04], [3.93, 3.95, 6.75]]];
+    document.querySelector("#simtab tbody").innerHTML = S.map(function (s) {
+      return "<tr" + (s[0] === "nn_bc" ? ' class="grp"' : "") + "><td><code>" + s[0] + "</code><br><small>" + s[1] + "</small></td>" +
+        "<td>" + s[2].map(function (v) { return '<div class="ib"><span>' + fmtf(v, 2) + '</span><i class="w" style="width:' + (v / 4 * 70) + 'px"></i></div>'; }).join("") + "</td>" +
+        "<td>" + s[3].map(function (v) { return '<div class="ib"><span>' + fmtf(v, 2) + '</span><i style="width:' + (v / 9 * 70) + 'px"></i></div>'; }).join("") + "</td></tr>";
+    }).join("");
+  })();
+
+  /* ---------- dymki ---------- */
+  (function () {
+    var tip = $("tip"), open = null;
+    function show(btn) {
+      var src = $(btn.dataset.tip); if (!src) return;
+      tip.innerHTML = src.innerHTML; tip.classList.add("show"); open = btn;
+      btn.setAttribute("aria-expanded", "true");
+      var r = btn.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
+      var x = Math.min(Math.max(12, r.left + r.width / 2 - tw / 2), innerWidth - tw - 12);
+      var y = r.bottom + 10; if (y + th > innerHeight - 12) y = r.top - th - 10;
+      tip.style.transform = "translate(" + x + "px," + Math.max(12, y) + "px)";
+    }
+    function hide() { if (open) open.setAttribute("aria-expanded", "false"); open = null; tip.classList.remove("show"); }
+    document.querySelectorAll(".term").forEach(function (b) {
+      b.setAttribute("aria-expanded", "false");
+      b.addEventListener("mouseenter", function () { show(b); });
+      b.addEventListener("mouseleave", hide);
+      b.addEventListener("focus", function () { show(b); });
+      b.addEventListener("blur", hide);
+      b.addEventListener("click", function (e) { e.stopPropagation(); open === b ? hide() : show(b); });
+    });
+    document.addEventListener("click", hide);
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") hide(); });
+    window.addEventListener("scroll", function () { hide(); $("vtip").classList.remove("show"); }, { passive: true });
+  })();
+
+  tex(document.body);
+  runUpdaters();
+})();
+</script>
+
+<script>
+
+/* Nawigacja strzałkami: ← → przechodzą między krokami pasm przewijanych, a poza nimi między częściami strony. */
+(function () {
+  "use strict";
+  var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var bands = Array.prototype.slice.call(document.querySelectorAll(".scrolly"));
+  function sections() { return Array.prototype.slice.call(document.querySelectorAll("header.hero, main > section, footer")); }
+  function go(y) { window.scrollTo({ top: Math.max(0, Math.round(y)), behavior: reduced ? "auto" : "smooth" }); }
+  function topOf(el) { return el.getBoundingClientRect().top + window.scrollY; }
+  function steps(b) { return Array.prototype.slice.call(b.querySelectorAll(".step")); }
+  var desk = window.matchMedia("(min-width: 980px)"), pending = null;
+  function curStep(b, noPending) {
+    if (!noPending && pending && pending.b === b && Date.now() < pending.t) return pending.i;
+    var line = innerHeight * (desk.matches ? .5 : .8), k = 0;
+    steps(b).forEach(function (x, j) { if (x.getBoundingClientRect().top < line) k = j; });
+    return k;
+  }
+  function bandInView() {
+    var mid = innerHeight * .5;
+    return bands.find(function (b) { var r = b.getBoundingClientRect(); return r.top <= mid && r.bottom > mid; }) || null;
+  }
+  function stepTo(b, i) {
+    var s = steps(b);
+    if (i < 0) { var p = b.previousElementSibling; go(p ? topOf(p) : 0); return; }
+    if (i >= s.length) { var n = b.nextElementSibling; go(n ? topOf(n) : topOf(b) + b.offsetHeight); return; }
+    pending = { b: b, i: i, t: Date.now() + (reduced ? 0 : 700) };
+    go(topOf(s[i]) + 2);
+  }
+  function move(d) {
+    var b = bandInView();
+    if (b) { stepTo(b, curStep(b) + d); return; }
+    var secs = sections(), y = window.scrollY + 4, k = -1;
+    secs.forEach(function (s, j) { if (topOf(s) <= y) k = j; });
+    var t = secs[Math.min(secs.length - 1, Math.max(0, k + d))];
+    if (d < 0 && k >= 0 && topOf(secs[k]) < y - 40) t = secs[k];
+    if (t) {
+      if (t.classList.contains("scrolly")) stepTo(t, d > 0 ? 0 : steps(t).length - 1);
+      else go(topOf(t));
+    }
+  }
+  document.addEventListener("keydown", function (e) {
+    if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+    var a = document.activeElement, tag = a && a.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (a && a.isContentEditable)) return;
+    e.preventDefault();
+    move(e.key === "ArrowRight" ? 1 : -1);
+  });
+  /* przyciski w paśmie */
+  var navs = bands.map(function (b) {
+    var head = b.querySelector(".ghead"); if (!head) return null;
+    var n = document.createElement("div"); n.className = "snav";
+    n.innerHTML = '<button type="button" aria-label="Poprzedni krok">‹</button><span></span><button type="button" aria-label="Następny krok">›</button>';
+    var bt = n.querySelectorAll("button");
+    bt[0].addEventListener("click", function () { var i = curStep(b); if (i > 0) stepTo(b, i - 1); });
+    bt[1].addEventListener("click", function () { var i = curStep(b); if (i < steps(b).length - 1) stepTo(b, i + 1); });
+    head.insertBefore(n, head.firstChild);
+    return { b: b, prev: bt[0], next: bt[1], lab: n.querySelector("span") };
+  }).filter(Boolean);
+  function upd() {
+    navs.forEach(function (o) {
+      var i = curStep(o.b, true), n = steps(o.b).length;
+      o.lab.textContent = (i + 1) + " / " + n;
+      o.prev.disabled = i === 0; o.next.disabled = i === n - 1;
+    });
+  }
+  var t = false;
+  window.addEventListener("scroll", function () { if (!t) { t = true; requestAnimationFrame(function () { t = false; upd(); }); } }, { passive: true });
+  upd();
+})();
+</script>
+</body>
+</html>
