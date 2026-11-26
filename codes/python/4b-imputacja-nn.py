@@ -24,21 +24,21 @@ dane.assign(brak=braki).boxplot(column=['dochod', 'wiek'], by='brak')
 plt.show()
 
 # obciążenie: średnia po imputacji minus średnia prawdziwa
-def obciazenie(y):
+def bias(y):
     return np.mean(y) - dane['wydatki_prawda'].mean()
 
-obciazenie(dane['wydatki'].fillna(dane['wydatki'].mean()))
+bias(dane['wydatki'].fillna(dane['wydatki'].mean()))
 
 dawcy = dane[~braki]
 y_dawcow = dawcy['wydatki'].to_numpy()
 
-def sasiedzi(X, k=1):
+def nearest_donors(X, k=1):
     """Numery k najbliższych dawców każdego biorcy (zmienne przeskalowane do [0, 1], odległość miejska)."""
     X = MinMaxScaler().fit_transform(X)
     nn = NearestNeighbors(n_neighbors=k, metric='manhattan').fit(X[~braki])
     return nn.kneighbors(X[braki], return_distance=False)
 
-def wstaw(wartosci):
+def fill_missing(wartosci):
     """Wstawia wartości w miejsce braków."""
     y = dane['wydatki'].to_numpy().copy()
     y[braki] = wartosci
@@ -51,8 +51,8 @@ dane.loc[biorca, ['dochod', 'wiek', 'liczba_osob', 'wydatki_prawda']]
 odl = (dawcy['dochod'] - dane.loc[biorca, 'dochod']).abs()
 dawcy.loc[odl.idxmin(), ['dochod', 'wiek', 'liczba_osob', 'wydatki']]
 
-idx = sasiedzi(dane[['dochod']], k=1)
-obciazenie(wstaw(y_dawcow[idx[:, 0]]))
+idx = nearest_donors(dane[['dochod']], k=1)
+bias(fill_missing(y_dawcow[idx[:, 0]]))
 
 # %% # Krok 2 -- same zmienne jakościowe
 klasy = ['plec', 'wyksztalcenie', 'klasa_miejsc']
@@ -64,9 +64,9 @@ rng = np.random.default_rng(2025)
 imp_hd = dane.groupby(klasy)['wydatki'].transform(
     lambda s: s.fillna(pd.Series(rng.choice(s.dropna(), len(s)), index=s.index)))
 # najbliższy sąsiad (k = 1); zmienne jakościowe zamieniamy na zero-jedynkowe
-idx = sasiedzi(pd.get_dummies(dane[klasy]), k=1)
-imp_nn = wstaw(y_dawcow[idx[:, 0]])
-print(obciazenie(imp_hd), obciazenie(imp_nn))
+idx = nearest_donors(pd.get_dummies(dane[klasy]), k=1)
+imp_nn = fill_missing(y_dawcow[idx[:, 0]])
+print(bias(imp_hd), bias(imp_nn))
 print(len(np.unique(imp_hd[braki])), len(np.unique(imp_nn[braki])))
 
 # %% # Krok 3 -- liczba zmiennych
@@ -74,25 +74,25 @@ zm1 = ['dochod']
 zm2 = zm1 + ['wiek', 'liczba_osob']
 zm3 = zm2 + ['wzrost', 'czas_wywiadu']
 zm4 = zm3 + ['nr_ankietera', 'miesiac_urodzenia']
-pd.Series([obciazenie(wstaw(y_dawcow[sasiedzi(dane[zm], k=1)[:, 0]])) for zm in [zm1, zm2, zm3, zm4]]).round(1)
+pd.Series([bias(fill_missing(y_dawcow[nearest_donors(dane[zm], k=1)[:, 0]])) for zm in [zm1, zm2, zm3, zm4]]).round(1)
 
 # %% # Krok 4 -- liczba sąsiadów i korekta obciążenia
 xs = ['dochod', 'wiek', 'liczba_osob']
 rng = np.random.default_rng(2025)
-idx5 = sasiedzi(dane[xs], k=5)
-idx31 = sasiedzi(dane[xs], k=31)
+idx5 = nearest_donors(dane[xs], k=5)
+idx31 = nearest_donors(dane[xs], k=31)
 # dawca losowany spośród k najbliższych
-print(obciazenie(wstaw([rng.choice(y_dawcow[i]) for i in idx5])),
-      obciazenie(wstaw([rng.choice(y_dawcow[i]) for i in idx31])))
+print(bias(fill_missing([rng.choice(y_dawcow[i]) for i in idx5])),
+      bias(fill_missing([rng.choice(y_dawcow[i]) for i in idx31])))
 # średnia z k najbliższych
-print(obciazenie(wstaw(y_dawcow[idx5].mean(axis=1))),
-      obciazenie(wstaw(y_dawcow[idx31].mean(axis=1))))
+print(bias(fill_missing(y_dawcow[idx5].mean(axis=1))),
+      bias(fill_missing(y_dawcow[idx31].mean(axis=1))))
 
 # korekta obciążenia: wartość teoretyczna z modelu + średnia reszt k najbliższych dawców
 model = LinearRegression().fit(dawcy[xs], y_dawcow)
 mu = model.predict(dane[xs])
 reszty = y_dawcow - mu[~braki]
-obciazenie(wstaw(mu[braki] + reszty[idx31].mean(axis=1)))
+bias(fill_missing(mu[braki] + reszty[idx31].mean(axis=1)))
 
 # %% # Krok 5 -- odległość i skalowanie zmiennych
 X = dane[xs].to_numpy(dtype=float)
@@ -103,7 +103,7 @@ nn_std = NearestNeighbors(n_neighbors=1).fit(X_std[~braki]).kneighbors(X_std[bra
 print(dane.loc[biorca, xs])
 dawcy.iloc[[nn_sur[0], nn_std[0]]][xs]
 
-print(obciazenie(wstaw(y_dawcow[nn_sur])), obciazenie(wstaw(y_dawcow[nn_std])))
+print(bias(fill_missing(y_dawcow[nn_sur])), bias(fill_missing(y_dawcow[nn_std])))
 
 # %% # Przykład 1 -- symulacja
 # Ustawienie ziarna losowości

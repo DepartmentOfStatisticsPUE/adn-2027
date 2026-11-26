@@ -72,8 +72,8 @@ Obciążenie: średnia po imputacji minus średnia prawdziwa. Obciążenie imput
 
 ```{r}
 ## obciążenie: średnia po imputacji minus średnia prawdziwa
-obciazenie <- function(y) mean(y) - mean(dane$wydatki_prawda)
-obciazenie(ifelse(braki, mean(dane$wydatki, na.rm = TRUE), dane$wydatki))
+bias <- function(y) mean(y) - mean(dane$wydatki_prawda)
+bias(ifelse(braki, mean(dane$wydatki, na.rm = TRUE), dane$wydatki))
 ```
 
 ## Python
@@ -104,10 +104,10 @@ Obciążenie: średnia po imputacji minus średnia prawdziwa. Obciążenie imput
 
 ```{python}
 # obciążenie: średnia po imputacji minus średnia prawdziwa
-def obciazenie(y):
+def bias(y):
     return np.mean(y) - dane['wydatki_prawda'].mean()
 
-obciazenie(dane['wydatki'].fillna(dane['wydatki'].mean()))
+bias(dane['wydatki'].fillna(dane['wydatki'].mean()))
 ```
 
 W Pythonie nie ma odpowiednika `impute_knn()`, dlatego definiujemy dwie krótkie funkcje pomocnicze.
@@ -116,13 +116,13 @@ W Pythonie nie ma odpowiednika `impute_knn()`, dlatego definiujemy dwie krótkie
 dawcy = dane[~braki]
 y_dawcow = dawcy['wydatki'].to_numpy()
 
-def sasiedzi(X, k=1):
+def nearest_donors(X, k=1):
     """Numery k najbliższych dawców każdego biorcy (zmienne przeskalowane do [0, 1], odległość miejska)."""
     X = MinMaxScaler().fit_transform(X)
     nn = NearestNeighbors(n_neighbors=k, metric='manhattan').fit(X[~braki])
     return nn.kneighbors(X[braki], return_distance=False)
 
-def wstaw(wartosci):
+def fill_missing(wartosci):
     """Wstawia wartości w miejsce braków."""
     y = dane['wydatki'].to_numpy().copy()
     y[braki] = wartosci
@@ -162,7 +162,7 @@ Imputacja wszystkich braków
 
 ```{r}
 imp <- impute_knn(dane, wydatki ~ dochod, k = 1)
-obciazenie(imp$wydatki)
+bias(imp$wydatki)
 ```
 
 ## Python
@@ -182,8 +182,8 @@ dawcy.loc[odl.idxmin(), ['dochod', 'wiek', 'liczba_osob', 'wydatki']]
 Imputacja wszystkich braków
 
 ```{python}
-idx = sasiedzi(dane[['dochod']], k=1)
-obciazenie(wstaw(y_dawcow[idx[:, 0]]))
+idx = nearest_donors(dane[['dochod']], k=1)
+bias(fill_missing(y_dawcow[idx[:, 0]]))
 ```
 
 :::
@@ -214,8 +214,8 @@ Hot-deck w klasach i najbliższy sąsiad; liczba różnych wstawionych wartości
 set.seed(2025)
 imp_hd <- impute_rhd(dane, wydatki ~ plec + wyksztalcenie + klasa_miejsc)
 imp_nn <- impute_knn(dane, wydatki ~ plec + wyksztalcenie + klasa_miejsc, k = 1)
-obciazenie(imp_hd$wydatki)
-obciazenie(imp_nn$wydatki)
+bias(imp_hd$wydatki)
+bias(imp_nn$wydatki)
 length(unique(imp_hd$wydatki[braki]))
 length(unique(imp_nn$wydatki[braki]))
 ```
@@ -238,9 +238,9 @@ rng = np.random.default_rng(2025)
 imp_hd = dane.groupby(klasy)['wydatki'].transform(
     lambda s: s.fillna(pd.Series(rng.choice(s.dropna(), len(s)), index=s.index)))
 # najbliższy sąsiad (k = 1); zmienne jakościowe zamieniamy na zero-jedynkowe
-idx = sasiedzi(pd.get_dummies(dane[klasy]), k=1)
-imp_nn = wstaw(y_dawcow[idx[:, 0]])
-print(obciazenie(imp_hd), obciazenie(imp_nn))
+idx = nearest_donors(pd.get_dummies(dane[klasy]), k=1)
+imp_nn = fill_missing(y_dawcow[idx[:, 0]])
+print(bias(imp_hd), bias(imp_nn))
 print(len(np.unique(imp_hd[braki])), len(np.unique(imp_nn[braki])))
 ```
 
@@ -266,7 +266,7 @@ imp2 <- impute_knn(dane, wydatki ~ dochod + wiek + liczba_osob, k = 1)
 imp3 <- impute_knn(dane, wydatki ~ dochod + wiek + liczba_osob + wzrost + czas_wywiadu, k = 1)
 imp4 <- impute_knn(dane, wydatki ~ dochod + wiek + liczba_osob + wzrost + czas_wywiadu +
                      nr_ankietera + miesiac_urodzenia, k = 1)
-c(obciazenie(imp1$wydatki), obciazenie(imp2$wydatki), obciazenie(imp3$wydatki), obciazenie(imp4$wydatki))
+c(bias(imp1$wydatki), bias(imp2$wydatki), bias(imp3$wydatki), bias(imp4$wydatki))
 ```
 
 ## Python
@@ -276,7 +276,7 @@ zm1 = ['dochod']
 zm2 = zm1 + ['wiek', 'liczba_osob']
 zm3 = zm2 + ['wzrost', 'czas_wywiadu']
 zm4 = zm3 + ['nr_ankietera', 'miesiac_urodzenia']
-pd.Series([obciazenie(wstaw(y_dawcow[sasiedzi(dane[zm], k=1)[:, 0]])) for zm in [zm1, zm2, zm3, zm4]]).round(1)
+pd.Series([bias(fill_missing(y_dawcow[nearest_donors(dane[zm], k=1)[:, 0]])) for zm in [zm1, zm2, zm3, zm4]]).round(1)
 ```
 
 :::
@@ -304,8 +304,8 @@ imp_los31 <- impute_knn(dane, wydatki ~ dochod + wiek + liczba_osob, k = 31)
 ## średnia z k najbliższych
 imp_sr5 <- kNN(dane, variable = "wydatki", dist_var = xs, k = 5, numFun = mean)
 imp_sr31 <- kNN(dane, variable = "wydatki", dist_var = xs, k = 31, numFun = mean)
-c(obciazenie(imp_los5$wydatki), obciazenie(imp_los31$wydatki),
-  obciazenie(imp_sr5$wydatki), obciazenie(imp_sr31$wydatki))
+c(bias(imp_los5$wydatki), bias(imp_los31$wydatki),
+  bias(imp_sr5$wydatki), bias(imp_sr31$wydatki))
 ```
 
 Korekta obciążenia: imputujemy reszty modelu średnią z 31 sąsiadów i dodajemy je do wartości teoretycznych
@@ -315,7 +315,7 @@ Korekta obciążenia: imputujemy reszty modelu średnią z 31 sąsiadów i dodaj
 model <- lm(wydatki ~ dochod + wiek + liczba_osob, data = dane)
 dane$reszta <- dane$wydatki - predict(model, dane)    # dla biorców reszta to brak
 imp_r <- kNN(dane, variable = "reszta", dist_var = xs, k = 31, numFun = mean)
-obciazenie(predict(model, dane) + imp_r$reszta)
+bias(predict(model, dane) + imp_r$reszta)
 ```
 
 ## Python
@@ -325,14 +325,14 @@ Dawca losowy i średnia z $k$ sąsiadów
 ```{python}
 xs = ['dochod', 'wiek', 'liczba_osob']
 rng = np.random.default_rng(2025)
-idx5 = sasiedzi(dane[xs], k=5)
-idx31 = sasiedzi(dane[xs], k=31)
+idx5 = nearest_donors(dane[xs], k=5)
+idx31 = nearest_donors(dane[xs], k=31)
 # dawca losowany spośród k najbliższych
-print(obciazenie(wstaw([rng.choice(y_dawcow[i]) for i in idx5])),
-      obciazenie(wstaw([rng.choice(y_dawcow[i]) for i in idx31])))
+print(bias(fill_missing([rng.choice(y_dawcow[i]) for i in idx5])),
+      bias(fill_missing([rng.choice(y_dawcow[i]) for i in idx31])))
 # średnia z k najbliższych
-print(obciazenie(wstaw(y_dawcow[idx5].mean(axis=1))),
-      obciazenie(wstaw(y_dawcow[idx31].mean(axis=1))))
+print(bias(fill_missing(y_dawcow[idx5].mean(axis=1))),
+      bias(fill_missing(y_dawcow[idx31].mean(axis=1))))
 ```
 
 Korekta obciążenia: wartość teoretyczna + średnia reszt 31 najbliższych dawców
@@ -342,7 +342,7 @@ Korekta obciążenia: wartość teoretyczna + średnia reszt 31 najbliższych da
 model = LinearRegression().fit(dawcy[xs], y_dawcow)
 mu = model.predict(dane[xs])
 reszty = y_dawcow - mu[~braki]
-obciazenie(wstaw(mu[braki] + reszty[idx31].mean(axis=1)))
+bias(fill_missing(mu[braki] + reszty[idx31].mean(axis=1)))
 ```
 
 :::
@@ -377,8 +377,8 @@ Imputacja wszystkich braków
 imp_sur <- imp_std <- dane$wydatki
 imp_sur[braki] <- dawcy$wydatki[nn_sur]
 imp_std[braki] <- dawcy$wydatki[nn_std]
-obciazenie(imp_sur)
-obciazenie(imp_std)
+bias(imp_sur)
+bias(imp_std)
 ```
 
 ## Python
@@ -396,7 +396,7 @@ dawcy.iloc[[nn_sur[0], nn_std[0]]][xs]
 Imputacja wszystkich braków
 
 ```{python}
-print(obciazenie(wstaw(y_dawcow[nn_sur])), obciazenie(wstaw(y_dawcow[nn_std])))
+print(bias(fill_missing(y_dawcow[nn_sur])), bias(fill_missing(y_dawcow[nn_std])))
 ```
 
 :::
@@ -773,7 +773,7 @@ mean(remisy > 1)
 Funkcja `impute_knn()` losuje dawcę spośród `k` najbliższych sąsiadów. Przy `k = 1` nie ma losowania, a remis rozstrzyga kolejność dawców w danych, więc ten sam dawca trafia do wszystkich biorców o tych samych wartościach zmiennych. Poniższa funkcja losuje dawcę spośród wszystkich dawców w minimalnej odległości.
 
 ```{r}
-impute_nn_remisy <- function(dane, y, xs) {
+impute_nn_ties <- function(dane, y, xs) {
   resp <- !is.na(dane[[y]])
   dawcy <- dane[resp, ]
   dane[[y]][!resp] <- sapply(which(!resp), function(i) {
@@ -793,7 +793,7 @@ f <- czyta_ksiazki_z_brakami ~ plec + wiek + wyksztalcenie
 ## k = 1: przy remisie wybierany jest pierwszy dawca w kolejności danych
 wynik_nn1 <- impute_knn(data, f, k = 1)$czyta_ksiazki_z_brakami
 ## k = 1: dawca losowany spośród remisów
-wynik_nn1_los <- impute_nn_remisy(data, "czyta_ksiazki_z_brakami", xs)
+wynik_nn1_los <- impute_nn_ties(data, "czyta_ksiazki_z_brakami", xs)
 ## k = 5: dawca losowany spośród 5 najbliższych sąsiadów
 wynik_nn5 <- impute_knn(data, f, k = 5)$czyta_ksiazki_z_brakami
 ## k = 5: dominanta wartości 5 najbliższych sąsiadów (pakiet VIM)

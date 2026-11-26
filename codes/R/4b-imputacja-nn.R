@@ -21,8 +21,8 @@ boxplot(dochod ~ braki, data = dane)
 boxplot(wiek ~ braki, data = dane)
 
 ## obciążenie: średnia po imputacji minus średnia prawdziwa
-obciazenie <- function(y) mean(y) - mean(dane$wydatki_prawda)
-obciazenie(ifelse(braki, mean(dane$wydatki, na.rm = TRUE), dane$wydatki))
+bias <- function(y) mean(y) - mean(dane$wydatki_prawda)
+bias(ifelse(braki, mean(dane$wydatki, na.rm = TRUE), dane$wydatki))
 
 # Krok 1 -- najbliższy sąsiad krok po kroku ----
 biorca <- which(braki)[1]
@@ -33,7 +33,7 @@ odl <- abs(dawcy$dochod - dane$dochod[biorca])
 dawcy[which.min(odl), c("dochod", "wiek", "liczba_osob", "wydatki")]
 
 imp <- impute_knn(dane, wydatki ~ dochod, k = 1)
-obciazenie(imp$wydatki)
+bias(imp$wydatki)
 
 # Krok 2 -- same zmienne jakościowe ----
 klasy <- c("plec", "wyksztalcenie", "klasa_miejsc")
@@ -42,8 +42,8 @@ table(gower::gower_dist(dane[biorca, klasy], dawcy[klasy]))
 set.seed(2025)
 imp_hd <- impute_rhd(dane, wydatki ~ plec + wyksztalcenie + klasa_miejsc)
 imp_nn <- impute_knn(dane, wydatki ~ plec + wyksztalcenie + klasa_miejsc, k = 1)
-obciazenie(imp_hd$wydatki)
-obciazenie(imp_nn$wydatki)
+bias(imp_hd$wydatki)
+bias(imp_nn$wydatki)
 length(unique(imp_hd$wydatki[braki]))
 length(unique(imp_nn$wydatki[braki]))
 
@@ -53,7 +53,7 @@ imp2 <- impute_knn(dane, wydatki ~ dochod + wiek + liczba_osob, k = 1)
 imp3 <- impute_knn(dane, wydatki ~ dochod + wiek + liczba_osob + wzrost + czas_wywiadu, k = 1)
 imp4 <- impute_knn(dane, wydatki ~ dochod + wiek + liczba_osob + wzrost + czas_wywiadu +
                      nr_ankietera + miesiac_urodzenia, k = 1)
-c(obciazenie(imp1$wydatki), obciazenie(imp2$wydatki), obciazenie(imp3$wydatki), obciazenie(imp4$wydatki))
+c(bias(imp1$wydatki), bias(imp2$wydatki), bias(imp3$wydatki), bias(imp4$wydatki))
 
 # Krok 4 -- liczba sąsiadów i korekta obciążenia ----
 xs <- c("dochod", "wiek", "liczba_osob")
@@ -64,14 +64,14 @@ imp_los31 <- impute_knn(dane, wydatki ~ dochod + wiek + liczba_osob, k = 31)
 ## średnia z k najbliższych
 imp_sr5 <- kNN(dane, variable = "wydatki", dist_var = xs, k = 5, numFun = mean)
 imp_sr31 <- kNN(dane, variable = "wydatki", dist_var = xs, k = 31, numFun = mean)
-c(obciazenie(imp_los5$wydatki), obciazenie(imp_los31$wydatki),
-  obciazenie(imp_sr5$wydatki), obciazenie(imp_sr31$wydatki))
+c(bias(imp_los5$wydatki), bias(imp_los31$wydatki),
+  bias(imp_sr5$wydatki), bias(imp_sr31$wydatki))
 
 ## korekta obciążenia: wartość teoretyczna z modelu + średnia reszt k najbliższych dawców
 model <- lm(wydatki ~ dochod + wiek + liczba_osob, data = dane)
 dane$reszta <- dane$wydatki - predict(model, dane)    # dla biorców reszta to brak
 imp_r <- kNN(dane, variable = "reszta", dist_var = xs, k = 31, numFun = mean)
-obciazenie(predict(model, dane) + imp_r$reszta)
+bias(predict(model, dane) + imp_r$reszta)
 
 # Krok 5 -- odległość i skalowanie zmiennych ----
 X <- dane[, xs]
@@ -86,8 +86,8 @@ dawcy[nn_std[1], xs]
 imp_sur <- imp_std <- dane$wydatki
 imp_sur[braki] <- dawcy$wydatki[nn_sur]
 imp_std[braki] <- dawcy$wydatki[nn_std]
-obciazenie(imp_sur)
-obciazenie(imp_std)
+bias(imp_sur)
+bias(imp_std)
 
 # Przykład 1 -- symulacja ----
 # Ustawienie ziarna losowości dla reprodukowalności
@@ -242,7 +242,7 @@ remisy <- sapply(which(!resp), function(i) {
 table(remisy)
 mean(remisy > 1)
 
-impute_nn_remisy <- function(dane, y, xs) {
+impute_nn_ties <- function(dane, y, xs) {
   resp <- !is.na(dane[[y]])
   dawcy <- dane[resp, ]
   dane[[y]][!resp] <- sapply(which(!resp), function(i) {
@@ -258,7 +258,7 @@ f <- czyta_ksiazki_z_brakami ~ plec + wiek + wyksztalcenie
 ## k = 1: przy remisie wybierany jest pierwszy dawca w kolejności danych
 wynik_nn1 <- impute_knn(data, f, k = 1)$czyta_ksiazki_z_brakami
 ## k = 1: dawca losowany spośród remisów
-wynik_nn1_los <- impute_nn_remisy(data, "czyta_ksiazki_z_brakami", xs)
+wynik_nn1_los <- impute_nn_ties(data, "czyta_ksiazki_z_brakami", xs)
 ## k = 5: dawca losowany spośród 5 najbliższych sąsiadów
 wynik_nn5 <- impute_knn(data, f, k = 5)$czyta_ksiazki_z_brakami
 ## k = 5: dominanta wartości 5 najbliższych sąsiadów (pakiet VIM)
